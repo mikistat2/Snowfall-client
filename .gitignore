@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# builds
+dist/
+build/
+
+# env / secrets
+.env
+.env.local
+.env.*.local
+
+# logs
+*.log
+npm-debug.log*
+
+# uploads (member photos live outside git)
+server/uploads/photos/*
+!server/uploads/photos/.gitkeep
+
+# editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
