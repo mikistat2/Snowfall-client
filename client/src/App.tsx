@@ -11,15 +11,18 @@ import { EnrollPage } from './pages/EnrollPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { AuditLogPage } from './pages/AuditLogPage';
+import { GuidePage } from './pages/GuidePage';
+import { LandingPage } from './pages/LandingPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 export function App() {
   const { user } = useAuth();
   return (
     <Routes>
+      <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <LandingPage />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />
-      <Route element={user ? <Layout /> : <Navigate to="/login" replace />}>
+      <Route element={user ? <Layout /> : <Navigate to="/welcome" replace />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/monitor" element={<MonitorPage />} />
         <Route path="/members" element={<MembersPage />} />
@@ -28,6 +31,7 @@ export function App() {
         <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/audit" element={user?.role === 'owner' ? <AuditLogPage /> : <Navigate to="/" replace />} />
+        <Route path="/guide" element={<GuidePage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
@@ -43,6 +47,7 @@ const nav = [
   { to: '/notifications', label: 'nav.notifications' },
   { to: '/audit', label: 'nav.audit', ownerOnly: true },
   { to: '/settings', label: 'nav.settings' },
+  { to: '/guide', label: 'nav.guide' },
 ] as const;
 
 function Layout() {

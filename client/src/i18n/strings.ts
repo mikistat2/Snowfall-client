@@ -158,6 +158,7 @@ const en = {
 
   // telegram / notifications
   'nav.notifications': 'Notifications',
+  'nav.guide': 'Start-up Guide',
   'notifications.title': 'Notifications',
   'notifications.member': 'Member',
   'notifications.type': 'Type',
