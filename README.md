@@ -1,4 +1,4 @@
-# Gym Management System
+# Snowfall Gym Management System
 
 Multi-tenant B2B gym management for Ethiopian gyms: browser-based face-recognition
 entrance monitor, automatic entry rules, occupancy tracking, manual payment marking

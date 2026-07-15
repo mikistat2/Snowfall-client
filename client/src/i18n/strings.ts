@@ -4,7 +4,7 @@
  */
 const en = {
   // app
-  'app.name': 'Gym Manager',
+  'app.name': 'Snowfall Gym',
   'nav.dashboard': 'Dashboard',
   'nav.monitor': 'Monitor',
   'nav.members': 'Members',
@@ -159,6 +159,23 @@ const en = {
   // telegram / notifications
   'nav.notifications': 'Notifications',
   'nav.guide': 'Start-up Guide',
+  'nav.feedback': 'Feedback / Improvement',
+
+  // feedback
+  'feedback.title': 'Feedback & Improvement',
+  'feedback.intro':
+    'Have a suggestion, a bug to report, or an idea to make Snowfall better? Send it straight to the team.',
+  'feedback.category': 'Type',
+  'feedback.suggestion': 'Suggestion',
+  'feedback.bug': 'Bug report',
+  'feedback.improvement': 'Improvement idea',
+  'feedback.other': 'Other',
+  'feedback.subject': 'Subject',
+  'feedback.message': 'Your message',
+  'feedback.messagePlaceholder': 'Describe your idea, problem, or request in as much detail as you like…',
+  'feedback.send': 'Send feedback',
+  'feedback.sending': 'Sending…',
+  'feedback.thanks': 'Thanks! Your feedback was sent to our team.',
   'notifications.title': 'Notifications',
   'notifications.member': 'Member',
   'notifications.type': 'Type',

@@ -1,8 +1,8 @@
 {
-  "name": "gym-management-system",
+  "name": "snowfall-gym-management-system",
   "private": true,
   "version": "0.1.0",
-  "description": "Multi-tenant gym management system with face-recognition entrance monitor (Ethiopia)",
+  "description": "Snowfall Gym Management System — multi-tenant gym management with face-recognition entrance monitor (Ethiopia)",
   "workspaces": [
     "client",
     "server"

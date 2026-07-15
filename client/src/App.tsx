@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { t } from './i18n/strings';
+import { Logo } from './components/ui/Logo';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterGymPage } from './pages/RegisterGymPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -12,6 +13,7 @@ import { PaymentsPage } from './pages/PaymentsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { GuidePage } from './pages/GuidePage';
+import { FeedbackPage } from './pages/FeedbackPage';
 import { LandingPage } from './pages/LandingPage';
 import { SettingsPage } from './pages/SettingsPage';
 
@@ -32,6 +34,7 @@ export function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/audit" element={user?.role === 'owner' ? <AuditLogPage /> : <Navigate to="/" replace />} />
         <Route path="/guide" element={<GuidePage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
@@ -48,6 +51,7 @@ const nav = [
   { to: '/audit', label: 'nav.audit', ownerOnly: true },
   { to: '/settings', label: 'nav.settings' },
   { to: '/guide', label: 'nav.guide' },
+  { to: '/feedback', label: 'nav.feedback' },
 ] as const;
 
 function Layout() {
@@ -56,9 +60,12 @@ function Layout() {
   return (
     <div className="flex min-h-screen">
       <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-5 py-4">
-          <div className="text-sm font-bold">{gym?.name ?? t('app.name')}</div>
-          <div className="text-xs text-slate-500">{user?.name}</div>
+        <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-4">
+          <Logo size="h-12 w-12" tile />
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold">{gym?.name ?? t('app.name')}</div>
+            <div className="truncate text-xs text-slate-500">{user?.name}</div>
+          </div>
         </div>
         <nav className="flex-1 space-y-0.5 p-3">
           {items.map((item) => (

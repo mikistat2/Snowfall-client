@@ -1,8 +1,8 @@
 {
-  "name": "@gym/server",
+  "name": "@snowfall/server",
   "private": true,
   "version": "0.1.0",
-  "description": "Gym management system API server",
+  "description": "Snowfall Gym Management System API server",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -25,6 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "node-cron": "^3.0.3",
+    "nodemailer": "^9.0.3",
     "pg": "^8.12.0",
     "socket.io": "^4.7.5",
     "zod": "^3.23.8"
@@ -36,6 +37,7 @@
     "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.14.0",
     "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.16.0",

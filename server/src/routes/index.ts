@@ -14,6 +14,7 @@ import * as telegram from '../controllers/telegramController';
 import * as guests from '../controllers/guestController';
 import * as auditLogModel from '../models/auditLogModel';
 import { cameraProxy } from '../controllers/cameraProxyController';
+import * as feedback from '../controllers/feedbackController';
 
 export const api = Router();
 
@@ -199,6 +200,19 @@ api.get('/notifications', asyncHandler(telegram.notifications));
 // ---------- payments / dashboard ----------
 api.get('/payments', asyncHandler(payments.list));
 api.get('/dashboard/stats', asyncHandler(dashboard.stats));
+
+// ---------- feedback (emailed to product owner) ----------
+api.post(
+  '/feedback',
+  validate(
+    z.object({
+      category: z.enum(['suggestion', 'bug', 'improvement', 'other']),
+      subject: z.string().max(200).optional(),
+      message: z.string().min(1).max(5000),
+    }),
+  ),
+  asyncHandler(feedback.submit),
+);
 
 // ---------- settings / staff (owner only for writes) ----------
 api.get('/settings', asyncHandler(settings.getGym));

@@ -25,4 +25,11 @@ export const env = {
     accessTtl: optional('JWT_ACCESS_TTL', '15m'),
     refreshTtlDays: 30,
   },
+  // Feedback email (Gmail SMTP). SMTP_USER/SMTP_PASS must be a Gmail address
+  // + App Password (2-Step Verification required) for sending to work.
+  mail: {
+    user: optional('SMTP_USER', ''),
+    pass: optional('SMTP_PASS', ''),
+    feedbackTo: optional('FEEDBACK_TO', 'miki123mbt@gmail.com'),
+  },
 } as const;

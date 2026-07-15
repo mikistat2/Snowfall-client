@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
+import loginLogo from '../assets/images/login-logo.png';
 
 export function RegisterGymPage() {
   const { registerGym } = useAuth();
@@ -39,7 +40,34 @@ export function RegisterGymPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <form onSubmit={onSubmit} className="card w-full max-w-md space-y-4">
-        <h1 className="text-xl font-bold">{t('auth.registerGym')}</h1>
+        <div className="flex flex-col items-center gap-2 pb-1 text-center">
+          <img
+            src={loginLogo}
+            alt="Snowfall Gym Management System"
+            className="w-40 rounded-xl"
+          />
+          <h1
+  className="
+    mt-4
+    text-[22px]
+    font-display
+    font-black
+    uppercase
+    leading-none
+    tracking-wider
+    bg-gradient-to-br
+    from-sky-900
+    via-sky-400
+    to-sky-700
+    bg-clip-text
+    text-transparent
+    drop-shadow-[0_0_8px_rgba(96,165,250,0.45)]
+    [text-shadow:0_0_8px_rgba(255,255,255,0.35)]
+  "
+>
+  {t('auth.registerGym')}
+</h1>
+        </div>
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <div>
           <label className="label">{t('auth.gymName')}</label>

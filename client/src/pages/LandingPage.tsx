@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import promoImg from '../assets/images/promo-facerec-img.jpg';
 import heroBg from '../assets/images/hero-bg-img.jpg';
+import { Logo } from '../components/ui/Logo';
 
 /**
  * Public landing page (shown to logged-out visitors). Marketing copy lives
@@ -12,35 +13,59 @@ import heroBg from '../assets/images/hero-bg-img.jpg';
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-100">
-      {/* ---------------------------------------------------------- nav */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <img src={heroBg} alt="Gym Manager" className="h-8 w-8 rounded-lg object-cover" />
-            <span className="text-sm font-bold">Gym Manager</span>
-          </div>
-          <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
-            <a href="#features" className="hover:text-slate-900">Features</a>
-            <a href="#how" className="hover:text-slate-900">How it works</a>
-            <a href="#telegram" className="hover:text-slate-900">Telegram</a>
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link to="/login" className="btn-secondary">Log in</Link>
-            <Link to="/register" className="btn-primary">Get started</Link>
-          </div>
-        </div>
-      </header>
-
-      {/* ---------------------------------------------------------- hero */}
+      {/* ------------------------------------ hero (nav shares the same bg image) */}
       <section
         className="relative overflow-hidden bg-slate-900 bg-cover bg-center"
         style={{ backgroundImage: `url(${heroBg})` }}
       >
-        {/* dark overlay so the headline stays legible over the photo */}
-        <div className="absolute inset-0 bg-slate-950/75" />
+        {/* dark overlays so the nav + headline stay legible over the photo */}
+        <div className="absolute inset-0 bg-slate-650/75" />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 to-transparent" />
 
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 lg:grid-cols-[1fr_1.15fr] lg:py-24">
+        {/* nav — sits on top of the hero image */}
+        <header className="relative z-20">
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <Logo size="h-20 w-20 mt-4" />
+              <h1
+  className="
+    mt-4
+    text-[22px]
+    font-display
+    font-black
+    uppercase
+    leading-none
+    tracking-wider
+    bg-gradient-to-br
+    from-sky-400
+    via-sky-400
+    to-sky-700
+    bg-clip-text
+    text-transparent
+    drop-shadow-[0_0_8px_rgba(96,165,250,0.45)]
+    [text-shadow:0_0_8px_rgba(255,255,255,0.35)]
+  "
+>
+  Snowfall GMS
+</h1>
+            </div>
+            <nav className="hidden items-center gap-6 text-sm text-slate-200 md:flex">
+              <a href="#features" className="hover:text-white">Features</a>
+              <a href="#how" className="hover:text-white">How it works</a>
+              <a href="#telegram" className="hover:text-white">Telegram</a>
+            </nav>
+            <div className="flex items-center gap-2">
+              <Link to="/login" className="btn !border !border-white/40 !text-white hover:!bg-white/10">
+                Log in
+              </Link>
+              <Link to="/register" className="btn !bg-white !text-slate-900 hover:!bg-slate-200">
+                Get started
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 lg:grid-cols-[1fr_1.15fr] lg:pb-24 lg:pt-12">
           <div className="space-y-6">
             <h1 className="text-5xl font-bold leading-tight text-white sm:text-6xl">
               Your gym's front door,
@@ -158,6 +183,7 @@ export function LandingPage() {
       <section id="telegram" className="border-y border-slate-200 bg-white">
         <div className="mx-auto grid max-w-6xl items-center gap-10 scroll-mt-20 px-4 py-16 lg:grid-cols-2">
           <div className="space-y-4">
+            <TelegramIcon className="h-16 w-16" />
             <SectionTitle
               align="left"
               kicker="No member app to install"
@@ -203,7 +229,7 @@ export function LandingPage() {
       {/* ---------------------------------------------------------- footer */}
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-slate-400">
-          <span>© {new Date().getFullYear()} Gym Manager</span>
+          <span>© {new Date().getFullYear()} Snowfall Gym Management System</span>
           <span>Face data stays in your gym · Guests purged automatically</span>
         </div>
       </footer>
@@ -356,6 +382,20 @@ function Bubble({ children, me }: { children: ReactNode; me?: boolean }) {
 
 function Am({ children }: { children: ReactNode }) {
   return <span className="mt-1 block text-xs text-slate-500">{children}</span>;
+}
+
+/** Telegram logo (inline SVG — self-contained, no external request). */
+function TelegramIcon({ className }: { className?: string }) {
+  return (
+    <span className={`inline-flex items-center justify-center rounded-2xl bg-[#229ED9] p-3 ${className ?? ''}`}>
+      <svg viewBox="0 0 24 24" fill="none" className="h-full w-full" aria-hidden="true">
+        <path
+          d="M21.94 4.72 18.9 19.06c-.23 1.01-.83 1.26-1.68.78l-4.64-3.42-2.24 2.16c-.25.25-.46.46-.94.46l.33-4.73 8.62-7.79c.38-.33-.08-.52-.58-.19l-10.65 6.7-4.59-1.44c-1-.31-1.02-1 .21-1.48l17.94-6.92c.83-.31 1.56.2 1.29 1.51Z"
+          fill="#fff"
+        />
+      </svg>
+    </span>
+  );
 }
 
 function FeedRow({ dot, text, time, action }: { dot: string; text: string; time: string; action?: string }) {
