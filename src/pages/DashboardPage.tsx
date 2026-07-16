@@ -31,7 +31,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-5">
       <div className="text-center">
-        <h1 className="gym-name text-5xl leading-tight">{gym?.name ?? t('app.name')}</h1>
+        <h1 className="gym-name text-3xl leading-tight sm:text-5xl">{gym?.name ?? t('app.name')}</h1>
         <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
           {t('dashboard.title')}
         </p>
@@ -63,9 +63,9 @@ function PeakHoursChart({ data }: { data: { hour: number; count: number }[] }) {
   const peakHour = data.reduce((best, d) => (d.count > (byHour.get(best) ?? 0) ? d.hour : best), hours[0]!);
 
   return (
-    <section className="card">
+    <section className="card overflow-x-auto">
       <h2 className="mb-4 text-sm font-semibold text-slate-700">{t('dashboard.peakHours')}</h2>
-      <div className="flex h-44 items-end gap-1.5" role="img" aria-label={t('dashboard.peakHours')}>
+      <div className="flex h-44 min-w-[420px] items-end gap-1.5" role="img" aria-label={t('dashboard.peakHours')}>
         {hours.map((hour) => {
           const count = byHour.get(hour) ?? 0;
           const isPeak = hour === peakHour && count > 0;

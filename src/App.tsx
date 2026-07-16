@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { t } from './i18n/strings';
@@ -56,23 +57,58 @@ const nav = [
 
 function Layout() {
   const { user, gym, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
   const items = nav.filter((item) => !('ownerOnly' in item && item.ownerOnly) || user?.role === 'owner');
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-slate-200 bg-white">
+      {/* mobile top bar */}
+      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2.5 border-b border-slate-200 bg-white px-3 md:hidden">
+        <button
+          aria-label="Open menu"
+          onClick={() => setMenuOpen(true)}
+          className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M3 5h14M3 10h14M3 15h14" />
+          </svg>
+        </button>
+        <Logo size="h-8 w-8" tile />
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold">{gym?.name ?? t('app.name')}</div>
+        </div>
+      </header>
+
+      {/* backdrop for the mobile drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={() => setMenuOpen(false)} />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:static md:z-auto md:w-56 md:translate-x-0 ${
+          menuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-4">
           <Logo size="h-12 w-12" tile />
           <div className="min-w-0">
             <div className="truncate text-sm font-bold">{gym?.name ?? t('app.name')}</div>
             <div className="truncate text-xs text-slate-500">{user?.name}</div>
           </div>
+          <button
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+            className="ml-auto rounded-lg p-1.5 text-xl leading-none text-slate-400 hover:text-slate-600 md:hidden"
+          >
+            ×
+          </button>
         </div>
-        <nav className="flex-1 space-y-0.5 p-3">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
           {items.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={'end' in item && item.end}
+              onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-2 text-sm font-medium ${
                   isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
@@ -90,7 +126,7 @@ function Layout() {
           {t('nav.logout')}
         </button>
       </aside>
-      <main className="min-w-0 flex-1 p-6">
+      <main className="min-w-0 flex-1 p-4 pt-[4.5rem] md:p-6 md:pt-6">
         <Outlet />
       </main>
     </div>

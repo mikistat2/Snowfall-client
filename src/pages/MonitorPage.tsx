@@ -256,8 +256,8 @@ export function MonitorPage() {
 
   // --- render ----------------------------------------------------------
   return (
-    <div className="flex h-[calc(100vh-3rem)] gap-5">
-      <div className="relative min-w-0 flex-1 overflow-hidden rounded-xl bg-black">
+    <div className="flex flex-col gap-4 lg:h-[calc(100vh-3rem)] lg:flex-row lg:gap-5">
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1">
         <CameraFeed
           key={JSON.stringify(source)}
           source={source}
@@ -267,20 +267,20 @@ export function MonitorPage() {
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
 
         {/* gym name, top center */}
-        <div className="pointer-events-none absolute left-1/2 top-4 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-6 py-2 backdrop-blur">
-          <div className="gym-name truncate text-center text-4xl leading-tight">
+        <div className="pointer-events-none absolute left-1/2 top-2 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur sm:top-4 sm:px-6 sm:py-2">
+          <div className="gym-name truncate text-center text-xl leading-tight sm:text-3xl lg:text-4xl">
             {gym?.name ?? t('app.name')}
           </div>
         </div>
 
         {/* occupancy, top right */}
-        <div className="absolute right-4 top-4 rounded-xl bg-black/60 px-4 py-2 text-white backdrop-blur">
-          <div className="text-xs uppercase tracking-wide text-slate-300">{t('monitor.occupancy')}</div>
-          <div className="text-3xl font-bold leading-tight">{occupancy}</div>
+        <div className="absolute right-2 top-2 rounded-xl bg-black/60 px-3 py-1.5 text-white backdrop-blur sm:right-4 sm:top-4 sm:px-4 sm:py-2">
+          <div className="text-[10px] uppercase tracking-wide text-slate-300 sm:text-xs">{t('monitor.occupancy')}</div>
+          <div className="text-xl font-bold leading-tight sm:text-3xl">{occupancy}</div>
         </div>
 
         {/* quick actions, bottom left */}
-        <div className="absolute bottom-4 left-4 flex gap-2">
+        <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-2 sm:bottom-4 sm:left-4 sm:right-auto">
           <button className="btn-secondary" onClick={() => setCheckoutOpen(true)}>
             {t('monitor.checkOut')}
           </button>
@@ -299,7 +299,7 @@ export function MonitorPage() {
         )}
       </div>
 
-      <aside className="w-80 shrink-0">
+      <aside className="h-96 w-full shrink-0 lg:h-auto lg:w-80">
         <EventFeed
           events={events}
           overriding={overrideMutation.isPending || approveMutation.isPending}

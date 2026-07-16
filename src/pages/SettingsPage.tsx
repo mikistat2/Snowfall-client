@@ -270,7 +270,8 @@ function PlansSection() {
           + {t('settings.addPlan')}
         </button>
       </div>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm">
         <tbody>
           {plans.map((p) => (
             <tr key={p.id} className={`border-b border-slate-100 last:border-0 ${p.active ? '' : 'opacity-50'}`}>
@@ -312,6 +313,7 @@ function PlansSection() {
           ))}
         </tbody>
       </table>
+      </div>
 
       {editing && (
         <Modal title={editing.id ? editing.name : t('settings.addPlan')} onClose={() => setEditing(null)}>
@@ -424,7 +426,8 @@ function StaffSection() {
           + {t('settings.addStaff')}
         </button>
       </div>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[420px] text-sm">
         <tbody>
           {staff.map((s) => (
             <tr key={s.id} className="border-b border-slate-100 last:border-0">
@@ -442,6 +445,7 @@ function StaffSection() {
           ))}
         </tbody>
       </table>
+      </div>
 
       {adding && (
         <Modal title={t('settings.addStaff')} onClose={() => setAdding(false)}>
