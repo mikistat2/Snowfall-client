@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { io, type Socket } from 'socket.io-client';
-import { tokenStore } from '../lib/api';
+import { API_ORIGIN, tokenStore } from '../lib/api';
 
 /**
  * One socket per mounted consumer, authenticated with the JWT access token.
@@ -12,7 +12,11 @@ export function useSocket(handlers: Record<string, (payload: never) => void>): v
   handlersRef.current = handlers;
 
   useEffect(() => {
-    const socket: Socket = io({ auth: { token: tokenStore.access } });
+    // separate API origin in production (Vercel client → Render API);
+    // same-origin through the Vite proxy in dev
+    const socket: Socket = API_ORIGIN
+      ? io(API_ORIGIN, { auth: { token: tokenStore.access } })
+      : io({ auth: { token: tokenStore.access } });
 
     const events = Object.keys(handlersRef.current);
     for (const event of events) {

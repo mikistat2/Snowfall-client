@@ -5,8 +5,15 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
  *  - access token attached to every request
  *  - on 401, one refresh attempt (single-flight), then the request is retried
  *  - refresh failure clears the session and sends the user to /login
+ *
+ * VITE_API_URL points at the API origin when client and server are deployed
+ * separately (e.g. Vercel + Render). Unset in dev → relative URLs through the
+ * Vite proxy.
  */
-export const api = axios.create({ baseURL: '/api/v1' });
+export const API_ORIGIN: string = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '') ?? '';
+const API_BASE = `${API_ORIGIN}/api/v1`;
+
+export const api = axios.create({ baseURL: API_BASE });
 
 const store = {
   get access() {
@@ -40,7 +47,7 @@ let refreshing: Promise<string> | null = null;
 async function refreshAccessToken(): Promise<string> {
   const refreshToken = store.refresh;
   if (!refreshToken) throw new Error('no refresh token');
-  const { data } = await axios.post('/api/v1/auth/refresh', { refreshToken });
+  const { data } = await axios.post(`${API_BASE}/auth/refresh`, { refreshToken });
   store.set(data);
   return data.accessToken as string;
 }

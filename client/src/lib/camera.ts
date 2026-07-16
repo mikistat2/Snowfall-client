@@ -1,4 +1,4 @@
-import { tokenStore } from './api';
+import { API_ORIGIN, tokenStore } from './api';
 
 /**
  * Camera source is a per-device choice (each monitor PC/phone picks its own),
@@ -17,7 +17,15 @@ export type CameraElement = HTMLVideoElement | HTMLImageElement;
 
 const KEY = 'cameraSource';
 
+/**
+ * IP/phone cameras only work when the server shares the gym's LAN, so the
+ * option is opt-in via VITE_ENABLE_IP_CAMERA=true (local/on-prem installs).
+ * Cloud deployments (Vercel + Render) leave it unset → webcam only.
+ */
+export const IP_CAMERA_ENABLED = import.meta.env.VITE_ENABLE_IP_CAMERA === 'true';
+
 export function getCameraSource(): CameraSource {
+  if (!IP_CAMERA_ENABLED) return { type: 'webcam' };
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
@@ -50,9 +58,9 @@ export function normalizeCameraUrl(raw: string): string {
   return trimmed;
 }
 
-/** Same-origin proxied URL for an IP camera stream (see server camera-proxy). */
+/** Proxied URL for an IP camera stream (see server camera-proxy). */
 export function proxiedStreamUrl(url: string): string {
-  return `/api/v1/camera-proxy?url=${encodeURIComponent(url)}&token=${encodeURIComponent(tokenStore.access ?? '')}`;
+  return `${API_ORIGIN}/api/v1/camera-proxy?url=${encodeURIComponent(url)}&token=${encodeURIComponent(tokenStore.access ?? '')}`;
 }
 
 /** Current frame dimensions; {0,0} until the source has delivered a frame. */

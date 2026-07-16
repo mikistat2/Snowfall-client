@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
-import { normalizeCameraUrl, proxiedStreamUrl, setCameraSource, type CameraSource } from '../../lib/camera';
+import {
+  IP_CAMERA_ENABLED,
+  normalizeCameraUrl,
+  proxiedStreamUrl,
+  setCameraSource,
+  type CameraSource,
+} from '../../lib/camera';
 import { t } from '../../i18n/strings';
 
 /** Pick this device's camera: built-in webcam or a phone/IP camera on the LAN. */
@@ -38,6 +44,7 @@ export function CameraSettingsModal({
           </span>
         </label>
 
+        {IP_CAMERA_ENABLED && (
         <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3">
           <input type="radio" checked={type === 'ip'} onChange={() => setType('ip')} className="mt-1" />
           <span className="min-w-0 flex-1">
@@ -85,6 +92,7 @@ export function CameraSettingsModal({
             )}
           </span>
         </label>
+        )}
 
         <div className="flex justify-end gap-2">
           <button type="button" className="btn-secondary" onClick={onClose}>

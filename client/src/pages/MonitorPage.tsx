@@ -266,6 +266,13 @@ export function MonitorPage() {
         />
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
 
+        {/* gym name, top center */}
+        <div className="pointer-events-none absolute left-1/2 top-4 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-6 py-2 backdrop-blur">
+          <div className="gym-name truncate text-center text-4xl leading-tight">
+            {gym?.name ?? t('app.name')}
+          </div>
+        </div>
+
         {/* occupancy, top right */}
         <div className="absolute right-4 top-4 rounded-xl bg-black/60 px-4 py-2 text-white backdrop-blur">
           <div className="text-xs uppercase tracking-wide text-slate-300">{t('monitor.occupancy')}</div>

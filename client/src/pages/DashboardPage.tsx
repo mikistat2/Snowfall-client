@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { t } from '../i18n/strings';
+import { useAuth } from '../hooks/useAuth';
 import { useSocket } from '../hooks/useSocket';
 import { useState } from 'react';
 import type { DashboardStats } from '../lib/types';
 
 export function DashboardPage() {
+  const { gym } = useAuth();
   const [liveOccupancy, setLiveOccupancy] = useState<number | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -28,7 +30,12 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+      <div className="text-center">
+        <h1 className="gym-name text-5xl leading-tight">{gym?.name ?? t('app.name')}</h1>
+        <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          {t('dashboard.title')}
+        </p>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (

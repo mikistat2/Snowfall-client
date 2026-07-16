@@ -30,4 +30,8 @@
   .card {
     @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
   }
+  /* gym name display treatment — matches the Snowfall brand mark on the landing page */
+  .gym-name {
+    @apply font-display font-extrabold uppercase tracking-wider bg-gradient-to-br from-sky-400 via-sky-500 to-sky-700 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(56,189,248,0.4)];
+  }
 }
