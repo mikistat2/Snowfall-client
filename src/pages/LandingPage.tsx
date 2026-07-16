@@ -80,21 +80,21 @@ export function LandingPage() {
               <br />
               <span className="text-slate-300">on autopilot.</span>
             </h1>
-            <p className="max-w-md text-lg leading-relaxed text-slate-200">
+            <p className="max-w-md text-base leading-relaxed text-slate-200 sm:text-lg">
               A camera recognizes every member at the entrance and enforces your rules automatically —
               expiry, sessions, hours. You mark payments in cash or Telebirr; the system and a Telegram
               bot handle everything else.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 to="/register"
-                className="btn !bg-white !px-6 !py-3 !text-base !text-slate-900 hover:!bg-slate-200"
+                className="btn w-full !bg-white !px-4 !py-2.5 !text-sm !text-slate-900 hover:!bg-slate-200 sm:w-auto sm:!px-6 sm:!py-3 sm:!text-base"
               >
                 Register your gym — free
               </Link>
               <a
                 href="#how"
-                className="btn !border !border-white/40 !px-6 !py-3 !text-base !text-white hover:!bg-white/10"
+                className="btn w-full !border !border-white/40 !px-4 !py-2.5 !text-sm !text-white hover:!bg-white/10 sm:w-auto sm:!px-6 sm:!py-3 sm:!text-base"
               >
                 See how it works
               </a>
@@ -320,10 +320,10 @@ function Tick({ children }: { children: ReactNode }) {
 /** CSS-only mock of the live monitor — the product IS the hero image. */
 function MonitorMock() {
   return (
-    <div className="card space-y-3 !p-4">
+    <div className="card mx-auto w-full max-w-[20rem] space-y-3 !p-3 sm:max-w-lg sm:!p-4 lg:max-w-none">
       {/* camera area */}
       <div
-        className="relative h-56 overflow-hidden rounded-lg bg-slate-900 bg-cover bg-center sm:h-80 lg:h-[28rem]"
+        className="relative h-72 overflow-hidden rounded-lg bg-slate-900 bg-cover bg-center sm:h-80 lg:h-[28rem]"
         style={{ backgroundImage: `url(${promoImg})` }}
       >
         {/* legibility overlay so pills/chip stay readable over any photo */}
