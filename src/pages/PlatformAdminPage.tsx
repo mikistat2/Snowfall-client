@@ -496,6 +496,26 @@ function ManageGymModal({
   const [confirmName, setConfirmName] = useState('');
   const [view, setView] = useState<'detail' | 'freeze' | 'delete'>('detail');
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  // one-click PDF of this gym's members (same layout as the gym's own export)
+  async function exportMembers() {
+    setExporting(true);
+    try {
+      const [{ downloadMembersPdf }, { data }] = await Promise.all([
+        import('../lib/membersPdf'),
+        platformApi.get<{ gym_name: string; members: import('../lib/membersPdf').MemberExportRow[] }>(
+          `/gyms/${gym.id}/export`,
+        ),
+      ]);
+      downloadMembersPdf(data.gym_name, data.members);
+      setError('');
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const detailQ = useQuery({
     queryKey: ['platform-gym', gym.id],
@@ -624,6 +644,9 @@ function ManageGymModal({
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
           <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+            <button className="btn-secondary mr-auto" onClick={() => void exportMembers()} disabled={exporting}>
+              {exporting ? 'Exporting…' : '⬇ Members PDF'}
+            </button>
             {gym.status === 'pending' && (
               <button className="btn-primary" onClick={() => approve.run()} disabled={approve.busy}>
                 {approve.busy ? 'Approving…' : '✓ Approve — start 1-year subscription'}
