@@ -206,6 +206,25 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<GymRow | null>(null);
   const [banner, setBanner] = useState('');
+  const [backingUp, setBackingUp] = useState(false);
+
+  // full member backup of every gym, rendered client-side as one PDF
+  async function downloadBackup() {
+    setBackingUp(true);
+    try {
+      const [{ downloadPlatformBackupPdf }, { data }] = await Promise.all([
+        import('../lib/membersPdf'),
+        platformApi.get<import('../lib/membersPdf').GymBackupEntry[]>('/export'),
+      ]);
+      downloadPlatformBackupPdf(data);
+      const total = data.reduce((sum, e) => sum + e.members.length, 0);
+      setBanner(`Backup PDF downloaded — ${data.length} gyms, ${total} members. Keep it somewhere safe.`);
+    } catch (err) {
+      setBanner(`Backup failed: ${apiErrorMessage(err)}`);
+    } finally {
+      setBackingUp(false);
+    }
+  }
 
   // action confirmation banner (e.g. "Gym frozen. Owner alerted via Telegram ✓ · Email ✓")
   useEffect(() => {
@@ -308,6 +327,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+          <button className="btn-secondary ml-auto" onClick={() => void downloadBackup()} disabled={backingUp}>
+            {backingUp ? 'Building backup…' : '⬇ Backup all gyms (PDF)'}
+          </button>
         </div>
 
         <div className="card overflow-x-auto p-0">

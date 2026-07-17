@@ -24,6 +24,8 @@ const en = {
   'auth.createAccount': 'Create account',
   'auth.haveAccount': 'Already have an account? Log in',
   'auth.confirmPassword': 'Confirm password',
+  'auth.agreeTerms': 'I have read and agree to the',
+  'auth.termsLink': 'Terms & Conditions',
   'auth.passwordMismatch': 'Passwords do not match',
   'auth.pendingTitle': 'Registration received!',
   'auth.pendingBody':

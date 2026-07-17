@@ -5,6 +5,7 @@ import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import loginLogo from '../assets/images/login-logo.png';
 import { TrialBanner } from '../components/ui/TrialBanner';
+import { TermsModal } from '../components/ui/TermsModal';
 
 export function RegisterGymPage() {
   const { registerGym } = useAuth();
@@ -20,6 +21,8 @@ export function RegisterGymPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsOpen, setTermsOpen] = useState(false);
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -132,9 +135,29 @@ export function RegisterGymPage() {
             {passwordsMismatch && <p className="mt-1 text-xs text-red-600">{t('auth.passwordMismatch')}</p>}
           </div>
         </div>
-        <button className="btn-primary w-full" disabled={busy || passwordsMismatch}>
+        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-slate-900"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            required
+          />
+          <span>
+            {t('auth.agreeTerms')}{' '}
+            <button
+              type="button"
+              className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900"
+              onClick={() => setTermsOpen(true)}
+            >
+              {t('auth.termsLink')}
+            </button>
+          </span>
+        </label>
+        <button className="btn-primary w-full" disabled={busy || passwordsMismatch || !agreedToTerms}>
           {t('auth.createAccount')}
         </button>
+        {termsOpen && <TermsModal onClose={() => setTermsOpen(false)} />}
         <Link to="/login" className="block text-center text-sm text-slate-500 hover:text-slate-800">
           {t('auth.haveAccount')}
         </Link>
