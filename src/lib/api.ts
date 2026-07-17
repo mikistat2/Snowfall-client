@@ -52,9 +52,17 @@ async function refreshAccessToken(): Promise<string> {
   return data.accessToken as string;
 }
 
+/** Fired when the platform admin has frozen this gym (any request → 403 GYM_FROZEN). */
+export const GYM_FROZEN_EVENT = 'gym-frozen';
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
+    const data = error.response?.data as { error?: string; code?: string } | undefined;
+    if (error.response?.status === 403 && data?.code === 'GYM_FROZEN') {
+      window.dispatchEvent(new CustomEvent(GYM_FROZEN_EVENT, { detail: data.error }));
+      throw error;
+    }
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;
     if (error.response?.status === 401 && original && !original._retried && store.refresh) {
       original._retried = true;

@@ -3,6 +3,8 @@ import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { t } from './i18n/strings';
 import { Logo } from './components/ui/Logo';
+import { FrozenGymAlert } from './components/ui/FrozenGymAlert';
+import { LiveDate } from './components/ui/LiveDate';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterGymPage } from './pages/RegisterGymPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -17,6 +19,7 @@ import { GuidePage } from './pages/GuidePage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { LandingPage } from './pages/LandingPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { PlatformAdminPage } from './pages/PlatformAdminPage';
 
 export function App() {
   const { user } = useAuth();
@@ -25,6 +28,8 @@ export function App() {
       <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <LandingPage />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />
+      {/* hidden platform-owner control panel — own auth, independent of gym sessions */}
+      <Route path="/platform" element={<PlatformAdminPage />} />
       <Route element={user ? <Layout /> : <Navigate to="/welcome" replace />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/monitor" element={<MonitorPage />} />
@@ -127,8 +132,14 @@ function Layout() {
         </button>
       </aside>
       <main className="min-w-0 flex-1 p-4 pt-[4.5rem] md:p-6 md:pt-6">
+        {/* today's date, visible on every page */}
+        <div className="mb-4 flex justify-end border-b border-slate-200 pb-2">
+          <LiveDate />
+        </div>
         <Outlet />
       </main>
+      {/* covers every page the moment the platform admin freezes this gym */}
+      <FrozenGymAlert />
     </div>
   );
 }
