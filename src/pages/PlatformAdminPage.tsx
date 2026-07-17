@@ -555,13 +555,18 @@ function ManageGymModal({
             <Info label="Revenue total" value={money(gym.revenue_total)} />
             <Info label="Revenue 30d" value={money(gym.revenue_30d)} />
             <Info label="Last check-in" value={ago(gym.last_checkin_at)} />
+            <Info label="Phone" value={gym.phone ?? '—'} />
+            <Info label="Address" value={gym.address ?? '—'} />
           </div>
 
           <div>
             <div className="label">Owner</div>
             <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
               <span className="font-medium">{gym.owner_name ?? '—'}</span>
-              <span className="text-slate-500"> · {gym.owner_email ?? '—'} · {gym.owner_phone ?? 'no phone'}</span>
+              <span className="text-slate-500">
+                {' '}
+                · {gym.owner_email ?? '—'} · {gym.owner_phone ?? gym.phone ?? 'no phone'}
+              </span>
             </div>
           </div>
 
