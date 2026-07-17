@@ -132,6 +132,8 @@ export interface GymSettings {
   match_threshold: number;
   closing_time: string;
   entry_mode: 'auto' | 'manual';
+  /** false: gym has no camera — enroll without face captures, monitor shows gym name only. */
+  camera_enabled: boolean;
 }
 
 export interface Gym {

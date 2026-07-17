@@ -41,6 +41,7 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
     match_threshold: 0.5,
     closing_time: '22:00',
     entry_mode: 'auto' as 'auto' | 'manual',
+    camera_enabled: true,
   });
   const [saved, setSaved] = useState(false);
 
@@ -70,6 +71,7 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
           match_threshold: Number(form.match_threshold),
           closing_time: form.closing_time,
           entry_mode: form.entry_mode,
+          camera_enabled: form.camera_enabled,
         },
       }),
     onSuccess: () => {
@@ -152,6 +154,19 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
             <option value="manual">{t('settings.entryManual')}</option>
           </select>
           <p className="mt-1 text-xs text-slate-400">{t('settings.entryModeHint')}</p>
+        </div>
+        <div>
+          <label className="label">{t('settings.camera')}</label>
+          <select
+            className="input"
+            value={form.camera_enabled ? 'on' : 'off'}
+            onChange={(e) => setForm((f) => ({ ...f, camera_enabled: e.target.value === 'on' }))}
+            disabled={readOnly}
+          >
+            <option value="on">{t('settings.cameraOn')}</option>
+            <option value="off">{t('settings.cameraOff')}</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-400">{t('settings.cameraHint')}</p>
         </div>
       </div>
       {!readOnly && (

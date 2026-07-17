@@ -53,15 +53,24 @@ export function MonitorPage() {
   const lastUnknownSent = useRef(0);
 
   // --- server state ---------------------------------------------------
+  const { data: gym } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get<Gym>('/settings')).data,
+  });
+  // undefined while settings load; false = gym has no camera → name-board mode
+  const cameraEnabled = gym ? gym.settings.camera_enabled !== false : undefined;
+
   const { data: descriptors = [] } = useQuery({
     queryKey: ['descriptors'],
     queryFn: async () => (await api.get<MemberDescriptors[]>('/members/descriptors')).data,
     refetchInterval: 60_000,
+    enabled: cameraEnabled === true, // pointless without a camera
   });
   const { data: guestDescriptors = [] } = useQuery({
     queryKey: ['guest-descriptors'],
     queryFn: async () => (await api.get<GuestDescriptor[]>('/guests/descriptors')).data,
     refetchInterval: 60_000,
+    enabled: cameraEnabled === true,
   });
   const targetsRef = useRef<RecognitionTarget[]>([]);
   // Number() guards against string ids from stale caches (bigint columns
@@ -81,10 +90,6 @@ export function MonitorPage() {
     })),
   ];
 
-  const { data: gym } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => (await api.get<Gym>('/settings')).data,
-  });
   const threshold = gym?.settings.match_threshold ?? 0.5;
   const thresholdRef = useRef(threshold);
   thresholdRef.current = threshold;
@@ -135,6 +140,8 @@ export function MonitorPage() {
 
   // --- detection loop (camera element is provided by <CameraFeed>) -----
   useEffect(() => {
+    if (cameraEnabled !== true) return; // no camera → no models, no loop
+
     let timer: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
     let detecting = false;
@@ -165,7 +172,7 @@ export function MonitorPage() {
       if (timer) clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cameraEnabled]);
 
   function drawOverlay(
     cam: CameraElement,
@@ -258,20 +265,33 @@ export function MonitorPage() {
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100vh-3rem)] lg:flex-row lg:gap-5">
       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1">
-        <CameraFeed
-          key={JSON.stringify(source)}
-          source={source}
-          elementRef={camRef}
-          className="h-full w-full object-contain"
-        />
-        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
+        {cameraEnabled === true && (
+          <>
+            <CameraFeed
+              key={JSON.stringify(source)}
+              source={source}
+              elementRef={camRef}
+              className="h-full w-full object-contain"
+            />
+            <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
 
-        {/* gym name, top center */}
-        <div className="pointer-events-none absolute left-1/2 top-2 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur sm:top-4 sm:px-6 sm:py-2">
-          <div className="gym-name truncate text-center text-xl leading-tight sm:text-3xl lg:text-4xl">
-            {gym?.name ?? t('app.name')}
+            {/* gym name, top center */}
+            <div className="pointer-events-none absolute left-1/2 top-2 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur sm:top-4 sm:px-6 sm:py-2">
+              <div className="gym-name truncate text-center text-xl leading-tight sm:text-3xl lg:text-4xl">
+                {gym?.name ?? t('app.name')}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* camera disabled → the monitor is a name board: gym name, big */}
+        {cameraEnabled === false && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6">
+            <div className="gym-name break-words text-center text-5xl leading-tight sm:text-7xl lg:text-8xl">
+              {gym?.name ?? t('app.name')}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* occupancy, top right */}
         <div className="absolute right-2 top-2 rounded-xl bg-black/60 px-3 py-1.5 text-white backdrop-blur sm:right-4 sm:top-4 sm:px-4 sm:py-2">
@@ -287,12 +307,14 @@ export function MonitorPage() {
           <button className="btn-secondary" onClick={() => setGuestOpen(true)}>
             {t('monitor.addGuest')}
           </button>
-          <button className="btn-secondary" onClick={() => setCameraOpen(true)}>
-            {t('camera.button')}
-          </button>
+          {cameraEnabled === true && (
+            <button className="btn-secondary" onClick={() => setCameraOpen(true)}>
+              {t('camera.button')}
+            </button>
+          )}
         </div>
 
-        {!ready && (
+        {cameraEnabled === true && !ready && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-white">
             {t('monitor.loadingModels')}
           </div>
