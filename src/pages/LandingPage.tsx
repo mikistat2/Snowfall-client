@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import promoImg from '../assets/images/promo-facerec-img.jpg';
 import heroBg from '../assets/images/hero-bg-img.jpg';
 import { Logo } from '../components/ui/Logo';
+import { TrialBanner } from '../components/ui/TrialBanner';
 
 /**
  * Public landing page (shown to logged-out visitors). Marketing copy lives
@@ -75,6 +76,7 @@ export function LandingPage() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 lg:grid-cols-[1fr_1.15fr] lg:pb-24 lg:pt-12">
           <div className="space-y-6">
+            <TrialBanner variant="landing" />
             <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
               Your gym's front door,
               <br />

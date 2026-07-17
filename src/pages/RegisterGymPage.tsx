@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import loginLogo from '../assets/images/login-logo.png';
+import { TrialBanner } from '../components/ui/TrialBanner';
 
 export function RegisterGymPage() {
   const { registerGym } = useAuth();
@@ -81,6 +82,7 @@ export function RegisterGymPage() {
   {t('auth.registerGym')}
 </h1>
         </div>
+        <TrialBanner variant="register" />
         {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
         <div>
           <label className="label">{t('auth.gymName')}</label>
