@@ -23,6 +23,16 @@ const en = {
   'auth.ownerName': 'Your name',
   'auth.createAccount': 'Create account',
   'auth.haveAccount': 'Already have an account? Log in',
+  'auth.confirmPassword': 'Confirm password',
+  'auth.passwordMismatch': 'Passwords do not match',
+  'auth.pendingTitle': 'Registration received!',
+  'auth.pendingBody':
+    'Please wait until the Admin verifies your registration. This usually takes less than a day — you cannot log in before your gym is approved.',
+  'auth.pendingEmail': 'We will notify you at',
+  'auth.pendingStep1': 'Registration submitted',
+  'auth.pendingStep2': 'Admin verification in progress',
+  'auth.pendingStep3': 'Log in and set up your gym',
+  'auth.backToLogin': 'Back to login',
   'auth.noAccount': 'New here? Register your gym',
 
   // statuses

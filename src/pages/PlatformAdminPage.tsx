@@ -16,6 +16,10 @@ interface Overview {
   total_gyms: number;
   active_gyms: number;
   frozen_gyms: number;
+  pending_gyms: number;
+  trial_gyms: number;
+  expiring_30d: number;
+  expired_subs: number;
   new_gyms_30d: number;
   total_members: number;
   total_staff: number;
@@ -24,14 +28,22 @@ interface Overview {
   revenue_30d: string;
 }
 
+interface PlatformSettings {
+  trial_mode: boolean;
+  trial_days: number;
+}
+
 interface GymRow {
   id: number;
   name: string;
   address: string | null;
   phone: string | null;
-  status: 'active' | 'frozen';
+  status: 'pending' | 'active' | 'frozen';
   frozen_at: string | null;
   admin_note: string | null;
+  approved_at: string | null;
+  subscription_ends_at: string | null;
+  is_trial: boolean;
   created_at: string;
   owner_name: string | null;
   owner_email: string | null;
@@ -63,6 +75,50 @@ function ago(date: string | null): string {
   if (days <= 0) return 'today';
   if (days === 1) return 'yesterday';
   return `${days} days ago`;
+}
+
+function daysLeft(date: string | null): number | null {
+  if (!date) return null;
+  return Math.floor((new Date(date).getTime() - Date.now()) / 86_400_000);
+}
+
+function StatusBadge({ gym }: { gym: GymRow }) {
+  if (gym.status === 'pending')
+    return (
+      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">Pending</span>
+    );
+  if (gym.status === 'frozen')
+    return <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700">Frozen</span>;
+  if (gym.is_trial)
+    return (
+      <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
+        Free trial
+      </span>
+    );
+  return (
+    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
+  );
+}
+
+/** Subscription cell: end date + a colored days-left chip. */
+function SubscriptionCell({ gym }: { gym: GymRow }) {
+  if (gym.status === 'pending') return <span className="text-slate-400">—</span>;
+  const left = daysLeft(gym.subscription_ends_at);
+  if (left === null) return <span className="text-slate-400">—</span>;
+  const chip =
+    left < 0
+      ? { text: 'expired', cls: 'bg-red-100 text-red-700' }
+      : left <= 7
+        ? { text: `${left}d left`, cls: 'bg-red-100 text-red-700' }
+        : left <= 30
+          ? { text: `${left}d left`, cls: 'bg-amber-100 text-amber-700' }
+          : { text: `${left}d left`, cls: 'bg-slate-100 text-slate-500' };
+  return (
+    <span className="whitespace-nowrap">
+      {String(gym.subscription_ends_at).slice(0, 10)}{' '}
+      <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-semibold ${chip.cls}`}>{chip.text}</span>
+    </span>
+  );
 }
 
 export function PlatformAdminPage() {
@@ -185,7 +241,19 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const stats = ov
     ? [
         { label: 'Gyms', value: ov.total_gyms, sub: `${ov.new_gyms_30d} new in 30d` },
-        { label: 'Active', value: ov.active_gyms, sub: `${ov.frozen_gyms} frozen` },
+        {
+          label: 'Pending approval',
+          value: ov.pending_gyms,
+          sub: ov.pending_gyms > 0 ? 'waiting for you!' : 'nothing to review',
+          highlight: ov.pending_gyms > 0,
+        },
+        { label: 'Active', value: ov.active_gyms, sub: `${ov.frozen_gyms} frozen · ${ov.trial_gyms} on trial` },
+        {
+          label: 'Subs ending ≤30d',
+          value: ov.expiring_30d,
+          sub: ov.expired_subs > 0 ? `${ov.expired_subs} already expired!` : 'none expired',
+          highlight: ov.expired_subs > 0,
+        },
         { label: 'Members', value: ov.total_members, sub: `${ov.total_staff} staff accounts` },
         { label: 'Check-ins (7d)', value: ov.checkins_7d, sub: 'across all gyms' },
         { label: 'Payments processed', value: money(ov.revenue_total), sub: `${money(ov.revenue_30d)} in 30d` },
@@ -218,9 +286,9 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         )}
 
         {/* overview cards */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
           {stats.map((s) => (
-            <div key={s.label} className="card p-4">
+            <div key={s.label} className={`card p-4 ${'highlight' in s && s.highlight ? 'border-amber-300 bg-amber-50' : ''}`}>
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{s.label}</div>
               <div className="mt-1 truncate text-xl font-bold">{s.value}</div>
               <div className="text-xs text-slate-400">{s.sub}</div>
@@ -228,6 +296,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           ))}
           {!ov && <div className="col-span-full py-2 text-center text-sm text-slate-400">Loading overview…</div>}
         </div>
+
+        <RegistrationModeCard onBanner={setBanner} />
 
         {/* gyms table */}
         <div className="flex flex-wrap items-center gap-3">
@@ -248,8 +318,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <th className="px-4 py-3">Owner</th>
                 <th className="px-4 py-3">Members</th>
                 <th className="px-4 py-3">Revenue (30d)</th>
+                <th className="px-4 py-3">Subscription ends</th>
                 <th className="px-4 py-3">Last check-in</th>
-                <th className="px-4 py-3">Joined</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -263,7 +333,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 </tr>
               )}
               {gyms.map((g) => (
-                <tr key={g.id} className={`border-b border-slate-100 last:border-0 ${g.status === 'frozen' ? 'bg-sky-50/60' : ''}`}>
+                <tr
+                  key={g.id}
+                  className={`border-b border-slate-100 last:border-0 ${
+                    g.status === 'frozen' ? 'bg-sky-50/60' : g.status === 'pending' ? 'bg-amber-50/60' : ''
+                  }`}
+                >
                   <td className="px-4 py-3">
                     <div className="font-semibold">{g.name}</div>
                     <div className="text-xs text-slate-400">{g.address ?? '—'}</div>
@@ -277,24 +352,16 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <span className="text-slate-400"> / {g.member_count}</span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">{money(g.revenue_30d)}</td>
+                  <td className="px-4 py-3 text-slate-500">
+                    <SubscriptionCell gym={g} />
+                  </td>
                   <td className="whitespace-nowrap px-4 py-3 text-slate-500">{ago(g.last_checkin_at)}</td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">
-                    {new Date(g.created_at).toLocaleDateString()}
-                  </td>
                   <td className="px-4 py-3">
-                    {g.status === 'frozen' ? (
-                      <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700">
-                        Frozen
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                        Active
-                      </span>
-                    )}
+                    <StatusBadge gym={g} />
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="whitespace-nowrap px-4 py-3 text-right">
                     <button className="btn-secondary px-3 py-1.5" onClick={() => setSelected(g)}>
-                      Manage
+                      {g.status === 'pending' ? 'Review' : 'Manage'}
                     </button>
                   </td>
                 </tr>
@@ -322,6 +389,68 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// ------------------------------------------------- registration mode card ----
+
+/** Global switch: new gyms wait for approval, or start a free trial instantly. */
+function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void }) {
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ['platform-settings'],
+    queryFn: async () => (await platformApi.get<PlatformSettings>('/settings')).data,
+    retry: false,
+  });
+  const [days, setDays] = useState<number | null>(null);
+  const trialDays = days ?? data?.trial_days ?? 30;
+
+  const save = useMutation({
+    mutationFn: async (patch: Partial<PlatformSettings>) => (await platformApi.put('/settings', patch)).data,
+    onSuccess: (updated: PlatformSettings) => {
+      qc.setQueryData(['platform-settings'], updated);
+      onBanner(
+        updated.trial_mode
+          ? `Free-trial mode is ON — new gyms start a ${updated.trial_days}-day trial instantly, without your approval.`
+          : 'Approval mode is ON — new gyms must wait until you approve them.',
+      );
+    },
+  });
+
+  if (!data) return null;
+  return (
+    <div className="card flex flex-wrap items-center gap-4 p-4">
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold">New gym registrations</div>
+        <div className="text-xs text-slate-500">
+          {data.trial_mode
+            ? `Free-trial mode: new gyms get ${data.trial_days} days instantly — you are notified by email of every trial signup.`
+            : 'Approval mode: new gyms wait on a "pending" screen until you approve them here.'}
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-sm">
+        Trial days
+        <input
+          type="number"
+          min={1}
+          max={365}
+          className="input w-20"
+          value={trialDays}
+          onChange={(e) => setDays(Number(e.target.value))}
+          onBlur={() => {
+            if (days !== null && days !== data.trial_days && days >= 1 && days <= 365)
+              save.mutate({ trial_days: days });
+          }}
+        />
+      </label>
+      <button
+        className={data.trial_mode ? 'btn-primary' : 'btn-secondary'}
+        disabled={save.isPending}
+        onClick={() => save.mutate({ trial_mode: !data.trial_mode })}
+      >
+        {data.trial_mode ? '🎁 Free trial: ON' : 'Free trial: OFF'}
+      </button>
     </div>
   );
 }
@@ -376,6 +505,16 @@ function ManageGymModal({
     onChanged,
     setError,
   );
+  const approve = useMutationHelper(
+    () => platformApi.post(`/gyms/${gym.id}/approve`),
+    doneAndClose(`"${gym.name}" approved — subscription runs for 1 year.`),
+    setError,
+  );
+  const renew = useMutationHelper(
+    () => platformApi.post(`/gyms/${gym.id}/renew`),
+    doneAndClose(`"${gym.name}" renewed for 1 more year.`),
+    setError,
+  );
 
   const d = detailQ.data;
 
@@ -383,15 +522,39 @@ function ManageGymModal({
     <Modal title={gym.name} onClose={onClose} wide>
       {view === 'detail' && (
         <div className="space-y-5">
+          {gym.status === 'pending' && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              ⏳ This gym is <b>waiting for your approval</b> — its owner cannot log in yet. Approve to start their
+              1-year subscription, or delete below to reject the registration.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <Info label="Status" value={gym.status === 'frozen' ? `Frozen ${ago(gym.frozen_at)}` : 'Active'} />
+            <Info
+              label="Status"
+              value={
+                gym.status === 'pending'
+                  ? 'Pending approval'
+                  : gym.status === 'frozen'
+                    ? `Frozen ${ago(gym.frozen_at)}`
+                    : gym.is_trial
+                      ? 'Active — free trial'
+                      : 'Active — paid'
+              }
+            />
+            <Info
+              label="Subscription ends"
+              value={
+                gym.subscription_ends_at
+                  ? `${String(gym.subscription_ends_at).slice(0, 10)} (${daysLeft(gym.subscription_ends_at)}d)`
+                  : '—'
+              }
+            />
             <Info label="Joined" value={new Date(gym.created_at).toLocaleDateString()} />
             <Info label="Members (active / all)" value={`${gym.active_member_count} / ${gym.member_count}`} />
             <Info label="Staff accounts" value={String(gym.staff_count)} />
             <Info label="Revenue total" value={money(gym.revenue_total)} />
             <Info label="Revenue 30d" value={money(gym.revenue_30d)} />
             <Info label="Last check-in" value={ago(gym.last_checkin_at)} />
-            <Info label="Phone" value={gym.phone ?? '—'} />
           </div>
 
           <div>
@@ -434,17 +597,28 @@ function ManageGymModal({
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
           <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-            {gym.status === 'active' ? (
+            {gym.status === 'pending' && (
+              <button className="btn-primary" onClick={() => approve.run()} disabled={approve.busy}>
+                {approve.busy ? 'Approving…' : '✓ Approve — start 1-year subscription'}
+              </button>
+            )}
+            {gym.status !== 'pending' && (
+              <button className="btn-secondary" onClick={() => renew.run()} disabled={renew.busy}>
+                {renew.busy ? 'Renewing…' : gym.is_trial ? '⭐ Convert trial → paid year' : '↻ Renew +1 year'}
+              </button>
+            )}
+            {gym.status === 'active' && (
               <button className="btn-secondary" onClick={() => setView('freeze')}>
                 ❄️ Freeze account
               </button>
-            ) : (
+            )}
+            {gym.status === 'frozen' && (
               <button className="btn-primary" onClick={() => unfreeze.run()} disabled={unfreeze.busy}>
                 {unfreeze.busy ? 'Unfreezing…' : 'Unfreeze account'}
               </button>
             )}
             <button className="btn-danger" onClick={() => setView('delete')}>
-              Delete gym
+              {gym.status === 'pending' ? 'Reject & delete' : 'Delete gym'}
             </button>
           </div>
         </div>
