@@ -135,12 +135,13 @@ function Layout() {
         </button>
       </aside>
       <main className="min-w-0 flex-1 p-4 pt-[4.5rem] md:p-6 md:pt-6">
-        {/* gym name + today's date, visible on every page */}
-        <div className="relative mb-4 flex min-h-[2.5rem] items-center justify-center border-b border-slate-200 pb-2">
-          <div className="gym-name min-w-0 max-w-[60%] truncate text-center text-3xl leading-tight sm:text-4xl">
+        {/* gym name + today's date, visible on every page.
+            Phone: stacked and centered. sm+: name centered, date pinned right. */}
+        <div className="mb-4 flex flex-col items-center gap-1 border-b border-slate-200 pb-2 sm:relative sm:min-h-[2.5rem] sm:flex-row sm:justify-center">
+          <div className="gym-name w-full min-w-0 truncate text-center text-2xl leading-tight sm:max-w-[60%] sm:text-4xl">
             {showGymName ? gym?.name ?? t('app.name') : ''}
           </div>
-          <div className="absolute right-0 top-1/2 -translate-y-1/2">
+          <div className="sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2">
             <LiveDate />
           </div>
         </div>

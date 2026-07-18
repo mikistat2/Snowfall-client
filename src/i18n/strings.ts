@@ -56,6 +56,7 @@ const en = {
   // camera source
   'camera.title': 'Camera source',
   'camera.button': 'Camera',
+  'camera.flip': 'Flip camera',
   'camera.webcam': 'This device’s webcam',
   'camera.webcamHint': 'Uses the built-in or USB camera via the browser.',
   'camera.ip': 'Phone / IP camera on the network',

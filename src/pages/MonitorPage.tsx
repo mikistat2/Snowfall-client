@@ -39,6 +39,8 @@ export function MonitorPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [source, setSource] = useState<CameraSource>(() => getCameraSource());
+  const [facing, setFacing] = useState<'user' | 'environment'>('user');
+  const [canFlip, setCanFlip] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
@@ -98,6 +100,15 @@ export function MonitorPage() {
     void api.get<GymEvent[]>('/events').then((r) => setEvents(r.data));
     void api.get<{ count: number }>('/occupancy').then((r) => setOccupancy(r.data.count));
   }, []);
+
+  // flip button only makes sense with 2+ cameras (e.g. a phone's front/back)
+  useEffect(() => {
+    if (cameraEnabled !== true || source.type !== 'webcam') return;
+    void navigator.mediaDevices
+      ?.enumerateDevices()
+      .then((devices) => setCanFlip(devices.filter((d) => d.kind === 'videoinput').length > 1))
+      .catch(() => setCanFlip(false));
+  }, [cameraEnabled, source.type]);
 
   useSocket({
     'event:new': (event: GymEvent) => setEvents((prev) => [event, ...prev].slice(0, 100)),
@@ -264,12 +275,13 @@ export function MonitorPage() {
   // --- render ----------------------------------------------------------
   return (
     <div className="flex flex-col gap-4 lg:h-[calc(100vh-3rem)] lg:flex-row lg:gap-5">
-      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-black sm:aspect-video lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1">
         {cameraEnabled === true && (
           <>
             <CameraFeed
               key={JSON.stringify(source)}
               source={source}
+              facingMode={facing}
               elementRef={camRef}
               className="h-full w-full object-contain"
             />
@@ -310,6 +322,26 @@ export function MonitorPage() {
           {cameraEnabled === true && (
             <button className="btn-secondary" onClick={() => setCameraOpen(true)}>
               {t('camera.button')}
+            </button>
+          )}
+          {cameraEnabled === true && source.type === 'webcam' && canFlip && (
+            <button
+              className="btn-secondary"
+              onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
+            >
+              <svg
+                className="mr-1.5 inline-block h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14.5 6.5a6 6 0 0 0-10 2M5.5 13.5a6 6 0 0 0 10-2" />
+                <path d="M4 4.5v4h4M16 15.5v-4h-4" />
+              </svg>
+              {t('camera.flip')}
             </button>
           )}
         </div>
