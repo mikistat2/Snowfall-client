@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { t } from './i18n/strings';
 import { Logo } from './components/ui/Logo';
@@ -62,7 +62,10 @@ const nav = [
 
 function Layout() {
   const { user, gym, logout } = useAuth();
+  const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  // the dashboard already opens with the gym name as its hero heading
+  const showGymName = pathname !== '/';
   const items = nav.filter((item) => !('ownerOnly' in item && item.ownerOnly) || user?.role === 'owner');
   return (
     <div className="flex min-h-screen">
@@ -79,7 +82,7 @@ function Layout() {
         </button>
         <Logo size="h-8 w-8" tile />
         <div className="min-w-0">
-          <div className="truncate text-sm font-bold">{gym?.name ?? t('app.name')}</div>
+          <div className="truncate text-base font-extrabold text-sky-600">{gym?.name ?? t('app.name')}</div>
         </div>
       </header>
 
@@ -96,7 +99,7 @@ function Layout() {
         <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-4">
           <Logo size="h-12 w-12" tile />
           <div className="min-w-0">
-            <div className="truncate text-sm font-bold">{gym?.name ?? t('app.name')}</div>
+            <div className="truncate text-lg font-extrabold text-sky-600">{gym?.name ?? t('app.name')}</div>
             <div className="truncate text-xs text-slate-500">{user?.name}</div>
           </div>
           <button
@@ -132,9 +135,14 @@ function Layout() {
         </button>
       </aside>
       <main className="min-w-0 flex-1 p-4 pt-[4.5rem] md:p-6 md:pt-6">
-        {/* today's date, visible on every page */}
-        <div className="mb-4 flex justify-end border-b border-slate-200 pb-2">
-          <LiveDate />
+        {/* gym name + today's date, visible on every page */}
+        <div className="relative mb-4 flex min-h-[2.5rem] items-center justify-center border-b border-slate-200 pb-2">
+          <div className="gym-name min-w-0 max-w-[60%] truncate text-center text-3xl leading-tight sm:text-4xl">
+            {showGymName ? gym?.name ?? t('app.name') : ''}
+          </div>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <LiveDate />
+          </div>
         </div>
         <Outlet />
       </main>

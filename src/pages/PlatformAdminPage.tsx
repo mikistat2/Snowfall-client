@@ -5,6 +5,7 @@ import { platformApi, platformToken } from '../lib/platformApi';
 import { apiErrorMessage } from '../lib/api';
 import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
+import loginLogo from "../assets/images/login-logo.png";
 
 /**
  * /platform — hidden control panel for the product owner (platform admin).
@@ -280,7 +281,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     : [];
 
   return (
-    <div className="min-h-screen bg-slate-100">
+    <div className="min-h-screen bg-slate-100" style={{ backgroundImage: `url(${loginLogo})`, backgroundSize: 'auto 100%', backgroundRepeat: 'repeat-x' }}>
       <header className="border-b border-slate-800 bg-slate-950 text-white">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
           <Logo size="h-9 w-9" tile />
