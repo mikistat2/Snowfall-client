@@ -95,6 +95,8 @@ const en = {
   'members.plan': 'Plan',
   'members.expires': 'Expires',
   'members.status': 'Status',
+  'members.daysLeft': 'days left',
+  'members.daysOverdue': 'days overdue',
   'members.renew': 'Renew / mark payment',
   'members.freeze': 'Freeze',
   'members.unfreeze': 'Unfreeze',

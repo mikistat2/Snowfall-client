@@ -5,6 +5,7 @@ import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { daysLeft, daysLeftColor } from '../lib/expiry';
 import type { MemberExportRow } from '../lib/membersPdf';
 import type { Member, MemberStatus } from '../lib/types';
 
@@ -103,7 +104,16 @@ export function MembersPage() {
                 <td className="px-4 py-3">{m.plan_name}</td>
                 <td className="px-4 py-3">{m.expires_at ? String(m.expires_at).slice(0, 10) : '—'}</td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={m.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={m.status} />
+                    {m.expires_at != null && m.status !== 'frozen' && (
+                      <span className={`whitespace-nowrap text-xs font-bold ${daysLeftColor[m.status]}`}>
+                        {daysLeft(m.expires_at) >= 0
+                          ? `${daysLeft(m.expires_at)} ${t('members.daysLeft')}`
+                          : `${-daysLeft(m.expires_at)} ${t('members.daysOverdue')}`}
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
