@@ -8,6 +8,7 @@ import { LiveDate } from './components/ui/LiveDate';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterGymPage } from './pages/RegisterGymPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { TodayPage } from './pages/TodayPage';
 import { MonitorPage } from './pages/MonitorPage';
 import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
@@ -18,6 +19,7 @@ import { AuditLogPage } from './pages/AuditLogPage';
 import { GuidePage } from './pages/GuidePage';
 import { FeedbackPage } from './pages/FeedbackPage';
 import { LandingPage } from './pages/LandingPage';
+import { PricingPage } from './pages/PricingPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PlatformAdminPage } from './pages/PlatformAdminPage';
 
@@ -28,10 +30,12 @@ export function App() {
       <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <LandingPage />} />
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       {/* hidden platform-owner control panel — own auth, independent of gym sessions */}
       <Route path="/platform" element={<PlatformAdminPage />} />
       <Route element={user ? <Layout /> : <Navigate to="/welcome" replace />}>
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/today" element={<TodayPage />} />
         <Route path="/monitor" element={<MonitorPage />} />
         <Route path="/members" element={<MembersPage />} />
         <Route path="/members/enroll" element={<EnrollPage />} />
@@ -50,6 +54,7 @@ export function App() {
 
 const nav = [
   { to: '/', label: 'nav.dashboard', end: true },
+  { to: '/today', label: 'nav.today' },
   { to: '/monitor', label: 'nav.monitor' },
   { to: '/members', label: 'nav.members' },
   { to: '/payments', label: 'nav.payments' },

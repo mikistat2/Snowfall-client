@@ -153,3 +153,37 @@ export interface DashboardStats {
   members_by_status: Partial<Record<MemberStatus, number>>;
   peak_hours: { hour: number; count: number }[];
 }
+
+/** GET /dashboard/today — the "Today" digest page. */
+export interface TodayDigest {
+  new_members: {
+    id: number;
+    full_name: string;
+    phone: string | null;
+    created_at: string;
+    plan_name: string | null;
+  }[];
+  /** Latest subscription within ±7 days of today; negative days_left = already expired. */
+  expiring: {
+    id: number;
+    full_name: string;
+    phone: string | null;
+    status: MemberStatus;
+    expires_at: string;
+    days_left: number;
+  }[];
+  payments_today: {
+    count: number;
+    total: number;
+    rows: {
+      id: number;
+      amount: string;
+      method: string;
+      created_at: string;
+      member_name: string;
+    }[];
+  };
+  check_ins_today: { allowed: number; denied: number; unique_members: number };
+  occupancy: number;
+  guests_today: number;
+}

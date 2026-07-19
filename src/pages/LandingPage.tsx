@@ -56,6 +56,7 @@ export function LandingPage() {
               <a href="#features" className="hover:text-white">Features</a>
               <a href="#how" className="hover:text-white">How it works</a>
               <a href="#telegram" className="hover:text-white">Telegram</a>
+              <Link to="/pricing" className="hover:text-white">Pricing</Link>
             </nav>
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               <Link
@@ -219,12 +220,18 @@ export function LandingPage() {
             Register your gym, create your plans, and enroll your first member today — all you need is a
             computer and a camera.
           </p>
-          <div className="mt-6 flex justify-center gap-3">
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               to="/register"
               className="btn !bg-white !px-6 !py-3 !text-base !text-slate-900 hover:!bg-slate-200"
             >
               Register your gym
+            </Link>
+            <Link
+              to="/pricing"
+              className="btn !border !border-slate-600 !px-6 !py-3 !text-base !text-white hover:!bg-slate-800"
+            >
+              See pricing
             </Link>
             <Link
               to="/login"

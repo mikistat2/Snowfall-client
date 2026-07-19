@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { AxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { platformApi, platformToken } from '../lib/platformApi';
+import { platformApi, platformToken, platformProfile, type PlatformPerms, type PlatformProfile } from '../lib/platformApi';
 import { apiErrorMessage } from '../lib/api';
 import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
@@ -149,8 +149,9 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
     setBusy(true);
     setError('');
     try {
-      const { data } = await platformApi.post<{ token: string }>('/login', { email, password });
+      const { data } = await platformApi.post<{ token: string } & PlatformProfile>('/login', { email, password });
       platformToken.set(data.token);
+      platformProfile.set({ role: data.role, name: data.name, permissions: data.permissions });
       onSuccess();
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -166,7 +167,7 @@ function AdminLogin({ onSuccess }: { onSuccess: () => void }) {
           <Logo size="h-14 w-14" tile />
           <h1 className="text-lg font-bold">Platform Control</h1>
           <p className="text-center text-xs text-slate-500">
-            Product-owner access only. Gym accounts cannot log in here.
+            Platform owner &amp; admin access only. Gym accounts cannot log in here.
           </p>
         </div>
         <div>
@@ -234,6 +235,26 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     return () => clearTimeout(timer);
   }, [banner]);
 
+  // live role + permissions — re-checked from the server so a permission
+  // change (or removal) by the owner is picked up without re-login
+  const meQ = useQuery({
+    queryKey: ['platform-me'],
+    queryFn: async () => {
+      const { data } = await platformApi.get<PlatformProfile>('/me');
+      platformProfile.set(data);
+      return data;
+    },
+    retry: false,
+  });
+  const profile = meQ.data ?? platformProfile.get();
+  const isOwner = profile?.role === 'owner';
+  const perms: PlatformPerms = profile?.permissions ?? {
+    approve: false,
+    freeze: false,
+    renew: false,
+    export: false,
+  };
+
   const overviewQ = useQuery({
     queryKey: ['platform-overview'],
     queryFn: async () => (await platformApi.get<Overview>('/overview')).data,
@@ -247,13 +268,13 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     retry: false,
   });
 
-  // expired/invalid platform token → back to login
+  // expired/invalid/revoked platform token → back to login
   useEffect(() => {
-    const err = overviewQ.error ?? gymsQ.error;
+    const err = meQ.error ?? overviewQ.error ?? gymsQ.error;
     if (err instanceof AxiosError && (err.response?.status === 401 || err.response?.status === 403)) {
       onLogout();
     }
-  }, [overviewQ.error, gymsQ.error, onLogout]);
+  }, [meQ.error, overviewQ.error, gymsQ.error, onLogout]);
 
   const gyms = gymsQ.data ?? [];
   const ov = overviewQ.data;
@@ -287,7 +308,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           <Logo size="h-9 w-9" tile />
           <div>
             <div className="text-sm font-bold leading-tight">Platform Control</div>
-            <div className="text-xs text-slate-400">Manage the gyms using your platform</div>
+            <div className="text-xs text-slate-400">
+              {isOwner
+                ? 'Signed in as the platform owner'
+                : `${profile?.name ?? 'Admin'} · limited access granted by the owner`}
+            </div>
           </div>
           <button
             onClick={onLogout}
@@ -317,7 +342,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {!ov && <div className="col-span-full py-2 text-center text-sm text-slate-400">Loading overview…</div>}
         </div>
 
-        <RegistrationModeCard onBanner={setBanner} />
+        {isOwner && <RegistrationModeCard onBanner={setBanner} />}
+        {isOwner && <TeamCard onBanner={setBanner} />}
 
         {/* gyms table */}
         <div className="flex flex-wrap items-center gap-3">
@@ -328,9 +354,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button className="btn-secondary ml-auto" onClick={() => void downloadBackup()} disabled={backingUp}>
-            {backingUp ? 'Building backup…' : '⬇ Backup all gyms (PDF)'}
-          </button>
+          {perms.export && (
+            <button className="btn-secondary ml-auto" onClick={() => void downloadBackup()} disabled={backingUp}>
+              {backingUp ? 'Building backup…' : '⬇ Backup all gyms (PDF)'}
+            </button>
+          )}
         </div>
 
         <div className="card overflow-x-auto p-0">
@@ -404,6 +432,8 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
       {selected && (
         <ManageGymModal
           gym={selected}
+          isOwner={isOwner}
+          perms={perms}
           onClose={() => setSelected(null)}
           onBanner={setBanner}
           onChanged={() => {
@@ -478,15 +508,238 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
   );
 }
 
+// ------------------------------------------------------------ team card ----
+
+interface AdminRow {
+  id: number;
+  name: string;
+  email: string;
+  permissions: PlatformPerms;
+  created_at: string;
+}
+
+const PERM_LABELS: { key: keyof PlatformPerms; label: string; hint: string }[] = [
+  { key: 'approve', label: 'Approve', hint: 'approve pending gym registrations' },
+  { key: 'freeze', label: 'Freeze', hint: 'freeze / unfreeze gym accounts' },
+  { key: 'renew', label: 'Renew', hint: 'renew subscriptions +1 year' },
+  { key: 'export', label: 'Export PDFs', hint: 'download member data as PDF' },
+];
+
+/**
+ * Owner-only: manage sub-admin accounts. Sub-admins can never delete gyms,
+ * change platform settings or see this card — the server enforces it too.
+ */
+function TeamCard({ onBanner }: { onBanner: (msg: string) => void }) {
+  const qc = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState('');
+
+  const adminsQ = useQuery({
+    queryKey: ['platform-admins'],
+    queryFn: async () => (await platformApi.get<AdminRow[]>('/admins')).data,
+    retry: false,
+  });
+  const refresh = () => void qc.invalidateQueries({ queryKey: ['platform-admins'] });
+
+  const togglePerm = useMutation({
+    mutationFn: async ({ admin, key }: { admin: AdminRow; key: keyof PlatformPerms }) =>
+      (
+        await platformApi.put(`/admins/${admin.id}`, {
+          permissions: { [key]: !admin.permissions[key] },
+        })
+      ).data,
+    onSuccess: () => {
+      setError('');
+      refresh();
+    },
+    onError: (err) => setError(apiErrorMessage(err)),
+  });
+
+  const removeAdmin = useMutation({
+    mutationFn: async (admin: AdminRow) => (await platformApi.delete(`/admins/${admin.id}`)).data,
+    onSuccess: (_data, admin) => {
+      setError('');
+      refresh();
+      onBanner(`"${admin.name}" was removed — their session is locked out immediately.`);
+    },
+    onError: (err) => setError(apiErrorMessage(err)),
+  });
+
+  const admins = adminsQ.data ?? [];
+
+  return (
+    <div className="card space-y-3 p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold">Platform admins (your team)</div>
+          <div className="text-xs text-slate-500">
+            They can only do what you allow below — never delete gyms, change settings or manage admins. You can
+            remove them anytime and it takes effect instantly.
+          </div>
+        </div>
+        <button className="btn-secondary" onClick={() => setAdding(true)}>
+          + Add admin
+        </button>
+      </div>
+
+      {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+
+      {admins.length > 0 && (
+        <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
+          {admins.map((a) => (
+            <div key={a.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
+              <div className="min-w-0 flex-1">
+                <span className="font-medium">{a.name}</span>
+                <span className="text-slate-400"> · {a.email}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {PERM_LABELS.map(({ key, label, hint }) => (
+                  <button
+                    key={key}
+                    title={`Click to ${a.permissions[key] ? 'revoke' : 'grant'}: ${hint}`}
+                    disabled={togglePerm.isPending}
+                    onClick={() => togglePerm.mutate({ admin: a, key })}
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition ${
+                      a.permissions[key]
+                        ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                        : 'bg-slate-100 text-slate-400 line-through hover:bg-slate-200'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="rounded-lg px-2.5 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
+                disabled={removeAdmin.isPending}
+                onClick={() => {
+                  if (window.confirm(`Remove admin "${a.name}"? They are locked out immediately.`))
+                    removeAdmin.mutate(a);
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {!adminsQ.isLoading && admins.length === 0 && (
+        <div className="rounded-lg border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-400">
+          No admins yet — add one to delegate approvals and freezes while keeping full control.
+        </div>
+      )}
+
+      {adding && (
+        <AddAdminModal
+          onClose={() => setAdding(false)}
+          onCreated={(name) => {
+            setAdding(false);
+            refresh();
+            onBanner(`Admin "${name}" created — they sign in at this same /platform page.`);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddAdminModal({ onClose, onCreated }: { onClose: () => void; onCreated: (name: string) => void }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [perms, setPerms] = useState<PlatformPerms>({ approve: true, freeze: true, renew: true, export: false });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      await platformApi.post('/admins', { name, email, password, permissions: perms });
+      onCreated(name);
+    } catch (err) {
+      setError(apiErrorMessage(err));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Modal title="Add platform admin" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-slate-600">
+          They log in at this same <b>/platform</b> page with the credentials below. Deleting gyms and changing
+          platform settings stay <b>owner-only</b> no matter what you grant here.
+        </p>
+        <div>
+          <label className="label">Name</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} />
+        </div>
+        <div>
+          <label className="label">Email</label>
+          <input
+            className="input"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label className="label">Password (min 8 characters)</label>
+          <input
+            className="input"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            maxLength={100}
+          />
+        </div>
+        <div>
+          <div className="label">Allowed actions</div>
+          <div className="space-y-2 rounded-lg border border-slate-200 p-3">
+            {PERM_LABELS.map(({ key, label, hint }) => (
+              <label key={key} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={perms[key]}
+                  onChange={(e) => setPerms({ ...perms, [key]: e.target.checked })}
+                />
+                <span className="font-medium">{label}</span>
+                <span className="text-xs text-slate-400">— {hint}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn-secondary" onClick={onClose}>
+            Cancel
+          </button>
+          <button className="btn-primary" disabled={busy}>
+            {busy ? 'Creating…' : 'Create admin'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
 // --------------------------------------------------------- manage modal ----
 
 function ManageGymModal({
   gym,
+  isOwner,
+  perms,
   onClose,
   onChanged,
   onBanner,
 }: {
   gym: GymRow;
+  isOwner: boolean;
+  perms: PlatformPerms;
   onClose: () => void;
   onChanged: () => void;
   onBanner: (msg: string) => void;
@@ -567,8 +820,8 @@ function ManageGymModal({
         <div className="space-y-5">
           {gym.status === 'pending' && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              ⏳ This gym is <b>waiting for your approval</b> — its owner cannot log in yet. Approve to start their
-              1-year subscription, or delete below to reject the registration.
+              ⏳ This gym is <b>waiting for approval</b> — its owner cannot log in yet. Approve to start their
+              1-year subscription{isOwner ? ', or delete below to reject the registration' : ''}.
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -645,32 +898,36 @@ function ManageGymModal({
           {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
           <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-            <button className="btn-secondary mr-auto" onClick={() => void exportMembers()} disabled={exporting}>
-              {exporting ? 'Exporting…' : '⬇ Members PDF'}
-            </button>
-            {gym.status === 'pending' && (
+            {perms.export && (
+              <button className="btn-secondary mr-auto" onClick={() => void exportMembers()} disabled={exporting}>
+                {exporting ? 'Exporting…' : '⬇ Members PDF'}
+              </button>
+            )}
+            {gym.status === 'pending' && perms.approve && (
               <button className="btn-primary" onClick={() => approve.run()} disabled={approve.busy}>
                 {approve.busy ? 'Approving…' : '✓ Approve — start 1-year subscription'}
               </button>
             )}
-            {gym.status !== 'pending' && (
+            {gym.status !== 'pending' && perms.renew && (
               <button className="btn-secondary" onClick={() => renew.run()} disabled={renew.busy}>
                 {renew.busy ? 'Renewing…' : gym.is_trial ? '⭐ Convert trial → paid year' : '↻ Renew +1 year'}
               </button>
             )}
-            {gym.status === 'active' && (
+            {gym.status === 'active' && perms.freeze && (
               <button className="btn-secondary" onClick={() => setView('freeze')}>
                 ❄️ Freeze account
               </button>
             )}
-            {gym.status === 'frozen' && (
+            {gym.status === 'frozen' && perms.freeze && (
               <button className="btn-primary" onClick={() => unfreeze.run()} disabled={unfreeze.busy}>
                 {unfreeze.busy ? 'Unfreezing…' : 'Unfreeze account'}
               </button>
             )}
-            <button className="btn-danger" onClick={() => setView('delete')}>
-              {gym.status === 'pending' ? 'Reject & delete' : 'Delete gym'}
-            </button>
+            {isOwner && (
+              <button className="btn-danger" onClick={() => setView('delete')}>
+                {gym.status === 'pending' ? 'Reject & delete' : 'Delete gym'}
+              </button>
+            )}
           </div>
         </div>
       )}
