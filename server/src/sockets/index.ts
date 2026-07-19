@@ -9,7 +9,7 @@ let io: Server | null = null;
  * with their JWT access token in `handshake.auth.token` and only ever join
  * their own gym's room. Events: checkin:result, occupancy:update, event:new.
  */
-export function initSocket(server: http.Server, corsOrigin: string): Server {
+export function initSocket(server: http.Server, corsOrigin: string | string[]): Server {
   io = new Server(server, {
     cors: { origin: corsOrigin, credentials: true },
   });

@@ -41,6 +41,7 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
     match_threshold: 0.5,
     closing_time: '22:00',
     entry_mode: 'auto' as 'auto' | 'manual',
+    camera_enabled: true,
   });
   const [saved, setSaved] = useState(false);
 
@@ -70,6 +71,7 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
           match_threshold: Number(form.match_threshold),
           closing_time: form.closing_time,
           entry_mode: form.entry_mode,
+          camera_enabled: form.camera_enabled,
         },
       }),
     onSuccess: () => {
@@ -152,6 +154,19 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
             <option value="manual">{t('settings.entryManual')}</option>
           </select>
           <p className="mt-1 text-xs text-slate-400">{t('settings.entryModeHint')}</p>
+        </div>
+        <div>
+          <label className="label">{t('settings.camera')}</label>
+          <select
+            className="input"
+            value={form.camera_enabled ? 'on' : 'off'}
+            onChange={(e) => setForm((f) => ({ ...f, camera_enabled: e.target.value === 'on' }))}
+            disabled={readOnly}
+          >
+            <option value="on">{t('settings.cameraOn')}</option>
+            <option value="off">{t('settings.cameraOff')}</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-400">{t('settings.cameraHint')}</p>
         </div>
       </div>
       {!readOnly && (
@@ -270,7 +285,8 @@ function PlansSection() {
           + {t('settings.addPlan')}
         </button>
       </div>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm">
         <tbody>
           {plans.map((p) => (
             <tr key={p.id} className={`border-b border-slate-100 last:border-0 ${p.active ? '' : 'opacity-50'}`}>
@@ -312,6 +328,7 @@ function PlansSection() {
           ))}
         </tbody>
       </table>
+      </div>
 
       {editing && (
         <Modal title={editing.id ? editing.name : t('settings.addPlan')} onClose={() => setEditing(null)}>
@@ -424,7 +441,8 @@ function StaffSection() {
           + {t('settings.addStaff')}
         </button>
       </div>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full min-w-[420px] text-sm">
         <tbody>
           {staff.map((s) => (
             <tr key={s.id} className="border-b border-slate-100 last:border-0">
@@ -442,6 +460,7 @@ function StaffSection() {
           ))}
         </tbody>
       </table>
+      </div>
 
       {adding && (
         <Modal title={t('settings.addStaff')} onClose={() => setAdding(false)}>

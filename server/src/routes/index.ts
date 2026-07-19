@@ -1,8 +1,10 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { asyncHandler } from '../utils/async';
 import { validate } from '../middleware/validate';
-import { requireAuth, requireOwner } from '../middleware/auth';
+import { requireAuth, requireOwner, blockFrozenGym } from '../middleware/auth';
+import { adminRouter } from './admin';
 import * as auth from '../controllers/authController';
 import * as plans from '../controllers/planController';
 import * as members from '../controllers/memberController';
@@ -13,6 +15,7 @@ import * as settings from '../controllers/settingsController';
 import * as telegram from '../controllers/telegramController';
 import * as guests from '../controllers/guestController';
 import * as auditLogModel from '../models/auditLogModel';
+import * as platformModel from '../models/platformModel';
 import { cameraProxy } from '../controllers/cameraProxyController';
 import * as feedback from '../controllers/feedbackController';
 
@@ -106,15 +109,41 @@ const settingsSchema = z.object({
       match_threshold: z.number().min(0.2).max(0.9),
       closing_time: z.string().regex(/^\d{2}:\d{2}$/),
       entry_mode: z.enum(['auto', 'manual']),
+      camera_enabled: z.boolean(),
     })
     .partial()
     .optional(),
 });
 
+// ---------- rate limits (per IP; trust proxy is set for Render) ----------
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20, // login/register attempts per 15 min
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts — try again in a few minutes' },
+});
+const feedbackLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 10, // feedback mails per hour
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too much feedback at once — try again later' },
+});
+
 // ---------- auth ----------
-api.post('/auth/register-gym', validate(registerGymSchema), asyncHandler(auth.registerGym));
+// public: lets the landing/registration pages advertise an active free trial
+api.get(
+  '/auth/registration-mode',
+  asyncHandler(async (_req, res) => {
+    const { trial_mode, trial_days } = await platformModel.getSettings();
+    res.json({ trial_mode, trial_days });
+  }),
+);
+api.post('/auth/register-gym', authLimiter, validate(registerGymSchema), asyncHandler(auth.registerGym));
 api.post(
   '/auth/login',
+  authLimiter,
   validate(z.object({ email: z.string().email(), password: z.string() })),
   asyncHandler(auth.login),
 );
@@ -125,8 +154,12 @@ api.post('/auth/logout', validate(z.object({ refreshToken: z.string() })), async
 // tags cannot send an Authorization header (registered before requireAuth).
 api.get('/camera-proxy', asyncHandler(cameraProxy));
 
-// everything below requires a logged-in staff member
+// ---------- platform super-admin (product owner) ----------
+api.use('/admin', adminRouter);
+
+// everything below requires a logged-in staff member of a non-frozen gym
 api.use(requireAuth);
+api.use(asyncHandler(blockFrozenGym));
 
 // ---------- plans ----------
 api.get('/plans', asyncHandler(plans.list));
@@ -137,6 +170,7 @@ api.delete('/plans/:id', asyncHandler(plans.remove));
 // ---------- members ----------
 api.get('/members', asyncHandler(members.list));
 api.get('/members/descriptors', asyncHandler(members.allDescriptors));
+api.get('/members/export', asyncHandler(members.exportData)); // before /members/:id
 api.post('/members', validate(enrollSchema), asyncHandler(members.enroll));
 api.get('/members/:id', asyncHandler(members.detail));
 api.put('/members/:id', validate(memberInfoSchema.partial()), asyncHandler(members.update));
@@ -204,6 +238,7 @@ api.get('/dashboard/stats', asyncHandler(dashboard.stats));
 // ---------- feedback (emailed to product owner) ----------
 api.post(
   '/feedback',
+  feedbackLimiter,
   validate(
     z.object({
       category: z.enum(['suggestion', 'bug', 'improvement', 'other']),

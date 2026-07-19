@@ -6,7 +6,8 @@ interface AuthState {
   user: AuthUser | null;
   gym: { id: number; name: string } | null;
   login: (email: string, password: string) => Promise<void>;
-  registerGym: (payload: unknown) => Promise<void>;
+  /** Resolves { pending: true } when the registration awaits platform-admin approval (no session started). */
+  registerGym: (payload: unknown) => Promise<{ pending: boolean }>;
   logout: () => void;
 }
 
@@ -48,7 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     async registerGym(payload) {
       const { data } = await api.post('/auth/register-gym', payload);
+      if (data.pending) return { pending: true }; // awaiting admin approval — no tokens yet
       apply(data);
+      return { pending: false };
     },
     logout() {
       const refreshToken = tokenStore.refresh;

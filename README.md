@@ -85,6 +85,52 @@ The stream is relayed through `GET /api/v1/camera-proxy` (JWT-checked, restricte
 to private-network URLs) so face-api.js can read pixels without CORS tainting.
 iPhone users can use any app that serves MJPEG over HTTP the same way.
 
+## Deploying (Vercel + Render + Neon)
+
+One cloud deployment serves every gym — gyms self-register and all data is
+scoped by `gym_id`. Deploy in this order:
+
+### 1. Neon (database)
+1. Create a project at neon.tech → copy the **connection string**
+   (`postgres://…neon.tech/neondb?sslmode=require`). SSL is detected
+   automatically; no extra config.
+
+### 2. Render (API server)
+1. New → **Web Service** → connect the repo. Region: **Frankfurt** (closest to Ethiopia).
+2. Root directory: `server` · Build: `npm install --include=dev && npm run build` · Start: `npm start`
+3. Environment variables:
+   | Key | Value |
+   |---|---|
+   | `DATABASE_URL` | the Neon connection string |
+   | `CLIENT_URL` | your Vercel URL(s), comma-separated (add it after step 3) |
+   | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | long random strings (`openssl rand -hex 32`) |
+   | `SMTP_USER` / `SMTP_PASS` / `FEEDBACK_TO` | Gmail + App Password for the feedback page |
+   | `AUTO_MIGRATE` | `true` (default — migrations run on every boot) |
+4. Health check path: `/health`.
+5. **Plan**: the free tier sleeps after 15 min idle, which stops the crons
+   (reminders, auto-checkout) and the Telegram bot. Use **Starter** for real
+   gyms, or a free-tier pinger (UptimeRobot on `/health` every 10 min) for pilots.
+
+### 3. Vercel (client)
+1. New project → same repo → **Root directory: `client`** (framework: Vite).
+2. Environment variable: `VITE_API_URL=https://<your-service>.onrender.com`
+   (no trailing slash). Leave `VITE_ENABLE_IP_CAMERA` unset — the phone/IP
+   camera only works when the server shares the gym's LAN.
+3. Deploy, then put the Vercel URL into Render's `CLIENT_URL` and redeploy the API.
+
+### Notes
+- **Fresh cloud database**: the first boot creates the schema automatically.
+  Register the first gym through the UI (`/register`) — don't run the demo seed
+  in production.
+- **Local `npm start` caveat**: the dev database was migrated from `.ts` files;
+  the compiled build migrates `.js` files. Run the compiled server against your
+  dev DB with `AUTO_MIGRATE=false` to avoid a re-run attempt. (Cloud DBs that
+  only ever met the compiled server are unaffected.)
+- **Rate limits**: login/registration 20 per 15 min per IP; feedback 10/hour.
+- Local development is unchanged: `npm run dev` in both workspaces, Vite
+  proxies `/api` and `/socket.io`, and `client/.env` keeps the IP-camera
+  option enabled locally.
+
 ## Key design decisions
 
 - **Multi-tenancy:** every tenant-scoped table carries `gym_id`; all queries are

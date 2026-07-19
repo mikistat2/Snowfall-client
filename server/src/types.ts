@@ -19,6 +19,8 @@ export interface GymSettings {
   closing_time: string;
   /** 'auto': allowed members pass instantly; 'manual': staff approve each entry. */
   entry_mode: 'auto' | 'manual';
+  /** false: gym has no camera — enroll without face captures, monitor shows gym name only. */
+  camera_enabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: GymSettings = {
@@ -29,6 +31,7 @@ export const DEFAULT_SETTINGS: GymSettings = {
   match_threshold: 0.5,
   closing_time: '22:00',
   entry_mode: 'auto',
+  camera_enabled: true,
 };
 
 export interface GymRow {
@@ -38,6 +41,18 @@ export interface GymRow {
   phone: string | null;
   telegram_bot_token: string | null;
   settings: GymSettings;
+  status: 'pending' | 'active' | 'frozen';
+  frozen_at: string | null;
+  admin_note: string | null;
+  approved_at: string | null;
+  subscription_ends_at: string | null;
+  is_trial: boolean;
+}
+
+/** Single-row global platform configuration (see platform_settings table). */
+export interface PlatformSettings {
+  trial_mode: boolean;
+  trial_days: number;
 }
 
 export interface UserRow {

@@ -12,10 +12,13 @@ export function CameraFeed({
   source,
   elementRef,
   className,
+  facingMode = 'user',
 }: {
   source: CameraSource;
   elementRef: MutableRefObject<CameraElement | null>;
   className?: string;
+  /** Which phone camera to use for the webcam source (front = 'user', back = 'environment'). */
+  facingMode?: 'user' | 'environment';
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState(false);
@@ -28,7 +31,10 @@ export function CameraFeed({
     let cancelled = false;
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+        stream = await navigator.mediaDevices.getUserMedia({
+          // ideal (not exact) so devices without the requested camera still work
+          video: { width: 1280, height: 720, facingMode: { ideal: facingMode } },
+        });
         if (cancelled || !videoRef.current) return;
         videoRef.current.srcObject = stream;
         elementRef.current = videoRef.current;
@@ -42,7 +48,7 @@ export function CameraFeed({
       stream?.getTracks().forEach((track) => track.stop());
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source.type]);
+  }, [source.type, facingMode]);
 
   if (source.type === 'ip') {
     return (

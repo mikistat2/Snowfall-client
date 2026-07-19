@@ -39,6 +39,8 @@ export function MonitorPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [source, setSource] = useState<CameraSource>(() => getCameraSource());
+  const [facing, setFacing] = useState<'user' | 'environment'>('user');
+  const [canFlip, setCanFlip] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
@@ -53,15 +55,24 @@ export function MonitorPage() {
   const lastUnknownSent = useRef(0);
 
   // --- server state ---------------------------------------------------
+  const { data: gym } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get<Gym>('/settings')).data,
+  });
+  // undefined while settings load; false = gym has no camera → name-board mode
+  const cameraEnabled = gym ? gym.settings.camera_enabled !== false : undefined;
+
   const { data: descriptors = [] } = useQuery({
     queryKey: ['descriptors'],
     queryFn: async () => (await api.get<MemberDescriptors[]>('/members/descriptors')).data,
     refetchInterval: 60_000,
+    enabled: cameraEnabled === true, // pointless without a camera
   });
   const { data: guestDescriptors = [] } = useQuery({
     queryKey: ['guest-descriptors'],
     queryFn: async () => (await api.get<GuestDescriptor[]>('/guests/descriptors')).data,
     refetchInterval: 60_000,
+    enabled: cameraEnabled === true,
   });
   const targetsRef = useRef<RecognitionTarget[]>([]);
   // Number() guards against string ids from stale caches (bigint columns
@@ -81,10 +92,6 @@ export function MonitorPage() {
     })),
   ];
 
-  const { data: gym } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => (await api.get<Gym>('/settings')).data,
-  });
   const threshold = gym?.settings.match_threshold ?? 0.5;
   const thresholdRef = useRef(threshold);
   thresholdRef.current = threshold;
@@ -93,6 +100,15 @@ export function MonitorPage() {
     void api.get<GymEvent[]>('/events').then((r) => setEvents(r.data));
     void api.get<{ count: number }>('/occupancy').then((r) => setOccupancy(r.data.count));
   }, []);
+
+  // flip button only makes sense with 2+ cameras (e.g. a phone's front/back)
+  useEffect(() => {
+    if (cameraEnabled !== true || source.type !== 'webcam') return;
+    void navigator.mediaDevices
+      ?.enumerateDevices()
+      .then((devices) => setCanFlip(devices.filter((d) => d.kind === 'videoinput').length > 1))
+      .catch(() => setCanFlip(false));
+  }, [cameraEnabled, source.type]);
 
   useSocket({
     'event:new': (event: GymEvent) => setEvents((prev) => [event, ...prev].slice(0, 100)),
@@ -135,6 +151,8 @@ export function MonitorPage() {
 
   // --- detection loop (camera element is provided by <CameraFeed>) -----
   useEffect(() => {
+    if (cameraEnabled !== true) return; // no camera → no models, no loop
+
     let timer: ReturnType<typeof setInterval> | null = null;
     let cancelled = false;
     let detecting = false;
@@ -165,7 +183,7 @@ export function MonitorPage() {
       if (timer) clearInterval(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [cameraEnabled]);
 
   function drawOverlay(
     cam: CameraElement,
@@ -256,50 +274,86 @@ export function MonitorPage() {
 
   // --- render ----------------------------------------------------------
   return (
-    <div className="flex h-[calc(100vh-3rem)] gap-5">
-      <div className="relative min-w-0 flex-1 overflow-hidden rounded-xl bg-black">
-        <CameraFeed
-          key={JSON.stringify(source)}
-          source={source}
-          elementRef={camRef}
-          className="h-full w-full object-contain"
-        />
-        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
+    <div className="flex flex-col gap-4 lg:h-[calc(100vh-3rem)] lg:flex-row lg:gap-5">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-black sm:aspect-video lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1">
+        {cameraEnabled === true && (
+          <>
+            <CameraFeed
+              key={JSON.stringify(source)}
+              source={source}
+              facingMode={facing}
+              elementRef={camRef}
+              className="h-full w-full object-contain"
+            />
+            <canvas ref={canvasRef} className="absolute inset-0 h-full w-full object-contain" />
 
-        {/* gym name, top center */}
-        <div className="pointer-events-none absolute left-1/2 top-4 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-6 py-2 backdrop-blur">
-          <div className="gym-name truncate text-center text-4xl leading-tight">
-            {gym?.name ?? t('app.name')}
+            {/* gym name, top center */}
+            <div className="pointer-events-none absolute left-1/2 top-2 max-w-[70%] -translate-x-1/2 rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur sm:top-4 sm:px-6 sm:py-2">
+              <div className="gym-name truncate text-center text-xl leading-tight sm:text-3xl lg:text-4xl">
+                {gym?.name ?? t('app.name')}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* camera disabled → the monitor is a name board: gym name, big */}
+        {cameraEnabled === false && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-6">
+            <div className="gym-name break-words text-center text-5xl leading-tight sm:text-7xl lg:text-8xl">
+              {gym?.name ?? t('app.name')}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* occupancy, top right */}
-        <div className="absolute right-4 top-4 rounded-xl bg-black/60 px-4 py-2 text-white backdrop-blur">
-          <div className="text-xs uppercase tracking-wide text-slate-300">{t('monitor.occupancy')}</div>
-          <div className="text-3xl font-bold leading-tight">{occupancy}</div>
+        <div className="absolute right-2 top-2 rounded-xl bg-black/60 px-3 py-1.5 text-white backdrop-blur sm:right-4 sm:top-4 sm:px-4 sm:py-2">
+          <div className="text-[10px] uppercase tracking-wide text-slate-300 sm:text-xs">{t('monitor.occupancy')}</div>
+          <div className="text-xl font-bold leading-tight sm:text-3xl">{occupancy}</div>
         </div>
 
         {/* quick actions, bottom left */}
-        <div className="absolute bottom-4 left-4 flex gap-2">
+        <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-2 sm:bottom-4 sm:left-4 sm:right-auto">
           <button className="btn-secondary" onClick={() => setCheckoutOpen(true)}>
             {t('monitor.checkOut')}
           </button>
           <button className="btn-secondary" onClick={() => setGuestOpen(true)}>
             {t('monitor.addGuest')}
           </button>
-          <button className="btn-secondary" onClick={() => setCameraOpen(true)}>
-            {t('camera.button')}
-          </button>
+          {cameraEnabled === true && (
+            <button className="btn-secondary" onClick={() => setCameraOpen(true)}>
+              {t('camera.button')}
+            </button>
+          )}
+          {cameraEnabled === true && source.type === 'webcam' && canFlip && (
+            <button
+              className="btn-secondary"
+              onClick={() => setFacing((f) => (f === 'user' ? 'environment' : 'user'))}
+            >
+              <svg
+                className="mr-1.5 inline-block h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M14.5 6.5a6 6 0 0 0-10 2M5.5 13.5a6 6 0 0 0 10-2" />
+                <path d="M4 4.5v4h4M16 15.5v-4h-4" />
+              </svg>
+              {t('camera.flip')}
+            </button>
+          )}
         </div>
 
-        {!ready && (
+        {cameraEnabled === true && !ready && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-white">
             {t('monitor.loadingModels')}
           </div>
         )}
       </div>
 
-      <aside className="w-80 shrink-0">
+      <aside className="h-96 w-full shrink-0 lg:h-auto lg:w-80">
         <EventFeed
           events={events}
           overriding={overrideMutation.isPending || approveMutation.isPending}

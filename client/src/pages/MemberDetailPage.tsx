@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { daysLeft, daysLeftColor } from '../lib/expiry';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { RenewModal } from '../components/members/RenewModal';
 import type { CheckIn, Member, Payment, Subscription } from '../lib/types';
@@ -45,6 +46,8 @@ export function MemberDetailPage() {
   if (isLoading || !data) return <p className="text-slate-400">{t('common.loading')}</p>;
   const { member } = data;
   const frozen = member.status === 'frozen';
+  const current = data.subscriptions[0];
+  const remaining = current ? daysLeft(current.expires_at) : null;
 
   return (
     <div className="space-y-5">
@@ -59,8 +62,20 @@ export function MemberDetailPage() {
           )}
           <div>
             <h1 className="text-2xl font-bold">{member.full_name}</h1>
-            <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
               <StatusBadge status={member.status} />
+              {current && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                  {current.plan_name}
+                </span>
+              )}
+              {remaining != null && !frozen && (
+                <span className={`text-xs font-bold ${daysLeftColor[member.status]}`}>
+                  {remaining >= 0
+                    ? `${remaining} ${t('members.daysLeft')}`
+                    : `${-remaining} ${t('members.daysOverdue')}`}
+                </span>
+              )}
               <span>{member.phone}</span>
               <span
                 className={`rounded-full px-2 py-0.5 text-xs ${
@@ -73,7 +88,7 @@ export function MemberDetailPage() {
             </div>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button className="btn-secondary" onClick={() => linkMutation.mutate()} disabled={linkMutation.isPending}>
             {member.telegram_chat_id ? t('telegram.relink') : t('telegram.link')}
           </button>
@@ -91,9 +106,9 @@ export function MemberDetailPage() {
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="card">
+        <section className="card overflow-x-auto">
           <h2 className="mb-3 font-semibold">{t('members.subscriptions')}</h2>
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[380px] text-sm">
             <tbody>
               {data.subscriptions.map((s) => (
                 <tr key={s.id} className="border-b border-slate-100 last:border-0">
@@ -111,9 +126,9 @@ export function MemberDetailPage() {
           </table>
         </section>
 
-        <section className="card">
+        <section className="card overflow-x-auto">
           <h2 className="mb-3 font-semibold">{t('members.paymentHistory')}</h2>
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[380px] text-sm">
             <tbody>
               {data.payments.map((p) => (
                 <tr key={p.id} className="border-b border-slate-100 last:border-0">

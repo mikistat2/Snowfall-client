@@ -4,7 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import { FaceCapture, type Capture } from '../components/members/FaceCapture';
-import type { Member, PaymentMethod, Plan } from '../lib/types';
+import type { Gym, Member, PaymentMethod, Plan } from '../lib/types';
 
 const METHODS: PaymentMethod[] = ['cash', 'telebirr', 'bank', 'other'];
 
@@ -14,6 +14,12 @@ export function EnrollPage() {
     queryKey: ['plans'],
     queryFn: async () => (await api.get<Plan[]>('/plans')).data.filter((p) => p.active),
   });
+  const { data: gym } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get<Gym>('/settings')).data,
+  });
+  // no camera at this gym → members are registered without face captures
+  const cameraEnabled = gym?.settings.camera_enabled ?? true;
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -45,7 +51,7 @@ export function EnrollPage() {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (planId === '' || captures.length < 3) return;
+    if (planId === '' || (cameraEnabled && captures.length < 3)) return;
     mutation.mutate();
   }
 
@@ -118,16 +124,22 @@ export function EnrollPage() {
           </div>
           <button
             className="btn-primary w-full"
-            disabled={mutation.isPending || planId === '' || captures.length < 3}
+            disabled={mutation.isPending || planId === '' || (cameraEnabled && captures.length < 3)}
           >
             {t('enroll.submit')}
           </button>
         </div>
 
-        <div className="card">
-          <h2 className="mb-3 font-semibold">{t('enroll.captures')}</h2>
-          <FaceCapture captures={captures} onChange={setCaptures} />
-        </div>
+        {cameraEnabled ? (
+          <div className="card">
+            <h2 className="mb-3 font-semibold">{t('enroll.captures')}</h2>
+            <FaceCapture captures={captures} onChange={setCaptures} />
+          </div>
+        ) : (
+          <div className="card flex items-center justify-center">
+            <p className="max-w-xs text-center text-sm text-slate-500">📷 {t('enroll.noCamera')}</p>
+          </div>
+        )}
       </form>
     </div>
   );

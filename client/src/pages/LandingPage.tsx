@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import promoImg from '../assets/images/promo-facerec-img.jpg';
 import heroBg from '../assets/images/hero-bg-img.jpg';
 import { Logo } from '../components/ui/Logo';
+import { TrialBanner } from '../components/ui/TrialBanner';
 
 /**
  * Public landing page (shown to logged-out visitors). Marketing copy lives
@@ -24,13 +25,15 @@ export function LandingPage() {
 
         {/* nav — sits on top of the hero image */}
         <header className="relative z-20">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-            <div className="flex items-center gap-2">
-              <Logo size="h-20 w-20 mt-4" />
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-3 sm:px-4">
+            <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
+              <Logo size="h-10 w-10 shrink-0 sm:h-20 sm:w-20 sm:mt-4" />
               <h1
   className="
-    mt-4
-    text-[22px]
+    truncate
+    text-sm
+    sm:mt-4
+    sm:text-[22px]
     font-display
     font-black
     uppercase
@@ -54,11 +57,17 @@ export function LandingPage() {
               <a href="#how" className="hover:text-white">How it works</a>
               <a href="#telegram" className="hover:text-white">Telegram</a>
             </nav>
-            <div className="flex items-center gap-2">
-              <Link to="/login" className="btn !border !border-white/40 !text-white hover:!bg-white/10">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <Link
+                to="/login"
+                className="btn whitespace-nowrap !border !border-white/40 !px-2.5 !py-1.5 !text-xs !text-white hover:!bg-white/10 sm:!px-3.5 sm:!py-2 sm:!text-sm"
+              >
                 Log in
               </Link>
-              <Link to="/register" className="btn !bg-white !text-slate-900 hover:!bg-slate-200">
+              <Link
+                to="/register"
+                className="btn whitespace-nowrap !bg-white !px-2.5 !py-1.5 !text-xs !text-slate-900 hover:!bg-slate-200 sm:!px-3.5 sm:!py-2 sm:!text-sm"
+              >
                 Get started
               </Link>
             </div>
@@ -67,26 +76,27 @@ export function LandingPage() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-8 lg:grid-cols-[1fr_1.15fr] lg:pb-24 lg:pt-12">
           <div className="space-y-6">
-            <h1 className="text-5xl font-bold leading-tight text-white sm:text-6xl">
+            <TrialBanner variant="landing" />
+            <h1 className="text-3xl font-bold leading-tight text-white sm:text-5xl lg:text-6xl">
               Your gym's front door,
               <br />
               <span className="text-slate-300">on autopilot.</span>
             </h1>
-            <p className="max-w-md text-lg leading-relaxed text-slate-200">
+            <p className="max-w-md text-base leading-relaxed text-slate-200 sm:text-lg">
               A camera recognizes every member at the entrance and enforces your rules automatically —
               expiry, sessions, hours. You mark payments in cash or Telebirr; the system and a Telegram
               bot handle everything else.
             </p>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Link
                 to="/register"
-                className="btn !bg-white !px-6 !py-3 !text-base !text-slate-900 hover:!bg-slate-200"
+                className="btn w-full !bg-white !px-4 !py-2.5 !text-sm !text-slate-900 hover:!bg-slate-200 sm:w-auto sm:!px-6 sm:!py-3 sm:!text-base"
               >
                 Register your gym — free
               </Link>
               <a
                 href="#how"
-                className="btn !border !border-white/40 !px-6 !py-3 !text-base !text-white hover:!bg-white/10"
+                className="btn w-full !border !border-white/40 !px-4 !py-2.5 !text-sm !text-white hover:!bg-white/10 sm:w-auto sm:!px-6 sm:!py-3 sm:!text-base"
               >
                 See how it works
               </a>
@@ -312,10 +322,10 @@ function Tick({ children }: { children: ReactNode }) {
 /** CSS-only mock of the live monitor — the product IS the hero image. */
 function MonitorMock() {
   return (
-    <div className="card space-y-3 !p-4">
+    <div className="card mx-auto w-full max-w-[20rem] space-y-3 !p-3 sm:max-w-lg sm:!p-4 lg:max-w-none">
       {/* camera area */}
       <div
-        className="relative h-[28rem] overflow-hidden rounded-lg bg-slate-900 bg-cover bg-center"
+        className="relative h-72 overflow-hidden rounded-lg bg-slate-900 bg-cover bg-center sm:h-80 lg:h-[28rem]"
         style={{ backgroundImage: `url(${promoImg})` }}
       >
         {/* legibility overlay so pills/chip stay readable over any photo */}

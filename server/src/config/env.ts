@@ -11,6 +11,12 @@ export const env = {
   nodeEnv: optional('NODE_ENV', 'development'),
   port: Number(optional('PORT', '4000')),
   clientUrl: optional('CLIENT_URL', 'http://localhost:5173'),
+  /** CLIENT_URL may be a comma-separated list (Vercel prod + preview + localhost). */
+  corsOrigins: optional('CLIENT_URL', 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+  autoMigrate: optional('AUTO_MIGRATE', 'true') === 'true',
   databaseUrl: process.env.DATABASE_URL,
   db: {
     host: optional('DB_HOST', 'localhost'),
@@ -24,6 +30,12 @@ export const env = {
     refreshSecret: optional('JWT_REFRESH_SECRET', 'dev-refresh-secret'),
     accessTtl: optional('JWT_ACCESS_TTL', '15m'),
     refreshTtlDays: 30,
+  },
+  // Platform super-admin (the product owner). The /platform admin area is
+  // disabled until PLATFORM_ADMIN_PASSWORD is set.
+  platformAdmin: {
+    email: optional('PLATFORM_ADMIN_EMAIL', 'miki123mbt@gmail.com'),
+    password: optional('PLATFORM_ADMIN_PASSWORD', ''),
   },
   // Feedback email (Gmail SMTP). SMTP_USER/SMTP_PASS must be a Gmail address
   // + App Password (2-Step Verification required) for sending to work.

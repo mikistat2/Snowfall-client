@@ -1,16 +1,39 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api';
+import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
+import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { daysLeft, daysLeftColor } from '../lib/expiry';
+import type { MemberExportRow } from '../lib/membersPdf';
 import type { Member, MemberStatus } from '../lib/types';
 
 const STATUSES: MemberStatus[] = ['active', 'expiring', 'grace', 'expired', 'frozen'];
 
 export function MembersPage() {
+  const { gym } = useAuth();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+
+  async function exportPdf() {
+    setExporting(true);
+    setExportError('');
+    try {
+      // jspdf is heavy — loaded on demand so it never slows down normal pages
+      const [{ downloadMembersPdf }, { data }] = await Promise.all([
+        import('../lib/membersPdf'),
+        api.get<MemberExportRow[]>('/members/export'),
+      ]);
+      downloadMembersPdf(gym?.name ?? 'Gym', data);
+    } catch (err) {
+      setExportError(apiErrorMessage(err));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['members', search, status],
@@ -23,10 +46,16 @@ export function MembersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t('members.title')}</h1>
-        <Link to="/members/enroll" className="btn-primary">
-          + {t('members.enroll')}
-        </Link>
+        <div className="flex gap-2">
+          <button className="btn-secondary" onClick={() => void exportPdf()} disabled={exporting}>
+            {exporting ? 'Exporting…' : '⬇ Export PDF'}
+          </button>
+          <Link to="/members/enroll" className="btn-primary">
+            + {t('members.enroll')}
+          </Link>
+        </div>
       </div>
+      {exportError && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{exportError}</div>}
 
       <div className="flex flex-wrap gap-3">
         <input
@@ -75,7 +104,16 @@ export function MembersPage() {
                 <td className="px-4 py-3">{m.plan_name}</td>
                 <td className="px-4 py-3">{m.expires_at ? String(m.expires_at).slice(0, 10) : '—'}</td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={m.status} />
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={m.status} />
+                    {m.expires_at != null && m.status !== 'frozen' && (
+                      <span className={`whitespace-nowrap text-xs font-bold ${daysLeftColor[m.status]}`}>
+                        {daysLeft(m.expires_at) >= 0
+                          ? `${daysLeft(m.expires_at)} ${t('members.daysLeft')}`
+                          : `${-daysLeft(m.expires_at)} ${t('members.daysOverdue')}`}
+                      </span>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
