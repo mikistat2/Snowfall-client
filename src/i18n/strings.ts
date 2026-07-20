@@ -176,6 +176,9 @@ const en = {
   'settings.staff': 'Staff accounts',
   'settings.addStaff': 'Add staff',
   'settings.save': 'Save',
+  'settings.language': 'Language',
+  'settings.languageHint':
+    'Changes menus and labels on this device only — member names and everything you typed stay exactly as entered.',
 
   // telegram / notifications
   'nav.notifications': 'Notifications',
@@ -259,14 +262,297 @@ const en = {
 
 export type StringKey = keyof typeof en;
 
+/**
+ * Amharic UI labels. Only interface text is translated — member names, gym
+ * names, notes and every other typed value are data and are never touched.
+ */
 const am: Partial<Record<StringKey, string>> = {
-  // Amharic translations land in a later phase.
+  // app
+  'app.name': 'ስኖውፎል ጂም',
+  'nav.dashboard': 'ዳሽቦርድ',
+  'nav.today': 'ዛሬ',
+  'nav.monitor': 'ሞኒተር',
+  'nav.members': 'አባላት',
+  'nav.payments': 'ክፍያዎች',
+  'nav.settings': 'ቅንብሮች',
+  'nav.logout': 'ውጣ',
+
+  // auth
+  'auth.login': 'ግባ',
+  'auth.email': 'ኢሜይል',
+  'auth.password': 'የይለፍ ቃል',
+  'auth.registerGym': 'ጂምዎን ያስመዝግቡ',
+  'auth.gymName': 'የጂም ስም',
+  'auth.address': 'አድራሻ',
+  'auth.phone': 'ስልክ',
+  'auth.ownerName': 'ስምዎ',
+  'auth.createAccount': 'መለያ ፍጠር',
+  'auth.haveAccount': 'መለያ አለዎት? ይግቡ',
+  'auth.confirmPassword': 'የይለፍ ቃል ያረጋግጡ',
+  'auth.agreeTerms': 'አንብቤ ተስማምቻለሁ፡',
+  'auth.termsLink': 'ውሎች እና ሁኔታዎች',
+  'auth.passwordMismatch': 'የይለፍ ቃሎች አይመሳሰሉም',
+  'auth.pendingTitle': 'ምዝገባዎ ደርሷል!',
+  'auth.pendingBody':
+    'አስተዳዳሪው ምዝገባዎን እስኪያረጋግጥ ይጠብቁ። ብዙውን ጊዜ ከአንድ ቀን በታች ይወስዳል — ጂምዎ ከመጽደቁ በፊት መግባት አይችሉም።',
+  'auth.pendingEmail': 'በዚህ ኢሜይል እናሳውቅዎታለን፡',
+  'auth.pendingStep1': 'ምዝገባ ተልኳል',
+  'auth.pendingStep2': 'የአስተዳዳሪ ማረጋገጫ በሂደት ላይ',
+  'auth.pendingStep3': 'ገብተው ጂምዎን ያዘጋጁ',
+  'auth.backToLogin': 'ወደ መግቢያ ተመለስ',
+  'auth.noAccount': 'አዲስ ነዎት? ጂምዎን ያስመዝግቡ',
+
+  // statuses
+  'status.active': 'ንቁ',
+  'status.expiring': 'ሊያበቃ ነው',
+  'status.grace': 'የችሮታ ጊዜ',
+  'status.expired': 'ጊዜው ያለፈ',
+  'status.frozen': 'የታገደ',
+
+  // monitor
+  'monitor.occupancy': 'አሁን ውስጥ ያሉ',
+  'monitor.eventFeed': 'የቀጥታ ክስተቶች',
+  'monitor.allowEntry': 'መግባት ፍቀድ',
+  'monitor.approve': 'አጽድቅ',
+  'monitor.awaitingApproval': 'ማጽደቅ በመጠበቅ ላይ',
+  'monitor.checkOut': 'አስወጣ',
+  'monitor.addGuest': 'እንግዳ ጨምር',
+  'monitor.guestAdded': 'የእንግዳ ፈቃድ ተፈጥሯል',
+  'monitor.cameraError': 'ካሜራ አልተገኘም — ፈቃዶችን ያረጋግጡ',
+  'monitor.loadingModels': 'የፊት መለያ ሞዴሎች በመጫን ላይ…',
+  'monitor.unknown': 'ያልታወቀ',
+  'monitor.noneInside': 'አሁን ማንም አልገባም',
+
+  // camera source
+  'camera.title': 'የካሜራ ምንጭ',
+  'camera.button': 'ካሜራ',
+  'camera.flip': 'ካሜራ ቀይር',
+  'camera.webcam': 'የዚህ መሣሪያ ካሜራ',
+  'camera.webcamHint': 'የተሰራውን ወይም የUSB ካሜራ በአሳሹ በኩል ይጠቀማል።',
+  'camera.ip': 'በኔትወርክ ላይ ያለ ስልክ / IP ካሜራ',
+  'camera.ipHint':
+    'ለምሳሌ ነፃው የ"IP Webcam" አንድሮይድ መተግበሪያ፡ ይክፈቱት → Start server → http://<የስልክ-ip>:8080/video እዚህ ያስገቡ። ስልኩ እና ይህ ኮምፒውተር በአንድ Wi-Fi ላይ መሆን አለባቸው።',
+  'camera.test': 'ዥረት ሞክር',
+  'camera.ipError': 'ዥረቱ አልተገኘም — URL፣ Wi-Fi እና የካሜራ መተግበሪያው መሥራቱን ያረጋግጡ።',
+
+  // guests
+  'guests.validity': 'ፈቃዱ የሚቆይበት',
+  'guests.today': 'ዛሬ ብቻ',
+  'guests.captureHint': 'ካሜራው በበሩ ላይ እንዲያውቀው የእንግዳውን ፊት አንድ ጊዜ ያንሱ።',
+  'guests.create': 'የእንግዳ ፈቃድ ፍጠር',
+
+  // audit log
+  'nav.audit': 'የክንውን መዝገብ',
+  'audit.title': 'የክንውን መዝገብ',
+  'audit.when': 'መቼ',
+  'audit.who': 'ሠራተኛ',
+  'audit.action': 'ተግባር',
+  'audit.entity': 'አካል',
+  'audit.details': 'ዝርዝሮች',
+  'audit.allEntities': 'ሁሉም አካላት',
+  'audit.searchAction': 'በተግባር አጣራ…',
+
+  // members
+  'members.title': 'አባላት',
+  'members.search': 'በስም ወይም በስልክ ፈልግ…',
+  'members.enroll': 'አባል መዝግብ',
+  'members.allStatuses': 'ሁሉም ሁኔታዎች',
+  'members.name': 'ስም',
+  'members.plan': 'እቅድ',
+  'members.expires': 'የሚያበቃበት',
+  'members.status': 'ሁኔታ',
+  'members.daysLeft': 'ቀናት ቀርተዋል',
+  'members.daysOverdue': 'ቀናት አልፈዋል',
+  'members.renew': 'አድስ / ክፍያ መዝግብ',
+  'members.freeze': 'አግድ',
+  'members.unfreeze': 'እገዳ አንሳ',
+  'members.telegram': 'ቴሌግራም',
+  'members.linked': 'ተገናኝቷል',
+  'members.notLinked': 'አልተገናኘም',
+  'members.subscriptions': 'የአባልነት ታሪክ',
+  'members.paymentHistory': 'ክፍያዎች',
+  'members.checkInHistory': 'የቅርብ ጊዜ መግቢያዎች',
+  'members.fullName': 'ሙሉ ስም',
+  'members.sex': 'ጾታ',
+  'members.male': 'ወንድ',
+  'members.female': 'ሴት',
+
+  // enroll
+  'enroll.title': 'አዲስ አባል መዝግብ',
+  'enroll.details': 'የአባል ዝርዝሮች',
+  'enroll.captures': 'የፊት ፎቶዎች',
+  'enroll.captureHint': '3–5 ፎቶዎችን ያንሱ፡ ቀጥታ ይመልከቱ፣ ከዚያ ትንሽ ወደ ግራ እና ወደ ቀኝ።',
+  'enroll.capture': 'አንሳ',
+  'enroll.retake': 'አስወግድ',
+  'enroll.needMore': 'ቢያንስ 3 የፊት ፎቶዎችን ያንሱ',
+  'enroll.captureAtLeast': 'የሚያስፈልጉ ፎቶዎች፡',
+  'enroll.noFace': 'ፊት አልተገኘም — ወደ ካሜራው ይቅረቡ',
+  'enroll.lowQuality': 'ዝቅተኛ ጥራት — ብርሃን ያሻሽሉ ወይም ይቅረቡ',
+  'enroll.tooSmall': 'ፊቱ በጣም ትንሽ ነው — ይቅረቡ',
+  'enroll.good': 'ጥሩ ፎቶ',
+  'enroll.plan': 'እቅድ',
+  'enroll.payment': 'የመጀመሪያ ክፍያ',
+  'enroll.amount': 'መጠን (ብር)',
+  'enroll.method': 'መንገድ',
+  'enroll.note': 'ማስታወሻ',
+  'enroll.submit': 'አባል መዝግብ',
+  'enroll.noCamera':
+    'ለዚህ ጂም ካሜራ ጠፍቷል — አባሉ ያለ ፊት ፎቶ ይመዘገባል። በኋላ በቅንብሮች ውስጥ ማብራት ይችላሉ።',
+
+  // payments
+  'payments.title': 'ክፍያዎች',
+  'payments.member': 'አባል',
+  'payments.amount': 'መጠን',
+  'payments.method': 'መንገድ',
+  'payments.markedBy': 'የመዘገበው',
+  'payments.date': 'ቀን',
+  'payments.from': 'ከ',
+  'payments.to': 'እስከ',
+  'payments.allMethods': 'ሁሉም መንገዶች',
+
+  // dashboard
+  'dashboard.title': 'ዳሽቦርድ',
+  'dashboard.checkInsToday': 'የዛሬ መግቢያዎች',
+  'dashboard.occupancy': 'አሁን ውስጥ ያሉ',
+  'dashboard.revenue': 'የዚህ ወር ገቢ',
+  'dashboard.expiringSoon': 'በ7 ቀናት ውስጥ የሚያበቁ',
+  'dashboard.peakHours': 'ከፍተኛ ሰዓታት (ያለፉት 14 ቀናት)',
+
+  // settings
+  'settings.title': 'ቅንብሮች',
+  'settings.gym': 'የጂም መገለጫ',
+  'settings.rules': 'የመግቢያ እና የአባልነት ህጎች',
+  'settings.gracePeriod': 'የችሮታ ጊዜ (ቀናት)',
+  'settings.autoCheckout': 'በራስ-ሰር መውጫ በኋላ (ሰዓታት)',
+  'settings.reminderDays': 'የማብቂያ ማስታወሻ (ቀናት በፊት)',
+  'settings.nudgeDays': 'የመቅረት ማስታወሻ በኋላ (ቀናት)',
+  'settings.threshold': 'የፊት መመሳሰል ደረጃ',
+  'settings.closing': 'የመዝጊያ ሰዓት',
+  'settings.entryMode': 'የመግቢያ ሁነታ',
+  'settings.entryAuto': 'በራስ-ሰር — የተፈቀደላቸው አባላት ወዲያውኑ ይገባሉ',
+  'settings.entryManual': 'በእጅ — ሠራተኞች እያንዳንዱን መግቢያ ያጸድቃሉ',
+  'settings.entryModeHint':
+    'በእጅ ሁነታ፡ የታወቁ አባላት ሠራተኛ "አጽድቅ" እስኪጫን ይጠብቃሉ (ቢጫ)። መከልከል በሁለቱም ሁነታዎች አንድ ነው።',
+  'settings.camera': 'የካሜራ ሞኒተር',
+  'settings.cameraOn': 'ነቅቷል — በፊት መለያ መግባት',
+  'settings.cameraOff': 'ጠፍቷል — ይህ ጂም ካሜራ የለውም',
+  'settings.cameraHint':
+    'ይህ ጂም ካሜራ ከሌለው ያጥፉት፡ አባላት ያለ ፊት ፎቶ ይመዘገባሉ፣ ሞኒተሩም የጂሙን ስም ያሳያል።',
+  'settings.botToken': 'የቴሌግራም ቦት ቶከን',
+  'settings.plans': 'የአባልነት እቅዶች',
+  'settings.addPlan': 'እቅድ ጨምር',
+  'settings.staff': 'የሠራተኛ መለያዎች',
+  'settings.addStaff': 'ሠራተኛ ጨምር',
+  'settings.save': 'አስቀምጥ',
+  'settings.language': 'ቋንቋ',
+  'settings.languageHint':
+    'ለዚህ መሣሪያ ምናሌዎችን እና መለያ ጽሁፎችን ብቻ ይቀይራል — የአባላት ስሞች እና ያስገቡት መረጃ በሙሉ እንደጻፉት ይቆያል።',
+
+  // telegram / notifications
+  'nav.notifications': 'ማሳወቂያዎች',
+  'nav.guide': 'የመጀመሪያ መመሪያ',
+  'nav.feedback': 'አስተያየት / ማሻሻያ',
+
+  // today digest
+  'today.title': 'ዛሬ በአጭሩ',
+  'today.subtitle': 'ዛሬ የሆነው እና ትኩረትዎን የሚፈልጉ',
+  'today.checkIns': 'የዛሬ መግቢያዎች',
+  'today.denied': 'የተከለከሉ',
+  'today.uniqueMembers': 'የተለያዩ አባላት',
+  'today.inside': 'አሁን ውስጥ ያሉ',
+  'today.paymentsTotal': 'ዛሬ የተሰበሰበ',
+  'today.newMembers': 'አዲስ አባላት',
+  'today.guestPasses': 'የእንግዳ ፈቃዶች',
+  'today.newMembersTitle': 'ዛሬ የተመዘገቡ አዲስ አባላት',
+  'today.noNewMembers': 'ዛሬ ምንም አዲስ አባል አልተመዘገበም።',
+  'today.expiringTitle': 'በሚቀጥሉት 7 ቀናት የሚያበቁ',
+  'today.noExpiring': 'በሚቀጥሉት 7 ቀናት የሚያበቃ የለም። 🎉',
+  'today.expiredTitle': 'ባለፉት 7 ቀናት ያበቁ',
+  'today.noExpired': 'ባለፉት 7 ቀናት ያበቃ የለም።',
+  'today.expiredHint': 'ከመራቃቸው በፊት ይደውሉላቸው — ከመገለጫቸው በአንድ ጠቅታ ይታደሳል።',
+  'today.paymentsTitle': 'የዛሬ ክፍያዎች',
+  'today.noPayments': 'ዛሬ ምንም ክፍያ አልተመዘገበም።',
+  'today.expiresToday': 'ዛሬ!',
+  'today.tomorrow': 'ነገ',
+  'today.daysLeft': 'ቀናት ቀርተዋል',
+  'today.daysAgo': 'ቀናት በፊት',
+  'today.yesterday': 'ትናንት',
+  'today.plan': 'እቅድ',
+  'today.joined': 'የተመዘገበው',
+
+  // feedback
+  'feedback.title': 'አስተያየት እና ማሻሻያ',
+  'feedback.intro': 'ሀሳብ፣ የሚነገር ችግር ወይም Snowfall-ን የሚያሻሽል ሀሳብ አለዎት? በቀጥታ ለቡድኑ ይላኩ።',
+  'feedback.category': 'አይነት',
+  'feedback.suggestion': 'ሀሳብ',
+  'feedback.bug': 'የችግር ሪፖርት',
+  'feedback.improvement': 'የማሻሻያ ሀሳብ',
+  'feedback.other': 'ሌላ',
+  'feedback.subject': 'ርዕስ',
+  'feedback.message': 'መልእክትዎ',
+  'feedback.messagePlaceholder': 'ሀሳብዎን፣ ችግርዎን ወይም ጥያቄዎን በዝርዝር ይግለጹ…',
+  'feedback.send': 'አስተያየት ላክ',
+  'feedback.sending': 'በመላክ ላይ…',
+  'feedback.thanks': 'እናመሰግናለን! አስተያየትዎ ለቡድናችን ተልኳል።',
+  'notifications.title': 'ማሳወቂያዎች',
+  'notifications.member': 'አባል',
+  'notifications.type': 'አይነት',
+  'notifications.status': 'ሁኔታ',
+  'notifications.message': 'መልእክት',
+  'notifications.date': 'ቀን',
+  'notifications.allTypes': 'ሁሉም አይነቶች',
+  'notifications.allStatuses': 'ሁሉም ሁኔታዎች',
+  'notifications.sent': 'ተልኳል',
+  'notifications.failed': 'አልተሳካም',
+  'notifications.skipped': 'ቻት አልተገናኘም',
+  'notifications.skippedHint': 'አባሉ ቴሌግራም አላገናኘም — ሊንክ ለመፍጠር መገለጫቸውን ይክፈቱ።',
+  'telegram.link': 'ቴሌግራም አገናኝ',
+  'telegram.linkTitle': 'የቴሌግራም መለያ አገናኝ',
+  'telegram.scanHint': 'በስልክ ይቃኙ፣ ወይም ሊንኩን በቴሌግራም ይክፈቱ። ሊንኩ አንድ ጊዜ ብቻ ይሠራል።',
+  'telegram.copy': 'ሊንክ ቅዳ',
+  'telegram.copied': 'ተቀድቷል!',
+  'telegram.relink': 'አዲስ ሊንክ ፍጠር',
+  'telegram.botRunning': 'ቦቱ እየሠራ ነው',
+  'telegram.botStopped': 'ቦቱ እየሠራ አይደለም',
+  'telegram.linkMyChat': 'የኔን ቻት አገናኝ (የአስተዳዳሪ ማንቂያዎች)',
+  'telegram.myChatLinked': 'ቻትዎ ተገናኝቷል',
+
+  // common
+  'common.cancel': 'ይቅር',
+  'common.save': 'አስቀምጥ',
+  'common.delete': 'ሰርዝ',
+  'common.loading': 'በመጫን ላይ…',
+  'common.error': 'የሆነ ችግር ተፈጥሯል',
+  'common.days': 'ቀናት',
+  'common.birr': 'ብር',
 };
 
-let locale: 'en' | 'am' = 'en';
+export type Locale = 'en' | 'am';
 
-export function setLocale(l: 'en' | 'am'): void {
+const LOCALE_KEY = 'locale';
+
+function loadLocale(): Locale {
+  try {
+    return localStorage.getItem(LOCALE_KEY) === 'am' ? 'am' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+let locale: Locale = loadLocale();
+
+export function getLocale(): Locale {
+  return locale;
+}
+
+/** Persists per device. Callers must re-render (the Settings page reloads). */
+export function setLocale(l: Locale): void {
   locale = l;
+  try {
+    localStorage.setItem(LOCALE_KEY, l);
+  } catch {
+    /* private-mode browsers: language just won't persist */
+  }
 }
 
 export function t(key: StringKey): string {

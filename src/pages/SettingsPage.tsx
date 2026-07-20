@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { t } from '../i18n/strings';
+import { t, getLocale, setLocale, type Locale } from '../i18n/strings';
 import { Modal } from '../components/ui/Modal';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import type { Gym, Plan } from '../lib/types';
@@ -14,9 +14,50 @@ export function SettingsPage() {
   return (
     <div className="max-w-4xl space-y-5">
       <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
+      <LanguageSection />
       <GymSection readOnly={!isOwner} />
       <PlansSection />
       {isOwner && <StaffSection />}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ language
+/**
+ * Per-device UI language (localStorage, not a server setting) — every staff
+ * member picks their own. Reloads so every rendered t() string updates.
+ */
+function LanguageSection() {
+  const current = getLocale();
+  function choose(l: Locale) {
+    if (l === current) return;
+    setLocale(l);
+    window.location.reload();
+  }
+  const options: { value: Locale; label: string }[] = [
+    { value: 'en', label: 'English' },
+    { value: 'am', label: 'አማርኛ' },
+  ];
+  return (
+    <div className="card flex flex-wrap items-center gap-4">
+      <div className="min-w-0 flex-1">
+        <h2 className="font-semibold">{t('settings.language')}</h2>
+        <p className="text-xs text-slate-500">{t('settings.languageHint')}</p>
+      </div>
+      <div className="flex overflow-hidden rounded-lg border border-slate-200">
+        {options.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            onClick={() => choose(o.value)}
+            className={`px-4 py-2 text-sm font-medium ${
+              current === o.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
