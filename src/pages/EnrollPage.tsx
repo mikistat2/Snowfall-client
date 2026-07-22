@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import { FaceCapture, type Capture } from '../components/members/FaceCapture';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import type { Gym, Member, PaymentMethod, Plan } from '../lib/types';
 
 const METHODS: PaymentMethod[] = ['cash', 'telebirr', 'bank', 'other'];
@@ -71,7 +72,7 @@ export function EnrollPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">{t('auth.phone')}</label>
-              <input className="input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <PhoneInput value={phone} onChange={setPhone} />
             </div>
             <div>
               <label className="label">{t('members.sex')}</label>

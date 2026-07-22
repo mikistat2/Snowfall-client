@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { t, getLocale, setLocale, type Locale } from '../i18n/strings';
 import { Modal } from '../components/ui/Modal';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import type { Gym, Plan } from '../lib/types';
 
 export function SettingsPage() {
@@ -147,7 +148,11 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
         </div>
         <div>
           <label className="label">{t('auth.phone')}</label>
-          <input className="input" value={form.phone} onChange={set('phone')} disabled={readOnly} />
+          <PhoneInput
+            value={form.phone}
+            onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+            disabled={readOnly}
+          />
         </div>
       </div>
       <div>

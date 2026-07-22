@@ -38,6 +38,10 @@ const en = {
   'auth.backToLogin': 'Back to login',
   'auth.noAccount': 'New here? Register your gym',
 
+  // phone input
+  'phone.search': 'Search country',
+  'phone.noResults': 'No country found',
+
   // statuses
   'status.active': 'Active',
   'status.expiring': 'Expiring',
@@ -285,6 +289,8 @@ const am: Partial<Record<StringKey, string>> = {
   'auth.gymName': 'የጂም ስም',
   'auth.address': 'አድራሻ',
   'auth.phone': 'ስልክ',
+  'phone.search': 'አገር ይፈልጉ',
+  'phone.noResults': 'አገር አልተገኘም',
   'auth.ownerName': 'ስምዎ',
   'auth.createAccount': 'መለያ ፍጠር',
   'auth.haveAccount': 'መለያ አለዎት? ይግቡ',

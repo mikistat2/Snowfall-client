@@ -6,6 +6,7 @@ import { t } from '../i18n/strings';
 import loginLogo from '../assets/images/login-logo.png';
 import { TrialBanner } from '../components/ui/TrialBanner';
 import { TermsModal } from '../components/ui/TermsModal';
+import { PhoneInput } from '../components/ui/PhoneInput';
 
 export function RegisterGymPage() {
   const { registerGym } = useAuth();
@@ -56,7 +57,7 @@ export function RegisterGymPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={onSubmit} className="card w-full max-w-md space-y-4">
+      <form onSubmit={onSubmit} className="card w-full max-w-lg space-y-4">
         <div className="flex flex-col items-center gap-2 pb-1 text-center">
           <img
             src={loginLogo}
@@ -91,14 +92,14 @@ export function RegisterGymPage() {
           <label className="label">{t('auth.gymName')}</label>
           <input className="input" value={form.gymName} onChange={set('gymName')} required minLength={2} />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        <div className="grid grid-cols-5 gap-3">
+          <div className="col-span-2">
             <label className="label">{t('auth.address')}</label>
             <input className="input" value={form.address} onChange={set('address')} />
           </div>
-          <div>
+          <div className="col-span-3">
             <label className="label">{t('auth.phone')}</label>
-            <input className="input" value={form.gymPhone} onChange={set('gymPhone')} />
+            <PhoneInput value={form.gymPhone} onChange={(v) => setForm((f) => ({ ...f, gymPhone: v }))} />
           </div>
         </div>
         <hr className="border-slate-200" />
