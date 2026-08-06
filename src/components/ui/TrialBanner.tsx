@@ -36,8 +36,8 @@ export function TrialBanner({ variant }: { variant: 'landing' | 'register' }) {
   // gradient card at the top of the registration form
   return (
     <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-violet-600 via-sky-600 to-sky-500 px-4 py-3 text-white shadow-lg shadow-sky-500/30">
-      <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-white/10" />
-      <div className="pointer-events-none absolute -bottom-10 -left-4 h-20 w-20 rounded-full bg-white/10" />
+      <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-surface/10" />
+      <div className="pointer-events-none absolute -bottom-10 -left-4 h-20 w-20 rounded-full bg-surface/10" />
       <div className="relative flex items-center gap-3">
         <span className="animate-bounce text-3xl" aria-hidden>
           🎁

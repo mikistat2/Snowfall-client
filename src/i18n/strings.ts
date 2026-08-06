@@ -1,3 +1,5 @@
+import * as storage from '../lib/storage';
+
 /**
  * All user-visible strings. English is the source of truth; Amharic ("am")
  * translations land later — missing keys fall back to English.
@@ -12,6 +14,9 @@ const en = {
   'nav.payments': 'Payments',
   'nav.settings': 'Settings',
   'nav.logout': 'Log out',
+  // mobile bottom tabs
+  'nav.live': 'Live',
+  'nav.more': 'More',
 
   // auth
   'auth.login': 'Log in',
@@ -69,6 +74,9 @@ const en = {
     'e.g. the free "IP Webcam" Android app: open it → Start server → enter http://<phone-ip>:8080/video here. Phone and this computer must be on the same Wi-Fi.',
   'camera.test': 'Test stream',
   'camera.ipError': 'Stream unreachable — check the URL, Wi-Fi, and that the camera app server is running.',
+  'camera.permissionDenied':
+    'Camera permission denied. Allow it in Android Settings → Apps → Snowfall Gym → Permissions.',
+  'camera.modelsFailed': 'Could not load face recognition models. Tap to retry.',
 
   // guests
   'guests.validity': 'Pass valid',
@@ -256,8 +264,65 @@ const en = {
 
   // common
   'common.cancel': 'Cancel',
+  'common.back': 'Back',
   'common.save': 'Save',
+  // mobile shell
+  'more.title': 'More',
+  'more.appearance': 'Appearance',
+  'more.theme.system': 'System',
+  'more.theme.light': 'Light',
+  'more.theme.dark': 'Dark',
+  'more.exitHint': 'Press back again to exit',
+  'live.title': 'Live events',
+  'live.comingSoon': 'The live event feed arrives in the next step.',
+
+  // mobile home screen
+  'home.morning': 'Good morning',
+  'home.afternoon': 'Good afternoon',
+  'home.evening': 'Good evening',
+  'home.insideNow': 'Inside now',
+  'home.liveLabel': 'LIVE',
+  'home.people': 'people',
+  'home.person': 'person',
+  'home.quickActions': 'Quick actions',
+  'home.actionEnroll': 'Enroll',
+  'home.actionMembers': 'Members',
+  'home.actionPayments': 'Payments',
+  'home.actionLive': 'Live',
+  'home.checkInsToday': 'Check-ins',
+  'home.collectedToday': 'Collected',
+  'home.expiringSoon': 'Expiring',
+  'home.newToday': 'New today',
+  'home.needsAttention': 'Needs attention',
+  'home.allGood': 'Nothing needs your attention today.',
+  'home.viewAll': 'View all',
+  'home.expiredAgo': 'expired',
+  'home.retry': 'Retry',
+  'home.offline': 'Cannot reach the server',
+  'home.pullToRefresh': 'Pull to refresh',
+  'home.releaseToRefresh': 'Release to refresh',
+  'home.refreshing': 'Refreshing…',
+
+  // --- home stat detail sheets ---
+  'home.sheetCheckIns': 'Check-ins today',
+  'home.sheetCollected': 'Collected today',
+  'home.sheetExpiring': 'Expiring soon',
+  'home.sheetNew': 'New members today',
+  'home.allowed': 'Allowed',
+  'home.denied': 'Denied',
+  'home.uniqueMembers': 'Unique members',
+  'home.guestPasses': 'Guest passes',
+  'home.checkInsNote': 'Individual entries appear in the live feed and on the Today page.',
+  'home.emptyCheckIns': 'No check-ins recorded yet today.',
+  'home.emptyPayments': 'No payments recorded yet today.',
+  'home.emptyNew': 'No new members joined today.',
+  'home.emptyExpiring': 'No memberships expiring in the next 7 days.',
+  'home.noPhone': 'No phone number',
+  'home.paymentsSummary': 'payments',
+  'home.membersSummary': 'members',
+
   'common.delete': 'Delete',
+  'common.close': 'Close',
   'common.loading': 'Loading…',
   'common.error': 'Something went wrong',
   'common.days': 'days',
@@ -280,6 +345,8 @@ const am: Partial<Record<StringKey, string>> = {
   'nav.payments': 'ክፍያዎች',
   'nav.settings': 'ቅንብሮች',
   'nav.logout': 'ውጣ',
+  'nav.live': 'ቀጥታ',
+  'nav.more': 'ተጨማሪ',
 
   // auth
   'auth.login': 'ግባ',
@@ -340,6 +407,9 @@ const am: Partial<Record<StringKey, string>> = {
     'ለምሳሌ ነፃው የ"IP Webcam" አንድሮይድ መተግበሪያ፡ ይክፈቱት → Start server → http://<የስልክ-ip>:8080/video እዚህ ያስገቡ። ስልኩ እና ይህ ኮምፒውተር በአንድ Wi-Fi ላይ መሆን አለባቸው።',
   'camera.test': 'ዥረት ሞክር',
   'camera.ipError': 'ዥረቱ አልተገኘም — URL፣ Wi-Fi እና የካሜራ መተግበሪያው መሥራቱን ያረጋግጡ።',
+  'camera.permissionDenied':
+    'የካሜራ ፈቃድ ተከልክሏል። በAndroid ቅንብሮች → መተግበሪያዎች → Snowfall Gym → ፈቃዶች ውስጥ ይፍቀዱ።',
+  'camera.modelsFailed': 'የፊት መለያ ሞዴሎችን መጫን አልተቻለም። እንደገና ለመሞከር ይንኩ።',
 
   // guests
   'guests.validity': 'ፈቃዱ የሚቆይበት',
@@ -525,43 +595,426 @@ const am: Partial<Record<StringKey, string>> = {
 
   // common
   'common.cancel': 'ይቅር',
+  'common.back': 'ተመለስ',
   'common.save': 'አስቀምጥ',
+  'more.title': 'ተጨማሪ',
+  'more.appearance': 'ገጽታ',
+  'more.theme.system': 'የስርዓቱ',
+  'more.theme.light': 'ብሩህ',
+  'more.theme.dark': 'ጨለማ',
+  'more.exitHint': 'ለመውጣት እንደገና ተመለስ ይጫኑ',
+  'live.title': 'ቀጥታ ክንውኖች',
+
+  // mobile home screen
+  'home.morning': 'እንደምን አደሩ',
+  'home.afternoon': 'እንደምን ዋሉ',
+  'home.evening': 'እንደምን አመሹ',
+  'home.insideNow': 'አሁን ውስጥ ያሉ',
+  'home.liveLabel': 'ቀጥታ',
+  'home.people': 'ሰዎች',
+  'home.person': 'ሰው',
+  'home.quickActions': 'ፈጣን እርምጃዎች',
+  'home.actionEnroll': 'መዝግብ',
+  'home.actionMembers': 'አባላት',
+  'home.actionPayments': 'ክፍያዎች',
+  'home.actionLive': 'ቀጥታ',
+  'home.checkInsToday': 'መግቢያዎች',
+  'home.collectedToday': 'የተሰበሰበ',
+  'home.expiringSoon': 'የሚያልቅ',
+  'home.newToday': 'አዲስ ዛሬ',
+  'home.needsAttention': 'ትኩረት የሚሹ',
+  'home.allGood': 'ዛሬ ትኩረት የሚሻ ነገር የለም።',
+  'home.viewAll': 'ሁሉንም ተመልከት',
+  'home.expiredAgo': 'አልቋል',
+  'home.retry': 'እንደገና ሞክር',
+  'home.offline': 'ሰርቨሩ ላይ መድረስ አልተቻለም',
+  'home.pullToRefresh': 'ለማደስ ይጎትቱ',
+  'home.releaseToRefresh': 'ለማደስ ይልቀቁ',
+  'home.refreshing': 'በማደስ ላይ…',
+
+  // --- home stat detail sheets ---
+  'home.sheetCheckIns': 'የዛሬ መግቢያዎች',
+  'home.sheetCollected': 'ዛሬ የተሰበሰበ',
+  'home.sheetExpiring': 'በቅርቡ የሚያልቅ',
+  'home.sheetNew': 'የዛሬ አዲስ አባላት',
+  'home.allowed': 'የተፈቀደ',
+  'home.denied': 'የተከለከለ',
+  'home.uniqueMembers': 'የተለያዩ አባላት',
+  'home.guestPasses': 'የእንግዳ ፈቃዶች',
+  'home.checkInsNote': 'እያንዳንዱ መግቢያ በቀጥታ ዝርዝሩ እና በ«ዛሬ» ገጽ ላይ ይታያል።',
+  'home.emptyCheckIns': 'ዛሬ እስካሁን ምንም መግቢያ አልተመዘገበም።',
+  'home.emptyPayments': 'ዛሬ እስካሁን ምንም ክፍያ አልተመዘገበም።',
+  'home.emptyNew': 'ዛሬ አዲስ አባል አልተመዘገበም።',
+  'home.emptyExpiring': 'በሚቀጥሉት 7 ቀናት የሚያልቅ አባልነት የለም።',
+  'home.noPhone': 'ስልክ ቁጥር የለም',
+  'home.paymentsSummary': 'ክፍያዎች',
+  'home.membersSummary': 'አባላት',
+
   'common.delete': 'ሰርዝ',
+  'common.close': 'ዝጋ',
   'common.loading': 'በመጫን ላይ…',
   'common.error': 'የሆነ ችግር ተፈጥሯል',
   'common.days': 'ቀናት',
   'common.birr': 'ብር',
 };
 
-export type Locale = 'en' | 'am';
+/**
+ * Afaan Oromoo (Oromo) UI labels.
+ *
+ * Oromo is written in Qubee, a Latin alphabet — the existing Inter font covers
+ * it, so unlike Amharic this needed no font work. The glottal stop is written
+ * with U+02BC MODIFIER LETTER APOSTROPHE (ʼ) rather than a plain ASCII quote:
+ * it is the correct character for the sound and it cannot terminate a string
+ * literal, which removes a whole class of escaping mistakes across the table.
+ *
+ * COVERAGE IS DELIBERATELY PARTIAL. `t()` falls back per key, so the screens
+ * translated here render in Oromo while the rest stays English. Still missing:
+ * the feedback, audit and telegram sections, and the marketing pages (which
+ * hardcode their English copy outside this file).
+ *
+ * TRANSLATION QUALITY: these strings have NOT been reviewed by a native
+ * speaker — see the note in the PR/commit. Gemination and vowel length are
+ * meaning-bearing in Oromo, so a review pass is required before this is
+ * offered to real gyms.
+ */
+const om: Partial<Record<StringKey, string>> = {
+  // app — 'app.name' is a brand name and stays English (Latin script already)
 
-const LOCALE_KEY = 'locale';
+  // nav
+  'nav.dashboard': 'Daashboordii',
+  'nav.today': 'Harʼa',
+  'nav.monitor': 'Toʼannoo',
+  'nav.members': 'Miseensota',
+  'nav.payments': 'Kaffaltiiwwan',
+  'nav.settings': 'Qindaaʼina',
+  'nav.logout': 'Baʼi',
+  'nav.live': 'Kallattii',
+  'nav.more': 'Dabalata',
+  'nav.audit': 'Galmee hordoffii',
+  'nav.notifications': 'Beeksisawwan',
+  'nav.guide': 'Qajeelfama jalqabaa',
+  'nav.feedback': 'Yaada / Fooyyessa',
 
-function loadLocale(): Locale {
-  try {
-    return localStorage.getItem(LOCALE_KEY) === 'am' ? 'am' : 'en';
-  } catch {
-    return 'en';
-  }
+  // status
+  'status.active': 'Sochoʼaa',
+  'status.expiring': 'Dhumachaa',
+  'status.grace': 'Yeroo dabalataa',
+  'status.expired': 'Dhumate',
+  'status.frozen': 'Dhaabbate',
+
+  // common
+  'common.cancel': 'Dhiisi',
+  'common.back': 'Duubatti',
+  'common.save': 'Olkaaʼi',
+  'common.delete': 'Haqi',
+  'common.close': 'Cufi',
+  'common.loading': 'Feʼaa jira…',
+  'common.error': 'Rakkoon uumameera',
+  'common.days': 'guyyoota',
+  'common.birr': 'Birrii',
+
+  // more / live
+  'more.title': 'Dabalata',
+  'more.appearance': 'Bifa',
+  'more.theme.system': 'Sirna',
+  'more.theme.light': 'Ifaa',
+  'more.theme.dark': 'Dukkanaaʼaa',
+  'more.exitHint': 'Baʼuuf ammas duubatti tuqi',
+  'live.title': 'Taateewwan kallattii',
+  'live.comingSoon': 'Tarreen taatee kallattii tarkaanfii itti aanu keessatti dhufa.',
+
+  // home
+  'home.morning': 'Akkam bulte',
+  'home.afternoon': 'Akkam oolte',
+  'home.evening': 'Akkam galte',
+  'home.insideNow': 'Amma keessa jiru',
+  'home.liveLabel': 'KALLATTII',
+  'home.people': 'namoota',
+  'home.person': 'nama',
+  'home.quickActions': 'Gochaalee saffisaa',
+  'home.actionEnroll': 'Galmeessi',
+  'home.actionMembers': 'Miseensota',
+  'home.actionPayments': 'Kaffaltii',
+  'home.actionLive': 'Kallattii',
+  'home.checkInsToday': 'Seensa',
+  'home.collectedToday': 'Walitti qabame',
+  'home.expiringSoon': 'Dhumachaa',
+  'home.newToday': 'Harʼa haaraa',
+  'home.needsAttention': 'Xiyyeeffannoo barbaada',
+  'home.allGood': 'Harʼa wanti xiyyeeffannoo barbaadu hin jiru.',
+  'home.viewAll': 'Hunda ilaali',
+  'home.expiredAgo': 'dhumate',
+  'home.retry': 'Irra deebiʼii yaali',
+  'home.offline': 'Sarvarii bira gaʼuun hin dandaʼamne',
+  'home.pullToRefresh': 'Haaromsuuf harkisi',
+  'home.releaseToRefresh': 'Haaromsuuf gadhiisi',
+  'home.refreshing': 'Haaromsaa jira…',
+  'home.sheetCheckIns': 'Seensa harʼaa',
+  'home.sheetCollected': 'Harʼa walitti qabame',
+  'home.sheetExpiring': 'Dhiyootti kan dhumu',
+  'home.sheetNew': 'Miseensota haaraa harʼaa',
+  'home.allowed': 'Hayyamame',
+  'home.denied': 'Dhorkame',
+  'home.uniqueMembers': 'Miseensota adda addaa',
+  'home.guestPasses': 'Eeyyama keessummaa',
+  'home.checkInsNote': 'Seensi tokkoon tokkoon isaa tarree kallattii fi fuula Harʼa irratti mulʼata.',
+  'home.emptyCheckIns': 'Harʼa hanga ammaatti seensi hin galmoofne.',
+  'home.emptyPayments': 'Harʼa hanga ammaatti kaffaltiin hin galmoofne.',
+  'home.emptyNew': 'Harʼa miseensi haaraa hin galmoofne.',
+  'home.emptyExpiring': 'Guyyoota 7 dhufan keessatti miseensummaan dhumu hin jiru.',
+  'home.noPhone': 'Lakkoofsi bilbilaa hin jiru',
+  'home.paymentsSummary': 'kaffaltiiwwan',
+  'home.membersSummary': 'miseensota',
+
+  // auth
+  'auth.login': 'Seeni',
+  'auth.email': 'Imeelii',
+  'auth.password': 'Jecha darbii',
+  'auth.registerGym': 'Jimii kee galmeessi',
+  'auth.gymName': 'Maqaa jimii',
+  'auth.address': 'Teessoo',
+  'auth.phone': 'Bilbila',
+  'auth.ownerName': 'Maqaa kee',
+  'auth.createAccount': 'Herrega uumi',
+  'auth.haveAccount': 'Duraanuu herrega qabdaa? Seeni',
+  'auth.confirmPassword': 'Jecha darbii mirkaneessi',
+  'auth.agreeTerms': 'Dubbiseera, nan fudhadhas',
+  'auth.termsLink': 'Haalawwan tajaajilaa',
+  'auth.passwordMismatch': 'Jechi darbii wal hin simu',
+  'auth.pendingTitle': 'Galmeen keessan nu gaʼeera!',
+  'auth.pendingBody':
+    'Hanga Bulchaan galmee keessan mirkaneessutti eegaa. Yeroo baayʼee guyyaa tokkoo gadi fudhata — jimiin keessan hin mirkanaaʼin dura seenuu hin dandaʼan.',
+  'auth.pendingEmail': 'Karaa kanaan isin beeksifna',
+  'auth.pendingStep1': 'Galmeen ergameera',
+  'auth.pendingStep2': 'Mirkaneessi bulchaa adeemsa irra jira',
+  'auth.pendingStep3': 'Seenii jimii kee qindeessi',
+  'auth.backToLogin': 'Gara seensaatti deebiʼi',
+  'auth.noAccount': 'Haaraa dhufte? Jimii kee galmeessi',
+
+  // members
+  'members.title': 'Miseensota',
+  'members.search': 'Maqaa yookaan bilbila barbaadi…',
+  'members.enroll': 'Miseensa galmeessi',
+  'members.allStatuses': 'Haala hunda',
+  'members.name': 'Maqaa',
+  'members.plan': 'Karoora',
+  'members.expires': 'Kan dhumu',
+  'members.status': 'Haala',
+  'members.daysLeft': 'guyyoota hafan',
+  'members.daysOverdue': 'guyyoota darban',
+  'members.renew': 'Haaromsi / kaffaltii galmeessi',
+  'members.freeze': 'Dhaabi',
+  'members.unfreeze': 'Itti fufi',
+  'members.telegram': 'Telegram',
+  'members.linked': 'Walqabate',
+  'members.notLinked': 'Hin walqabanne',
+  'members.subscriptions': 'Seenaa miseensummaa',
+  'members.paymentHistory': 'Kaffaltiiwwan',
+  'members.checkInHistory': 'Seensa dhiyoo',
+  'members.fullName': 'Maqaa guutuu',
+  'members.sex': 'Saala',
+  'members.male': 'Dhiira',
+  'members.female': 'Dubartii',
+
+  // enroll
+  'enroll.title': 'Miseensa haaraa galmeessi',
+  'enroll.details': 'Odeeffannoo miseensaa',
+  'enroll.captures': 'Suuraa fuulaa',
+  'enroll.captureHint': 'Suuraa 3–5 kaasi: kallattiin ilaali, sana booda xinnoo bitaa fi mirga.',
+  'enroll.capture': 'Kaasi',
+  'enroll.retake': 'Haqi',
+  'enroll.needMore': 'Yoo xinnaate suuraa fuulaa 3 kaasi',
+  'enroll.captureAtLeast': 'Suuraan barbaachisu:',
+  'enroll.noFace': 'Fuulli hin argamne — gara kaameraatti dhiyaadhu',
+  'enroll.lowQuality': 'Qulqullinni gadi buʼaadha — ifa fooyyessi yookaan dhiyaadhu',
+  'enroll.tooSmall': 'Fuulli baayʼee xiqqaadha — dhiyaadhu',
+  'enroll.good': 'Suuraan gaariidha',
+  'enroll.plan': 'Karoora',
+  'enroll.payment': 'Kaffaltii jalqabaa',
+  'enroll.amount': 'Hamma (Birrii)',
+  'enroll.method': 'Mala',
+  'enroll.note': 'Yaadannoo',
+  'enroll.submit': 'Miseensa galmeessi',
+  'enroll.noCamera':
+    'Jimii kanaaf kaameraan cufameera — miseensi suuraa fuulaa malee galmaaʼa. Booda Qindaaʼina keessatti kaamera banuu dandeessa.',
+
+  // payments
+  'payments.title': 'Kaffaltiiwwan',
+  'payments.member': 'Miseensa',
+  'payments.amount': 'Hamma',
+  'payments.method': 'Mala',
+  'payments.markedBy': 'Kan galmeesse',
+  'payments.date': 'Guyyaa',
+  'payments.from': 'Irraa',
+  'payments.to': 'Hanga',
+  'payments.allMethods': 'Mala hunda',
+
+  // today
+  'today.title': 'Harʼa ilaalcha gabaabaa',
+  'today.subtitle': 'Harʼa maaltu taʼe, eenyutu xiyyeeffannoo barbaada',
+  'today.checkIns': 'Seensa harʼaa',
+  'today.denied': 'dhorkame',
+  'today.uniqueMembers': 'miseensota adda addaa',
+  'today.inside': 'Amma keessa jiru',
+  'today.paymentsTotal': 'Harʼa walitti qabame',
+  'today.newMembers': 'Miseensota haaraa',
+  'today.guestPasses': 'Eeyyama keessummaa',
+  'today.newMembersTitle': 'Miseensota haaraa harʼaa',
+  'today.noNewMembers': 'Harʼa miseensi haaraa hin galmoofne.',
+  'today.expiringTitle': 'Guyyoota 7 dhufan keessatti kan dhumu',
+  'today.noExpiring': 'Guyyoota 7 dhufan keessatti kan dhumu hin jiru. 🎉',
+  'today.expiredTitle': 'Guyyoota 7 darban keessatti kan dhumate',
+  'today.noExpired': 'Guyyoota 7 darban keessatti kan dhumate hin jiru.',
+  'today.expiredHint':
+    'Utuu hin baditti isaan bilbili — profaayilii isaanii irraa tuqaa tokkoon ni haaromsita.',
+  'today.paymentsTitle': 'Kaffaltii harʼaa',
+  'today.noPayments': 'Harʼa kaffaltiin hin galmoofne.',
+  'today.expiresToday': 'harʼa!',
+  'today.tomorrow': 'boru',
+  'today.daysLeft': 'guyyoota hafan',
+  'today.daysAgo': 'guyyoota dura',
+  'today.yesterday': 'kaleessa',
+  'today.plan': 'Karoora',
+  'today.joined': 'galmaaʼe',
+
+  // phone
+  'phone.search': 'Biyya barbaadi',
+  'phone.noResults': 'Biyyi hin argamne',
+
+  // monitor
+  'monitor.occupancy': 'Amma keessa jiru',
+  'monitor.eventFeed': 'Taateewwan kallattii',
+  'monitor.allowEntry': 'Seensa hayyami',
+  'monitor.approve': 'Mirkaneessi',
+  'monitor.awaitingApproval': 'mirkaneessa eegaa jira',
+  'monitor.checkOut': 'Baʼi',
+  'monitor.addGuest': 'Keessummaa dabali',
+  'monitor.guestAdded': 'Eeyyamni keessummaa uumameera',
+  'monitor.cameraError': 'Kaameraan hin argamne — hayyama ilaali',
+  'monitor.loadingModels': 'Moodeelota beekumsa fuulaa feʼaa jira…',
+  'monitor.unknown': 'Hin beekamne',
+  'monitor.noneInside': 'Amma namni seene hin jiru',
+
+  // camera
+  'camera.title': 'Madda kaameraa',
+  'camera.button': 'Kaameraa',
+  'camera.flip': 'Kaameraa jijjiiri',
+  'camera.webcam': 'Kaameraa meeshaa kanaa',
+  'camera.webcamHint': 'Kaameraa keessaa yookaan USB karaa biraawuzariitiin fayyadama.',
+  'camera.ip': 'Bilbila / kaameraa IP netwoorkii irratti',
+  'camera.ipHint':
+    'fkn. appii Android bilisaa "IP Webcam": banii → Start server → http://<ip-bilbilaa>:8080/video asitti galchi. Bilbilii fi kompiitarri kun Wi-Fi tokko irra jiraachuu qabu.',
+  'camera.test': 'Ergaa yaali',
+  'camera.ipError':
+    'Ergaan hin argamne — URL, Wi-Fi, akkasumas sarvariin appii kaameraa hojjechuu isaa mirkaneessi.',
+  'camera.permissionDenied':
+    'Hayyamni kaameraa dhorkameera. Qindaaʼina Android → Appiiwwan → Snowfall Gym → Hayyamoota keessatti hayyami.',
+  'camera.modelsFailed': 'Moodeelota beekumsa fuulaa feʼuun hin dandaʼamne. Irra deebiʼuuf tuqi.',
+
+  // guests
+  'guests.validity': 'Eeyyamni kan hojjetu',
+  'guests.today': 'Harʼa qofa',
+  'guests.captureHint':
+    'Kaameraan balbala irratti akka isa beeku suuraa fuula keessummaa yeroo tokko kaasi.',
+  'guests.create': 'Eeyyama keessummaa uumi',
+
+  // dashboard
+  'dashboard.title': 'Daashboordii',
+  'dashboard.checkInsToday': 'Seensa harʼaa',
+  'dashboard.occupancy': 'Amma keessa jiru',
+  'dashboard.revenue': 'Galii jiʼa kanaa',
+  'dashboard.expiringSoon': 'Guyyoota 7 keessatti kan dhumu',
+  'dashboard.peakHours': 'Saʼaatii hedduu (guyyoota 14 darban)',
+
+  // settings
+  'settings.title': 'Qindaaʼina',
+  'settings.gym': 'Profaayilii jimii',
+  'settings.rules': 'Seerota seensaa fi jireenya miseensummaa',
+  'settings.gracePeriod': 'Yeroo dabalataa (guyyoota)',
+  'settings.autoCheckout': 'Ofumaan baʼuu (saʼaatii booda)',
+  'settings.reminderDays': 'Yaadachiisa dhumaatii (guyyoota dura)',
+  'settings.nudgeDays': 'Yaadachiisa hafuu (guyyoota booda)',
+  'settings.threshold': 'Sadarkaa walsimannaa fuulaa',
+  'settings.closing': 'Yeroo cufaatii',
+  'settings.entryMode': 'Haala seensaa',
+  'settings.entryAuto': 'Ofumaan — miseensonni hayyamaman battalumatti seenu',
+  'settings.entryManual': 'Harkaan — hojjettoonni seensa hunda mirkaneessu',
+  'settings.entryModeHint':
+    'Haala harkaa: miseensonni beekaman hanga hojjetaan Mirkaneessi tuqutti eegu (keelloo). Dhorkaan haala lamaan keessattuu wal fakkaata.',
+  'settings.camera': 'Toʼannoo kaameraa',
+  'settings.cameraOn': 'Banaa — seensa beekumsa fuulaatiin',
+  'settings.cameraOff': 'Cufaa — jimiin kun kaameraa hin qabu',
+  'settings.cameraHint':
+    'Yoo jimiin kun kaameraa hin qabne cufi: miseensonni suuraa fuulaa malee galmaaʼu, toʼannoonis maqaa jimii agarsiisa.',
+  'settings.botToken': 'Tokenii boot Telegram',
+  'settings.plans': 'Karoorota miseensummaa',
+  'settings.addPlan': 'Karoora dabali',
+  'settings.staff': 'Herrega hojjettootaa',
+  'settings.addStaff': 'Hojjetaa dabali',
+  'settings.save': 'Olkaaʼi',
+  'settings.language': 'Afaan',
+  'settings.languageHint':
+    'Meeshaa kana irratti qofa baafata fi maqaawwan jijjiira — maqaan miseensotaa fi wanti ati galchite hundi akkuma jirutti hafa.',
+
+  // notifications
+  'notifications.title': 'Beeksisawwan',
+  'notifications.member': 'Miseensa',
+  'notifications.type': 'Gosa',
+  'notifications.status': 'Haala',
+  'notifications.message': 'Ergaa',
+  'notifications.date': 'Guyyaa',
+  'notifications.allTypes': 'Gosa hunda',
+  'notifications.allStatuses': 'Haala hunda',
+  'notifications.sent': 'Ergameera',
+  'notifications.failed': 'Hin milkoofne',
+  'notifications.skipped': 'Chaatiin hin walqabanne',
+  'notifications.skippedHint':
+    'Miseensi Telegram hin walqabsiifne — profaayilii isaanii banii linkii uumi.',
+};
+
+export type Locale = 'en' | 'am' | 'om';
+
+/**
+ * Resolved lazily rather than at module load: this module is imported by
+ * almost every component, so its top level runs before main.tsx has awaited
+ * storage.hydrate(). The first `t()` call happens during render, by which
+ * point the store is warm.
+ */
+let locale: Locale | null = null;
+
+/**
+ * Every locale's table, keyed by code. Adding a language is now one entry here
+ * plus one option in the Settings picker — neither `t()` nor `getLocale()`
+ * grows a branch per language the way the hardcoded `=== 'am'` checks did.
+ */
+const TABLES: Record<Locale, Partial<Record<StringKey, string>>> = { en, am, om };
+
+/** Source of truth for "which codes exist", derived from the tables above. */
+export const LOCALES = Object.keys(TABLES) as Locale[];
+
+export function isLocale(value: unknown): value is Locale {
+  return typeof value === 'string' && (LOCALES as readonly string[]).includes(value);
 }
 
-let locale: Locale = loadLocale();
-
 export function getLocale(): Locale {
+  if (locale === null) {
+    // Validate rather than compare: a stored code from a build that knew a
+    // language this one does not must fall back, not render as undefined.
+    const stored = storage.get('locale');
+    locale = isLocale(stored) ? stored : 'en';
+  }
   return locale;
 }
 
 /** Persists per device. Callers must re-render (the Settings page reloads). */
 export function setLocale(l: Locale): void {
   locale = l;
-  try {
-    localStorage.setItem(LOCALE_KEY, l);
-  } catch {
-    /* private-mode browsers: language just won't persist */
-  }
+  storage.set('locale', l);
 }
 
 export function t(key: StringKey): string {
-  if (locale === 'am' && am[key]) return am[key] as string;
-  return en[key];
+  // Per-key fallback, not per-language: a partial translation renders its own
+  // strings and quietly uses English for the rest, so a language can ship
+  // incomplete without leaving blanks in the UI.
+  return TABLES[getLocale()][key] ?? en[key];
 }

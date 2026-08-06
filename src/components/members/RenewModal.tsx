@@ -1,18 +1,15 @@
 import { useState, type FormEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, apiErrorMessage } from '../../lib/api';
+import { apiErrorMessage } from '../../lib/api';
 import { Modal } from '../ui/Modal';
 import { t } from '../../i18n/strings';
-import type { PaymentMethod, Plan } from '../../lib/types';
+import { useActivePlans } from '../../hooks/queries/usePlans';
+import { useRenewMember } from '../../hooks/queries/useMembers';
+import type { PaymentMethod } from '../../lib/types';
 
 const METHODS: PaymentMethod[] = ['cash', 'telebirr', 'bank', 'other'];
 
 export function RenewModal({ memberId, onClose }: { memberId: number; onClose: () => void }) {
-  const queryClient = useQueryClient();
-  const { data: plans = [] } = useQuery({
-    queryKey: ['plans'],
-    queryFn: async () => (await api.get<Plan[]>('/plans')).data.filter((p) => p.active),
-  });
+  const { data: plans = [] } = useActivePlans();
 
   const [planId, setPlanId] = useState<number | ''>('');
   const [amount, setAmount] = useState('');
@@ -21,33 +18,27 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
 
   const selected = plans.find((p) => p.id === planId);
 
-  const mutation = useMutation({
-    mutationFn: async () =>
-      (
-        await api.post(`/members/${memberId}/renew`, {
-          plan_id: planId,
-          amount: amount === '' ? undefined : Number(amount),
-          method,
-          note: note || undefined,
-        })
-      ).data,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['member', memberId] });
-      void queryClient.invalidateQueries({ queryKey: ['members'] });
-      onClose();
-    },
-  });
+  const mutation = useRenewMember(memberId);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (planId !== '') mutation.mutate();
+    if (planId === '') return;
+    mutation.mutate(
+      {
+        plan_id: planId,
+        amount: amount === '' ? undefined : Number(amount),
+        method,
+        note: note || undefined,
+      },
+      { onSuccess: onClose },
+    );
   }
 
   return (
     <Modal title={t('members.renew')} onClose={onClose}>
       <form onSubmit={onSubmit} className="space-y-4">
         {mutation.isError && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{apiErrorMessage(mutation.error)}</p>
+          <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(mutation.error)}</p>
         )}
         <div>
           <label className="label">{t('enroll.plan')}</label>

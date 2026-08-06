@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug-only overrides.
+
+  Cleartext HTTP lives here and *only* here. Live reload and a locally-run API
+  are plain http:// on a LAN IP, which Android blocks by default since API 28.
+  Because this manifest belongs to the debug source set it is merged into debug
+  builds alone — a release AAB/APK physically cannot send cleartext traffic,
+  regardless of what capacitor.config.ts said at build time.
+
+  The main manifest deliberately does not declare this attribute, so this is a
+  clean addition and needs no tools:replace.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application android:usesCleartextTraffic="true" />
+</manifest>

@@ -22,7 +22,8 @@ export interface Plan {
   name: string;
   duration_days: number;
   price: string;
-  sessions_per_day: number | null;
+  /** 1 = one session per day, null = unlimited. Enforced by a DB CHECK and the API schema. */
+  sessions_per_day: 1 | null;
   includes: Record<string, boolean>;
   allowed_hours: string | null;
   active: boolean;

@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { api, tokenStore } from '../lib/api';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { api, tokenStore, SESSION_EXPIRED_EVENT } from '../lib/api';
+import * as storage from '../lib/storage';
 import type { AuthUser } from '../lib/types';
 
 interface AuthState {
@@ -13,19 +14,13 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-function readJson<T>(key: string): T | null {
-  const raw = localStorage.getItem(key);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as T;
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => readJson<AuthUser>('authUser'));
-  const [gym, setGym] = useState<{ id: number; name: string } | null>(() => readJson('authGym'));
+  // storage.hydrate() has already run in main.tsx, so these reads are warm
+  // even on Android where the backing store is async.
+  const [user, setUser] = useState<AuthUser | null>(() => storage.getJson<AuthUser>('authUser'));
+  const [gym, setGym] = useState<{ id: number; name: string } | null>(() =>
+    storage.getJson<{ id: number; name: string }>('authGym'),
+  );
 
   function apply(data: {
     accessToken: string;
@@ -34,11 +29,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     gym: { id: number; name: string };
   }) {
     tokenStore.set(data);
-    localStorage.setItem('authUser', JSON.stringify(data.user));
-    localStorage.setItem('authGym', JSON.stringify(data.gym));
+    storage.setJson('authUser', data.user);
+    storage.setJson('authGym', data.gym);
     setUser(data.user);
     setGym(data.gym);
   }
+
+  function clearSession() {
+    tokenStore.clear();
+    setUser(null);
+    setGym(null);
+  }
+
+  // A failed token refresh clears state here rather than in the axios
+  // interceptor, so the app re-renders into the login route instead of
+  // reloading the bundle.
+  useEffect(() => {
+    const onExpired = () => clearSession();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, []);
 
   const value: AuthState = {
     user,
@@ -56,9 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     logout() {
       const refreshToken = tokenStore.refresh;
       if (refreshToken) void api.post('/auth/logout', { refreshToken }).catch(() => undefined);
-      tokenStore.clear();
-      setUser(null);
-      setGym(null);
+      clearSession();
     },
   };
 

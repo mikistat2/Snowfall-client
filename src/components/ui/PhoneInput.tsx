@@ -67,22 +67,26 @@ export function PhoneInput({ value, onChange, disabled, id }: Props) {
 
   return (
     <div className="relative" ref={wrapRef}>
+      {/* Colours come from the same semantic tokens as `.input` (index.css).
+          Hardcoding bg-white/slate-* here made the field unreadable in dark
+          mode: the box stayed white while the text inherited the light-on-dark
+          foreground colour. */}
       <div
-        className={`flex items-stretch rounded-lg border border-slate-300 ${
-          disabled ? 'bg-slate-100 opacity-60' : 'bg-white'
-        } focus-within:border-slate-500 focus-within:ring-1 focus-within:ring-slate-400`}
+        className={`flex items-stretch rounded-lg border border-line ${
+          disabled ? 'bg-surface-2 opacity-60' : 'bg-surface'
+        } focus-within:border-slate-500 focus-within:ring-1 focus-within:ring-slate-400 dark:focus-within:border-sky-500 dark:focus-within:ring-sky-500`}
       >
         <button
           type="button"
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
-          className="flex shrink-0 items-center gap-1.5 rounded-l-lg border-r border-slate-200 px-2.5 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed"
+          className="flex shrink-0 items-center gap-1.5 rounded-l-lg border-r border-line px-2.5 text-sm text-fg hover:bg-surface-2 disabled:cursor-not-allowed"
           aria-label={country.name}
         >
           <span className={`fi fi-${country.iso} rounded-[2px]`} />
           <span className="tabular-nums">{country.dial}</span>
           <svg
-            className={`h-3.5 w-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`h-3.5 w-3.5 text-fg-subtle transition-transform ${open ? 'rotate-180' : ''}`}
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -99,15 +103,15 @@ export function PhoneInput({ value, onChange, disabled, id }: Props) {
           inputMode="tel"
           autoComplete="tel-national"
           disabled={disabled}
-          className="w-full min-w-0 rounded-r-lg bg-transparent px-3 py-2 text-sm outline-none disabled:cursor-not-allowed"
+          className="w-full min-w-0 rounded-r-lg bg-transparent px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-subtle disabled:cursor-not-allowed"
           value={local}
           onChange={(e) => emit(country, e.target.value)}
         />
       </div>
 
       {open && !disabled && (
-        <div className="absolute z-30 mt-1 w-72 max-w-[85vw] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
-          <div className="border-b border-slate-100 p-2">
+        <div className="absolute z-30 mt-1 w-72 max-w-[85vw] overflow-hidden rounded-lg border border-line bg-surface shadow-lg">
+          <div className="border-b border-line p-2">
             <input
               autoFocus
               className="input"
@@ -118,20 +122,20 @@ export function PhoneInput({ value, onChange, disabled, id }: Props) {
           </div>
           <ul className="max-h-64 overflow-y-auto py-1">
             {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-slate-400">{t('phone.noResults')}</li>
+              <li className="px-3 py-2 text-sm text-fg-subtle">{t('phone.noResults')}</li>
             )}
             {filtered.map((c) => (
               <li key={`${c.iso}-${c.dial}`}>
                 <button
                   type="button"
                   onClick={() => pickCountry(c)}
-                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-slate-50 ${
-                    c.iso === country.iso ? 'bg-slate-50 font-medium' : ''
+                  className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm hover:bg-surface-2 ${
+                    c.iso === country.iso ? 'bg-surface-2 font-medium' : ''
                   }`}
                 >
                   <span className={`fi fi-${c.iso} shrink-0 rounded-[2px]`} />
-                  <span className="min-w-0 flex-1 truncate text-slate-700">{c.name}</span>
-                  <span className="shrink-0 tabular-nums text-slate-400">{c.dial}</span>
+                  <span className="min-w-0 flex-1 truncate text-fg">{c.name}</span>
+                  <span className="shrink-0 tabular-nums text-fg-subtle">{c.dial}</span>
                 </button>
               </li>
             ))}

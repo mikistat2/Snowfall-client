@@ -1,4 +1,6 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { NATIVE } from './platform';
+import * as storage from './storage';
 
 /**
  * Axios instance with JWT access/refresh handling:
@@ -9,28 +11,42 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
  * VITE_API_URL points at the API origin when client and server are deployed
  * separately (e.g. Vercel + Render). Unset in dev → relative URLs through the
  * Vite proxy.
+ *
+ * In the Android app there is no proxy and no same-origin server: the WebView
+ * is served from https://localhost, so a relative URL would resolve to the
+ * bundle itself. VITE_API_URL is therefore **required** for native builds and
+ * its absence is reported loudly rather than failing as a wall of 404s.
  */
 export const API_ORIGIN: string = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, '') ?? '';
+
+/** Non-null when the build is unusable as configured — rendered as a boot error. */
+export const API_CONFIG_ERROR: string | null =
+  NATIVE && !API_ORIGIN
+    ? 'VITE_API_URL is not set. The Android build needs an absolute API URL — see MOBILE.md.'
+    : null;
+
+if (API_CONFIG_ERROR) console.error(`[api] ${API_CONFIG_ERROR}`);
+
 const API_BASE = `${API_ORIGIN}/api/v1`;
 
 export const api = axios.create({ baseURL: API_BASE });
 
 const store = {
   get access() {
-    return localStorage.getItem('accessToken');
+    return storage.get('accessToken');
   },
   get refresh() {
-    return localStorage.getItem('refreshToken');
+    return storage.get('refreshToken');
   },
   set(tokens: { accessToken: string; refreshToken: string }) {
-    localStorage.setItem('accessToken', tokens.accessToken);
-    localStorage.setItem('refreshToken', tokens.refreshToken);
+    storage.set('accessToken', tokens.accessToken);
+    storage.set('refreshToken', tokens.refreshToken);
   },
   clear() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('authUser');
-    localStorage.removeItem('authGym');
+    storage.remove('accessToken');
+    storage.remove('refreshToken');
+    storage.remove('authUser');
+    storage.remove('authGym');
   },
 };
 
@@ -55,6 +71,14 @@ async function refreshAccessToken(): Promise<string> {
 /** Fired when the platform admin has frozen this gym (any request → 403 GYM_FROZEN). */
 export const GYM_FROZEN_EVENT = 'gym-frozen';
 
+/**
+ * Fired when the refresh token is gone or rejected. The auth context listens
+ * and clears the session, which routes back to login through React Router —
+ * a hard `window.location` assignment would reload the whole bundle and, in
+ * the Android WebView, navigate away from the app shell entirely.
+ */
+export const SESSION_EXPIRED_EVENT = 'session-expired';
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
@@ -75,7 +99,7 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         store.clear();
-        window.location.href = '/login';
+        window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
       }
     }
     throw error;

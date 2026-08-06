@@ -1,0 +1,62 @@
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import * as membersApi from '../../api/members';
+import { qk } from './keys';
+import type { MemberFilter, RenewInput } from '../../api/members';
+
+/**
+ * Anything that changes a membership moves the dashboard tiles and the list
+ * rows too, so mutations invalidate all three rather than just the record
+ * they touched.
+ */
+function invalidateMember(qc: QueryClient, memberId?: number): void {
+  if (memberId != null) void qc.invalidateQueries({ queryKey: qk.member(memberId) });
+  void qc.invalidateQueries({ queryKey: qk.membersAll });
+  void qc.invalidateQueries({ queryKey: qk.dashboard });
+  void qc.invalidateQueries({ queryKey: qk.today });
+}
+
+export function useMembers(filter: MemberFilter = {}) {
+  return useQuery({
+    queryKey: qk.members(filter),
+    queryFn: () => membersApi.listMembers(filter),
+  });
+}
+
+export function useMember(id: number) {
+  return useQuery({
+    queryKey: qk.member(id),
+    queryFn: () => membersApi.getMember(id),
+    enabled: Number.isFinite(id),
+  });
+}
+
+export function useEnrollMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: membersApi.enrollMember,
+    onSuccess: () => invalidateMember(qc),
+  });
+}
+
+export function useRenewMember(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RenewInput) => membersApi.renewMember(memberId, input),
+    onSuccess: () => {
+      invalidateMember(qc, memberId);
+      void qc.invalidateQueries({ queryKey: qk.paymentsAll });
+    },
+  });
+}
+
+export function useSetMemberFrozen(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (frozen: boolean) => membersApi.setMemberFrozen(memberId, frozen),
+    onSuccess: () => invalidateMember(qc, memberId),
+  });
+}
+
+export function useMemberTelegramLink(memberId: number) {
+  return useMutation({ mutationFn: () => membersApi.createTelegramLink(memberId) });
+}

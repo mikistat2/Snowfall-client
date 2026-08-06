@@ -53,7 +53,7 @@ export function AuditLogPage() {
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-fg-muted">
               <th className="px-4 py-3">{t('audit.when')}</th>
               <th className="px-4 py-3">{t('audit.who')}</th>
               <th className="px-4 py-3">{t('audit.action')}</th>
@@ -64,32 +64,32 @@ export function AuditLogPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-fg-subtle">
                   {t('common.loading')}
                 </td>
               </tr>
             )}
             {rows.map((r) => (
-              <tr key={r.id} className="border-b border-slate-100 align-top last:border-0">
-                <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+              <tr key={r.id} className="border-b border-line align-top last:border-0">
+                <td className="whitespace-nowrap px-4 py-3 text-fg-muted">
                   {new Date(r.created_at).toLocaleString()}
                 </td>
                 <td className="px-4 py-3 font-medium">{r.user_name ?? '—'}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs">{r.action}</span>
+                  <span className="rounded bg-surface-2 px-2 py-0.5 font-mono text-xs">{r.action}</span>
                 </td>
-                <td className="px-4 py-3 text-slate-500">
+                <td className="px-4 py-3 text-fg-muted">
                   {r.entity}
                   {r.entity_id != null ? ` #${r.entity_id}` : ''}
                 </td>
-                <td className="max-w-sm px-4 py-3 font-mono text-xs text-slate-400">
+                <td className="max-w-sm px-4 py-3 font-mono text-xs text-fg-subtle">
                   {Object.keys(r.meta ?? {}).length > 0 ? JSON.stringify(r.meta) : ''}
                 </td>
               </tr>
             ))}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-fg-subtle">
                   —
                 </td>
               </tr>

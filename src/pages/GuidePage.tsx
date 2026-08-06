@@ -32,7 +32,7 @@ export function GuidePage() {
           <a
             key={s.id}
             href={`#${s.id}`}
-            className="block rounded px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            className="block rounded px-2 py-1 text-sm text-fg-muted hover:bg-surface-2 hover:text-fg"
           >
             {s.title}
           </a>
@@ -126,7 +126,7 @@ export function GuidePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-fg-muted">
                   <th className="py-2 pr-3">Color</th>
                   <th className="py-2 pr-3">Meaning</th>
                   <th className="py-2">Door result</th>
@@ -159,7 +159,7 @@ export function GuidePage() {
               </tbody>
             </table>
           </div>
-          <p className="text-slate-500">
+          <p className="text-fg-muted">
             In one line: green = go · yellow = go, but talk to them · orange = stop (plan rule) · red =
             stop (invalid membership) · blue = guest.
           </p>
@@ -229,7 +229,7 @@ export function GuidePage() {
               <b>Frozen</b> (red at door, gray badge) — manually paused (section 9). Denied until unfrozen.
             </li>
           </ul>
-          <p className="text-slate-500">
+          <p className="text-fg-muted">
             The reminder window and grace period are per-gym settings — changing them changes when members
             turn yellow and how long they stay allowed after expiry.
           </p>
@@ -318,7 +318,7 @@ export function GuidePage() {
             </li>
             <li>Phone and computer must be on the same Wi-Fi. Mount the phone facing the entrance.</li>
           </ol>
-          <p className="text-slate-500">
+          <p className="text-fg-muted">
             The choice is per computer: the door PC can use the phone while the office PC keeps its webcam
             for enrollment. Tip: set the app's resolution to ~1280×720 and lock the phone's orientation.
           </p>
@@ -377,14 +377,14 @@ function Section({ id, title, children }: { id: string; title: string; children:
   return (
     <section id={id} className="card scroll-mt-6 space-y-3">
       <h2 className="text-lg font-semibold">{title}</h2>
-      <div className="space-y-3 text-sm leading-relaxed text-slate-700">{children}</div>
+      <div className="space-y-3 text-sm leading-relaxed text-fg">{children}</div>
     </section>
   );
 }
 
 function ColorRow({ dot, name, children }: { dot: string; name: string; children: ReactNode }) {
   return (
-    <tr className="border-b border-slate-100 last:border-0">
+    <tr className="border-b border-line last:border-0">
       <td className="whitespace-nowrap py-2.5 pr-3">
         <span className={`mr-2 inline-block h-3 w-3 rounded-full ${dot}`} />
         <b>{name}</b>
@@ -397,5 +397,5 @@ function ColorRow({ dot, name, children }: { dot: string; name: string; children
 }
 
 function Result({ children }: { children: ReactNode }) {
-  return <span className="mt-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">{children}</span>;
+  return <span className="mt-1 block text-xs font-semibold uppercase tracking-wide text-fg-subtle">{children}</span>;
 }

@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
+import { useMembers } from '../hooks/queries/useMembers';
 import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { daysLeft, daysLeftColor } from '../lib/expiry';
 import type { MemberExportRow } from '../lib/membersPdf';
-import type { Member, MemberStatus } from '../lib/types';
+import type { MemberStatus } from '../lib/types';
 
 const STATUSES: MemberStatus[] = ['active', 'expiring', 'grace', 'expired', 'frozen'];
 
@@ -35,12 +35,7 @@ export function MembersPage() {
     }
   }
 
-  const { data: members = [], isLoading } = useQuery({
-    queryKey: ['members', search, status],
-    queryFn: async () =>
-      (await api.get<Member[]>('/members', { params: { search: search || undefined, status: status || undefined } }))
-        .data,
-  });
+  const { data: members = [], isLoading } = useMembers({ search, status: status as MemberStatus | '' });
 
   return (
     <div className="space-y-4">
@@ -55,7 +50,7 @@ export function MembersPage() {
           </Link>
         </div>
       </div>
-      {exportError && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{exportError}</div>}
+      {exportError && <div className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{exportError}</div>}
 
       <div className="flex flex-wrap gap-3">
         <input
@@ -77,7 +72,7 @@ export function MembersPage() {
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-fg-muted">
               <th className="px-4 py-3">{t('members.name')}</th>
               <th className="px-4 py-3">{t('auth.phone')}</th>
               <th className="px-4 py-3">{t('members.plan')}</th>
@@ -88,19 +83,19 @@ export function MembersPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-fg-subtle">
                   {t('common.loading')}
                 </td>
               </tr>
             )}
             {members.map((m) => (
-              <tr key={m.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+              <tr key={m.id} className="border-b border-line last:border-0 hover:bg-surface-2">
                 <td className="px-4 py-3">
-                  <Link to={`/members/${m.id}`} className="font-medium text-slate-900 hover:underline">
+                  <Link to={`/members/${m.id}`} className="font-medium text-fg hover:underline">
                     {m.full_name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{m.phone}</td>
+                <td className="px-4 py-3 text-fg-muted">{m.phone}</td>
                 <td className="px-4 py-3">{m.plan_name}</td>
                 <td className="px-4 py-3">{m.expires_at ? String(m.expires_at).slice(0, 10) : '—'}</td>
                 <td className="px-4 py-3">
@@ -119,7 +114,7 @@ export function MembersPage() {
             ))}
             {!isLoading && members.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-fg-subtle">
                   —
                 </td>
               </tr>

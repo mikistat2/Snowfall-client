@@ -13,8 +13,8 @@ export function TelegramLinkModal({ url, onClose }: { url: string; onClose: () =
   return (
     <Modal title={t('telegram.linkTitle')} onClose={onClose}>
       <div className="space-y-4 text-center">
-        <img src={qr} alt="QR code" className="mx-auto h-[220px] w-[220px] rounded-lg border border-slate-200" />
-        <p className="text-sm text-slate-500">{t('telegram.scanHint')}</p>
+        <img src={qr} alt="QR code" className="mx-auto h-[220px] w-[220px] rounded-lg border border-line" />
+        <p className="text-sm text-fg-muted">{t('telegram.scanHint')}</p>
         <a href={url} target="_blank" rel="noreferrer" className="block break-all text-sm text-blue-600 hover:underline">
           {url}
         </a>

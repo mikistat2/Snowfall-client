@@ -26,10 +26,15 @@ export const statusSeverity: Record<MemberStatus, Severity> = {
   frozen: 'red',
 };
 
+/**
+ * Badge fills. The dark variants keep the same hue but flip to a dim tinted
+ * background with a light foreground, so a status reads identically in both
+ * themes without a second lookup table to drift out of sync.
+ */
 export const statusBadge: Record<MemberStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  expiring: 'bg-yellow-100 text-yellow-800',
-  grace: 'bg-orange-100 text-orange-800',
-  expired: 'bg-red-100 text-red-800',
-  frozen: 'bg-slate-200 text-slate-700',
+  active: 'bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-300',
+  expiring: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300',
+  grace: 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300',
+  expired: 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300',
+  frozen: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
 };

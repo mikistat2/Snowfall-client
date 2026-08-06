@@ -61,7 +61,7 @@ export function NotificationsPage() {
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-fg-muted">
               <th className="px-4 py-3">{t('notifications.date')}</th>
               <th className="px-4 py-3">{t('notifications.member')}</th>
               <th className="px-4 py-3">{t('notifications.type')}</th>
@@ -72,14 +72,14 @@ export function NotificationsPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-fg-subtle">
                   {t('common.loading')}
                 </td>
               </tr>
             )}
             {rows.map((n) => (
-              <tr key={n.id} className="border-b border-slate-100 align-top last:border-0">
-                <td className="whitespace-nowrap px-4 py-3 text-slate-500">
+              <tr key={n.id} className="border-b border-line align-top last:border-0">
+                <td className="whitespace-nowrap px-4 py-3 text-fg-muted">
                   {new Date(n.sent_at).toLocaleString()}
                 </td>
                 <td className="px-4 py-3">
@@ -88,10 +88,10 @@ export function NotificationsPage() {
                       {n.member_name}
                     </Link>
                   ) : (
-                    <span className="text-slate-400">admin</span>
+                    <span className="text-fg-subtle">admin</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-600">{n.type.replace(/_/g, ' ')}</td>
+                <td className="px-4 py-3 text-fg-muted">{n.type.replace(/_/g, ' ')}</td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle[n.status]}`}
@@ -104,14 +104,14 @@ export function NotificationsPage() {
                         : t('notifications.skipped')}
                   </span>
                 </td>
-                <td className="max-w-md px-4 py-3 text-slate-500">
+                <td className="max-w-md px-4 py-3 text-fg-muted">
                   <span className="line-clamp-2 whitespace-pre-line">{n.payload.text}</span>
                 </td>
               </tr>
             ))}
             {!isLoading && rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={5} className="px-4 py-8 text-center text-fg-subtle">
                   —
                 </td>
               </tr>

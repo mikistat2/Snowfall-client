@@ -13,7 +13,15 @@ export function loadModels(): Promise<void> {
     faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
     faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
     faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
-  ]).then(() => undefined);
+  ])
+    .then(() => undefined)
+    .catch((err: unknown) => {
+      // Never cache a rejection: the memo would replay the same failure for the
+      // rest of the session, so a retry (or the network coming back) could
+      // never recover. Clearing it makes the next call a real attempt.
+      loaded = null;
+      throw err;
+    });
   return loaded;
 }
 

@@ -25,13 +25,13 @@ export function FrozenGymAlert() {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/80 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl bg-surface p-8 text-center shadow-2xl">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-4xl">
           ⚠️
         </div>
-        <h2 className="text-xl font-bold text-slate-900">Account frozen</h2>
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">{message}</p>
-        <p className="mt-2 text-xs text-slate-400">
+        <h2 className="text-xl font-bold text-fg">Account frozen</h2>
+        <p className="mt-3 text-sm leading-relaxed text-fg-muted">{message}</p>
+        <p className="mt-2 text-xs text-fg-subtle">
           Your data is safe — members, payments and history are untouched. Access is restored as soon as the
           issue is resolved.
         </p>

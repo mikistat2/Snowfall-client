@@ -6,9 +6,27 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mobile:sync": "npm run build && cap sync android",
+    "mobile:open": "cap open android",
+    "mobile:run": "cap run android",
+    "mobile:copy": "npm run build && cap copy android"
   },
   "dependencies": {
+    "@capacitor/android": "^7.6.8",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/camera": "^7.0.5",
+    "@capacitor/core": "^7.6.8",
+    "@capacitor/haptics": "^7.0.5",
+    "@capacitor/network": "^7.0.4",
+    "@capacitor/preferences": "^7.0.4",
+    "@capacitor/push-notifications": "^7.0.7",
+    "@capacitor/share": "^7.0.4",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/noto-sans-ethiopic": "^5.3.0",
+    "@fontsource/orbitron": "^5.3.0",
     "@tanstack/react-query": "^5.51.0",
     "axios": "^1.7.2",
     "face-api.js": "^0.22.2",
@@ -21,6 +39,7 @@
     "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.8",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

@@ -2,17 +2,15 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) resolve to real
+         values, so the shell can pad around the status bar and gesture bar. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/png" href="/snowfall-logo.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Ethiopic:wght@400;600&family=Orbitron:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <!-- Fonts are bundled (see src/fonts.ts), not fetched from the Google CDN:
+         the Android WebView must render Amharic correctly with no network. -->
     <title>Snowfall Gym Management System</title>
-    <script type="module" crossorigin src="/assets/index-Cy3cpl4f.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-AOzpqU29.css">
+    <script type="module" crossorigin src="/assets/index-BZpWL5Go.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DEnwhULz.css">
   </head>
   <body>
     <div id="root"></div>

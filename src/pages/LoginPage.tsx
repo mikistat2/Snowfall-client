@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiErrorMessage } from '../lib/api';
+import { NATIVE } from '../lib/platform';
 import { t } from '../i18n/strings';
 import loginLogo from '../assets/images/login-logo.png';
 
@@ -33,7 +34,7 @@ export function LoginPage() {
           alt="Snowfall Gym Management System"
           className="mx-auto mb-2 w-40 rounded-xl"
         />
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
         <h1
   className="
     mt-4
@@ -72,9 +73,15 @@ export function LoginPage() {
         <button className="btn-primary w-full" disabled={busy}>
           {t('auth.login')}
         </button>
-        <Link to="/register" className="block text-center text-sm text-slate-500 hover:text-slate-800">
-          {t('auth.noAccount')}
-        </Link>
+        {/* Sign-up is web-only — App.tsx registers /register behind !NATIVE
+            because the app is installed by staff of an already-registered gym.
+            Rendering the link on the phone gave a dead tap that fell through
+            the catch-all route straight back to this screen. */}
+        {!NATIVE && (
+          <Link to="/register" className="block text-center text-sm text-fg-muted hover:text-fg">
+            {t('auth.noAccount')}
+          </Link>
+        )}
       </form>
     </div>
   );

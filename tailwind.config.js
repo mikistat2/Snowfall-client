@@ -1,8 +1,42 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  // Toggled by lib/theme.ts on <html>. Class-based rather than 'media' so the
+  // user can override the system setting from Settings.
+  darkMode: 'class',
   theme: {
     extend: {
+      // Semantic surface/text tokens backed by CSS variables (see index.css).
+      // Using these instead of raw slate shades is what lets one set of markup
+      // render correctly in both themes.
+      colors: {
+        canvas: 'rgb(var(--c-bg) / <alpha-value>)',
+        surface: 'rgb(var(--c-surface) / <alpha-value>)',
+        'surface-2': 'rgb(var(--c-surface-2) / <alpha-value>)',
+        fg: 'rgb(var(--c-fg) / <alpha-value>)',
+        'fg-muted': 'rgb(var(--c-fg-muted) / <alpha-value>)',
+        'fg-subtle': 'rgb(var(--c-fg-subtle) / <alpha-value>)',
+        line: 'rgb(var(--c-line) / <alpha-value>)',
+      },
+      spacing: {
+        // Android status bar / gesture bar. Resolve to 0 in the browser, so the
+        // same classes are safe on web.
+        'safe-t': 'env(safe-area-inset-top)',
+        'safe-b': 'env(safe-area-inset-bottom)',
+        'safe-l': 'env(safe-area-inset-left)',
+        'safe-r': 'env(safe-area-inset-right)',
+        /** Bottom tab bar (56px) + the gesture inset beneath it. */
+        'tabbar': 'calc(3.5rem + env(safe-area-inset-bottom))',
+        /** Stack header (56px) + the status bar above it. */
+        'appbar': 'calc(3.5rem + env(safe-area-inset-top))',
+      },
+      minHeight: {
+        /** Android's minimum comfortable touch target. */
+        touch: '44px',
+      },
+      minWidth: {
+        touch: '44px',
+      },
       fontFamily: {
         // Noto Sans Ethiopic renders Amharic cleanly; falls back to system sans
         sans: ['Inter', 'Noto Sans Ethiopic', 'system-ui', 'sans-serif'],
@@ -32,6 +66,15 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.35' },
         },
+        // Mobile bottom sheet (components/mobile/DetailSheet).
+        'sheet-up': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
       },
       animation: {
         'float-slow': 'float-slow 6s ease-in-out infinite',
@@ -39,6 +82,8 @@ export default {
         'gradient-pan': 'gradient-pan 6s linear infinite',
         scan: 'scan 2.8s ease-in-out infinite',
         blink: 'blink 1.4s ease-in-out infinite',
+        'sheet-up': 'sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1)',
+        'fade-in': 'fade-in 200ms ease-out',
       },
     },
   },

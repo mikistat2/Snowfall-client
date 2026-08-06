@@ -1,12 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { t, getLocale, setLocale, type Locale } from '../i18n/strings';
 import { Modal } from '../components/ui/Modal';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { PhoneInput } from '../components/ui/PhoneInput';
-import type { Gym, Plan } from '../lib/types';
+import {
+  useCreateStaff,
+  useDeleteStaff,
+  useGymSettings,
+  useStaff,
+  useUpdateGym,
+} from '../hooks/queries/useSettings';
+import { useDeletePlan, usePlans, useSavePlan } from '../hooks/queries/usePlans';
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -35,24 +42,28 @@ function LanguageSection() {
     setLocale(l);
     window.location.reload();
   }
+  // Endonyms — each language is written the way its own speakers write it.
   const options: { value: Locale; label: string }[] = [
     { value: 'en', label: 'English' },
     { value: 'am', label: 'አማርኛ' },
+    { value: 'om', label: 'Afaan Oromoo' },
   ];
   return (
     <div className="card flex flex-wrap items-center gap-4">
       <div className="min-w-0 flex-1">
         <h2 className="font-semibold">{t('settings.language')}</h2>
-        <p className="text-xs text-slate-500">{t('settings.languageHint')}</p>
+        <p className="text-xs text-fg-muted">{t('settings.languageHint')}</p>
       </div>
-      <div className="flex overflow-hidden rounded-lg border border-slate-200">
+      <div className="flex overflow-hidden rounded-lg border border-line">
         {options.map((o) => (
           <button
             key={o.value}
             type="button"
             onClick={() => choose(o.value)}
-            className={`px-4 py-2 text-sm font-medium ${
-              current === o.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'
+            // px-3 not px-4: three options with "Afaan Oromoo" among them
+            // otherwise overflow the card on a 360px phone.
+            className={`whitespace-nowrap px-3 py-2 text-sm font-medium ${
+              current === o.value ? 'bg-slate-900 text-white' : 'bg-surface text-fg-muted hover:bg-surface-2'
             }`}
           >
             {o.label}
@@ -65,11 +76,7 @@ function LanguageSection() {
 
 // ---------------------------------------------------------------- gym + rules
 function GymSection({ readOnly }: { readOnly: boolean }) {
-  const queryClient = useQueryClient();
-  const { data: gym } = useQuery({
-    queryKey: ['settings'],
-    queryFn: async () => (await api.get<Gym>('/settings')).data,
-  });
+  const { data: gym } = useGymSettings();
 
   const [form, setForm] = useState({
     name: '',
@@ -98,9 +105,16 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
     });
   }, [gym]);
 
-  const mutation = useMutation({
-    mutationFn: async () =>
-      api.put('/settings', {
+  const mutation = useUpdateGym();
+
+  const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (readOnly) return;
+    mutation.mutate(
+      {
         name: form.name,
         address: form.address || null,
         phone: form.phone || null,
@@ -115,27 +129,21 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
           entry_mode: form.entry_mode,
           camera_enabled: form.camera_enabled,
         },
-      }),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['settings'] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    },
-  });
-
-  const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }));
-
-  function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!readOnly) mutation.mutate();
+      },
+      {
+        onSuccess: () => {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 2000);
+        },
+      },
+    );
   }
 
   return (
     <form onSubmit={onSubmit} className="card space-y-4">
       <h2 className="font-semibold">{t('settings.gym')}</h2>
       {mutation.isError && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{apiErrorMessage(mutation.error)}</p>
+        <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(mutation.error)}</p>
       )}
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
@@ -199,7 +207,7 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
             <option value="auto">{t('settings.entryAuto')}</option>
             <option value="manual">{t('settings.entryManual')}</option>
           </select>
-          <p className="mt-1 text-xs text-slate-400">{t('settings.entryModeHint')}</p>
+          <p className="mt-1 text-xs text-fg-subtle">{t('settings.entryModeHint')}</p>
         </div>
         <div>
           <label className="label">{t('settings.camera')}</label>
@@ -212,7 +220,7 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
             <option value="on">{t('settings.cameraOn')}</option>
             <option value="off">{t('settings.cameraOff')}</option>
           </select>
-          <p className="mt-1 text-xs text-slate-400">{t('settings.cameraHint')}</p>
+          <p className="mt-1 text-xs text-fg-subtle">{t('settings.cameraHint')}</p>
         </div>
       </div>
       {!readOnly && (
@@ -263,7 +271,7 @@ function BotStatus() {
       )}
       {data.running &&
         (data.my_chat_linked ? (
-          <span className="text-slate-500">✓ {t('telegram.myChatLinked')}</span>
+          <span className="text-fg-muted">✓ {t('telegram.myChatLinked')}</span>
         ) : (
           <button type="button" className="btn-secondary !py-1 text-xs" onClick={() => ownerLink.mutate()}>
             {t('telegram.linkMyChat')}
@@ -279,23 +287,26 @@ const emptyPlan = {
   name: '',
   duration_days: 30,
   price: 0,
-  sessions_per_day: null as number | null,
+  // the API accepts only 1 (one session per day) or null (unlimited)
+  sessions_per_day: null as 1 | null,
   allowed_hours: '',
   includes: '' as string, // comma-separated feature names
   active: true,
 };
 
 function PlansSection() {
-  const queryClient = useQueryClient();
-  const { data: plans = [] } = useQuery({
-    queryKey: ['plans'],
-    queryFn: async () => (await api.get<Plan[]>('/plans')).data,
-  });
+  // the plan builder edits inactive plans too, so this is the unfiltered list
+  const { data: plans = [] } = usePlans();
   const [editing, setEditing] = useState<(typeof emptyPlan & { id?: number }) | null>(null);
 
-  const save = useMutation({
-    mutationFn: async (plan: typeof emptyPlan & { id?: number }) => {
-      const payload = {
+  const save = useSavePlan();
+  const remove = useDeletePlan();
+
+  /** Form shape → API shape: `includes` is a comma-separated field in the UI. */
+  function submitPlan(plan: typeof emptyPlan & { id?: number }) {
+    save.mutate(
+      {
+        id: plan.id,
         name: plan.name,
         duration_days: Number(plan.duration_days),
         price: Number(plan.price),
@@ -309,19 +320,10 @@ function PlansSection() {
             .map((k) => [k, true]),
         ),
         active: plan.active,
-      };
-      return plan.id ? api.put(`/plans/${plan.id}`, payload) : api.post('/plans', payload);
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['plans'] });
-      setEditing(null);
-    },
-  });
-
-  const remove = useMutation({
-    mutationFn: async (id: number) => api.delete(`/plans/${id}`),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['plans'] }),
-  });
+      },
+      { onSuccess: () => setEditing(null) },
+    );
+  }
 
   return (
     <section className="card space-y-3">
@@ -335,22 +337,22 @@ function PlansSection() {
       <table className="w-full min-w-[520px] text-sm">
         <tbody>
           {plans.map((p) => (
-            <tr key={p.id} className={`border-b border-slate-100 last:border-0 ${p.active ? '' : 'opacity-50'}`}>
+            <tr key={p.id} className={`border-b border-line last:border-0 ${p.active ? '' : 'opacity-50'}`}>
               <td className="py-2 font-medium">{p.name}</td>
-              <td className="py-2 text-slate-500">
+              <td className="py-2 text-fg-muted">
                 {p.duration_days} {t('common.days')}
               </td>
               <td className="py-2">
                 {Number(p.price)} {t('common.birr')}
               </td>
-              <td className="py-2 text-xs text-slate-500">
+              <td className="py-2 text-xs text-fg-muted">
                 {p.sessions_per_day === 1 ? '1 session/day' : 'unlimited'}
                 {p.allowed_hours ? ` · ${p.allowed_hours}` : ''}
                 {Object.keys(p.includes ?? {}).length > 0 ? ` · ${Object.keys(p.includes).join(', ')}` : ''}
               </td>
               <td className="py-2 text-right">
                 <button
-                  className="text-xs text-slate-500 hover:text-slate-900"
+                  className="text-xs text-fg-muted hover:text-fg"
                   onClick={() =>
                     setEditing({
                       id: p.id,
@@ -382,11 +384,11 @@ function PlansSection() {
             className="space-y-3"
             onSubmit={(e) => {
               e.preventDefault();
-              save.mutate(editing);
+              submitPlan(editing);
             }}
           >
             {save.isError && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{apiErrorMessage(save.error)}</p>
+              <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(save.error)}</p>
             )}
             <div>
               <label className="label">{t('members.name')}</label>
@@ -449,35 +451,23 @@ function PlansSection() {
 }
 
 // ---------------------------------------------------------------- staff
-interface Staff {
-  id: number;
-  name: string;
-  email: string;
-  role: 'owner' | 'staff';
-}
 
 function StaffSection() {
-  const queryClient = useQueryClient();
-  const { data: staff = [] } = useQuery({
-    queryKey: ['staff'],
-    queryFn: async () => (await api.get<Staff[]>('/staff')).data,
-  });
+  const { data: staff = [] } = useStaff();
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
 
-  const create = useMutation({
-    mutationFn: async () => api.post('/staff', form),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['staff'] });
-      setAdding(false);
-      setForm({ name: '', email: '', password: '' });
-    },
-  });
+  const create = useCreateStaff();
+  const remove = useDeleteStaff();
 
-  const remove = useMutation({
-    mutationFn: async (id: number) => api.delete(`/staff/${id}`),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['staff'] }),
-  });
+  function submitStaff() {
+    create.mutate(form, {
+      onSuccess: () => {
+        setAdding(false);
+        setForm({ name: '', email: '', password: '' });
+      },
+    });
+  }
 
   return (
     <section className="card space-y-3">
@@ -491,10 +481,10 @@ function StaffSection() {
       <table className="w-full min-w-[420px] text-sm">
         <tbody>
           {staff.map((s) => (
-            <tr key={s.id} className="border-b border-slate-100 last:border-0">
+            <tr key={s.id} className="border-b border-line last:border-0">
               <td className="py-2 font-medium">{s.name}</td>
-              <td className="py-2 text-slate-500">{s.email}</td>
-              <td className="py-2 text-xs uppercase text-slate-400">{s.role}</td>
+              <td className="py-2 text-fg-muted">{s.email}</td>
+              <td className="py-2 text-xs uppercase text-fg-subtle">{s.role}</td>
               <td className="py-2 text-right">
                 {s.role !== 'owner' && (
                   <button className="text-xs text-red-500 hover:text-red-700" onClick={() => remove.mutate(s.id)}>
@@ -514,11 +504,11 @@ function StaffSection() {
             className="space-y-3"
             onSubmit={(e) => {
               e.preventDefault();
-              create.mutate();
+              submitStaff();
             }}
           >
             {create.isError && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{apiErrorMessage(create.error)}</p>
+              <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(create.error)}</p>
             )}
             <div>
               <label className="label">{t('members.name')}</label>

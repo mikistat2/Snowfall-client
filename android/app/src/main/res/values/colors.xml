@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Slate-900. The single source of truth for the launch background: it must
+      match SplashScreen.backgroundColor in capacitor.config.ts and the field
+      baked into drawable*/splash.png, otherwise the colour visibly shifts as
+      the system splash hands over to the WebView.
+    -->
+    <color name="splashBackground">#0F172A</color>
+</resources>

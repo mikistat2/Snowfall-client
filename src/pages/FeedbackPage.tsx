@@ -38,14 +38,14 @@ export function FeedbackPage() {
   return (
     <div className="max-w-2xl space-y-4">
       <h1 className="text-2xl font-bold">{t('feedback.title')}</h1>
-      <p className="text-sm text-slate-600">{t('feedback.intro')}</p>
+      <p className="text-sm text-fg-muted">{t('feedback.intro')}</p>
 
       <form onSubmit={onSubmit} className="card space-y-4">
         {mutation.isSuccess && (
           <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">{t('feedback.thanks')}</p>
         )}
         {mutation.isError && (
-          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{apiErrorMessage(mutation.error)}</p>
+          <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(mutation.error)}</p>
         )}
 
         <div className="grid gap-3 sm:grid-cols-2">

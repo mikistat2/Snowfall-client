@@ -3,8 +3,60 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Theme tokens. Every shared surface reads these rather than a literal slate
+   * shade, so light and dark stay in step and there is only one place to
+   * adjust. Values are space-separated RGB channels so Tailwind's
+   * <alpha-value> syntax (bg-surface/60) keeps working.
+   *
+   * The .dark class is set on <html> by lib/theme.ts.
+   */
+  :root {
+    --c-bg: 241 245 249; /* slate-100 */
+    --c-surface: 255 255 255; /* white */
+    --c-surface-2: 248 250 252; /* slate-50  — hover/striping */
+    --c-fg: 15 23 42; /* slate-900 */
+    --c-fg-muted: 100 116 139; /* slate-500 */
+    --c-fg-subtle: 148 163 184; /* slate-400 */
+    --c-line: 226 232 240; /* slate-200 */
+  }
+
+  .dark {
+    /* Gym floors are dim; the dark palette is deliberately not pure black so
+       elevated surfaces remain distinguishable from the page background. */
+    --c-bg: 2 6 23; /* slate-950 */
+    --c-surface: 15 23 42; /* slate-900 */
+    --c-surface-2: 30 41 59; /* slate-800 */
+    --c-fg: 241 245 249; /* slate-100 */
+    --c-fg-muted: 148 163 184; /* slate-400 */
+    --c-fg-subtle: 100 116 139; /* slate-500 */
+    --c-line: 51 65 85; /* slate-700 */
+  }
+
+  html {
+    /* Painted behind the WebView during overscroll, so it must follow the
+       theme or a white band flashes at the edges of the Android app. */
+    background-color: rgb(var(--c-bg));
+  }
+
   body {
-    @apply bg-slate-100 text-slate-900 antialiased;
+    @apply bg-canvas text-fg antialiased;
+  }
+
+  /* Native apps do not have a text-selection affordance on chrome; keep it for
+     genuine content only. Inputs re-enable it below. */
+  .native-app {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    overscroll-behavior-y: none;
+  }
+
+  .native-app input,
+  .native-app textarea,
+  .native-app [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 
@@ -13,25 +65,38 @@
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-slate-900 text-white hover:bg-slate-700;
+    @apply btn bg-slate-900 text-white hover:bg-slate-700 dark:bg-sky-600 dark:text-white dark:hover:bg-sky-500;
   }
   .btn-secondary {
-    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+    @apply btn border border-line bg-surface text-fg hover:bg-surface-2;
   }
   .btn-danger {
     @apply btn bg-red-600 text-white hover:bg-red-500;
   }
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-400;
+    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-slate-500 focus:ring-1 focus:ring-slate-400 dark:focus:border-sky-500 dark:focus:ring-sky-500;
   }
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500;
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-fg-muted;
   }
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-xl border border-line bg-surface p-5 shadow-sm;
   }
   /* gym name display treatment — matches the Snowfall brand mark on the landing page */
   .gym-name {
     @apply font-display font-extrabold uppercase tracking-wider bg-gradient-to-br from-sky-400 via-sky-500 to-sky-700 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(56,189,248,0.4)];
+  }
+
+  /* --- mobile shell helpers ------------------------------------------- */
+
+  /* Every interactive element in the mobile shell must clear 44px. */
+  .touch-target {
+    @apply flex min-h-touch min-w-touch items-center justify-center;
+  }
+
+  /* Scroll region between a fixed stack header and the bottom tab bar. */
+  .mobile-scroll {
+    @apply flex-1 overflow-y-auto overscroll-contain;
+    -webkit-overflow-scrolling: touch;
   }
 }

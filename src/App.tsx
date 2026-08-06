@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
+import { useMobileShell } from './hooks/useIsMobile';
+import { NATIVE } from './lib/platform';
 import { t } from './i18n/strings';
 import { Logo } from './components/ui/Logo';
 import { FrozenGymAlert } from './components/ui/FrozenGymAlert';
 import { LiveDate } from './components/ui/LiveDate';
+import { MobileShell } from './components/mobile/MobileShell';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterGymPage } from './pages/RegisterGymPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -22,21 +25,41 @@ import { LandingPage } from './pages/LandingPage';
 import { PricingPage } from './pages/PricingPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PlatformAdminPage } from './pages/PlatformAdminPage';
+import { MorePage } from './pages/mobile/MorePage';
+import { LivePage } from './pages/mobile/LivePage';
+import { HomePage } from './pages/mobile/HomePage';
 
 export function App() {
   const { user } = useAuth();
+  const mobile = useMobileShell();
+
+  // The desktop sidebar is meaningless on a phone, and the mobile tab bar is
+  // wrong on a wide screen — one shell or the other, never both.
+  const Shell = mobile ? MobileShell : Layout;
+
   return (
     <Routes>
-      <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <LandingPage />} />
+      {/* Marketing and sign-up flows are web-only: the app is installed by
+          staff of an already-registered gym, so it opens straight at login. */}
+      {!NATIVE && <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <LandingPage />} />}
+      {!NATIVE && <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />}
+      {!NATIVE && <Route path="/pricing" element={<PricingPage />} />}
+      {/* hidden platform-owner control panel — own auth, independent of gym
+          sessions, and never shipped to the phone */}
+      {!NATIVE && <Route path="/platform" element={<PlatformAdminPage />} />}
+
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      {/* hidden platform-owner control panel — own auth, independent of gym sessions */}
-      <Route path="/platform" element={<PlatformAdminPage />} />
-      <Route element={user ? <Layout /> : <Navigate to="/welcome" replace />}>
-        <Route path="/" element={<DashboardPage />} />
+
+      <Route element={user ? <Shell /> : <Navigate to={NATIVE ? '/login' : '/welcome'} replace />}>
+        {/* Home is the one screen with a genuinely different design per form
+            factor: a phone-native hero + triage list, versus the desktop
+            dashboard with its peak-hours chart. The rest of the app shares one
+            implementation across both shells. */}
+        <Route path="/" element={mobile ? <HomePage /> : <DashboardPage />} />
         <Route path="/today" element={<TodayPage />} />
-        <Route path="/monitor" element={<MonitorPage />} />
+        {/* the recognition loop belongs to the entrance kiosk, not the phone */}
+        {!NATIVE && <Route path="/monitor" element={<MonitorPage />} />}
+        <Route path="/live" element={<LivePage />} />
         <Route path="/members" element={<MembersPage />} />
         <Route path="/members/enroll" element={<EnrollPage />} />
         <Route path="/members/:id" element={<MemberDetailPage />} />
@@ -46,6 +69,7 @@ export function App() {
         <Route path="/guide" element={<GuidePage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/more" element={<MorePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
@@ -75,11 +99,11 @@ function Layout() {
   return (
     <div className="flex min-h-screen">
       {/* mobile top bar */}
-      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2.5 border-b border-slate-200 bg-white px-3 md:hidden">
+      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-2.5 border-b border-line bg-surface px-3 md:hidden">
         <button
           aria-label="Open menu"
           onClick={() => setMenuOpen(true)}
-          className="rounded-lg p-2 text-slate-600 hover:bg-slate-100"
+          className="rounded-lg p-2 text-fg-muted hover:bg-surface-2"
         >
           <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M3 5h14M3 10h14M3 15h14" />
@@ -87,7 +111,7 @@ function Layout() {
         </button>
         <Logo size="h-8 w-8" tile />
         <div className="min-w-0">
-          <div className="truncate text-base font-extrabold text-sky-600">{gym?.name ?? t('app.name')}</div>
+          <div className="truncate text-base font-extrabold text-sky-600 dark:text-sky-400">{gym?.name ?? t('app.name')}</div>
         </div>
       </header>
 
@@ -97,20 +121,20 @@ function Layout() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white transition-transform duration-200 md:static md:z-auto md:w-56 md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 shrink-0 flex-col border-r border-line bg-surface transition-transform duration-200 md:static md:z-auto md:w-56 md:translate-x-0 ${
           menuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center gap-2.5 border-b border-slate-200 px-4 py-4">
+        <div className="flex items-center gap-2.5 border-b border-line px-4 py-4">
           <Logo size="h-12 w-12" tile />
           <div className="min-w-0">
-            <div className="truncate text-lg font-extrabold text-sky-600">{gym?.name ?? t('app.name')}</div>
-            <div className="truncate text-xs text-slate-500">{user?.name}</div>
+            <div className="truncate text-lg font-extrabold text-sky-600 dark:text-sky-400">{gym?.name ?? t('app.name')}</div>
+            <div className="truncate text-xs text-fg-muted">{user?.name}</div>
           </div>
           <button
             aria-label="Close menu"
             onClick={() => setMenuOpen(false)}
-            className="ml-auto rounded-lg p-1.5 text-xl leading-none text-slate-400 hover:text-slate-600 md:hidden"
+            className="ml-auto rounded-lg p-1.5 text-xl leading-none text-fg-subtle hover:text-fg-muted md:hidden"
           >
             ×
           </button>
@@ -124,7 +148,7 @@ function Layout() {
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `block rounded-lg px-3 py-2 text-sm font-medium ${
-                  isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  isActive ? 'bg-slate-900 text-white dark:bg-sky-600' : 'text-fg-muted hover:bg-surface-2'
                 }`
               }
             >
@@ -134,7 +158,7 @@ function Layout() {
         </nav>
         <button
           onClick={logout}
-          className="border-t border-slate-200 px-5 py-3 text-left text-sm text-slate-500 hover:text-slate-800"
+          className="border-t border-line px-5 py-3 text-left text-sm text-fg-muted hover:text-fg"
         >
           {t('nav.logout')}
         </button>
@@ -142,7 +166,7 @@ function Layout() {
       <main className="min-w-0 flex-1 p-4 pt-[4.5rem] md:p-6 md:pt-6">
         {/* gym name + today's date, visible on every page.
             Phone: stacked and centered. sm+: name centered, date pinned right. */}
-        <div className="mb-4 flex flex-col items-center gap-1 border-b border-slate-200 pb-2 sm:relative sm:min-h-[2.5rem] sm:flex-row sm:justify-center">
+        <div className="mb-4 flex flex-col items-center gap-1 border-b border-line pb-2 sm:relative sm:min-h-[2.5rem] sm:flex-row sm:justify-center">
           <div className="gym-name w-full min-w-0 truncate text-center text-2xl leading-tight sm:max-w-[60%] sm:text-4xl">
             {showGymName ? gym?.name ?? t('app.name') : ''}
           </div>

@@ -1,4 +1,5 @@
 import { API_ORIGIN, tokenStore } from './api';
+import * as storage from './storage';
 
 /**
  * Camera source is a per-device choice (each monitor PC/phone picks its own),
@@ -15,7 +16,7 @@ export type CameraSource = { type: 'webcam' } | { type: 'ip'; url: string };
 /** Elements face-api can read frames from. */
 export type CameraElement = HTMLVideoElement | HTMLImageElement;
 
-const KEY = 'cameraSource';
+const KEY = 'cameraSource' as const;
 
 /**
  * IP/phone cameras only work when the server shares the gym's LAN, so the
@@ -26,20 +27,13 @@ export const IP_CAMERA_ENABLED = import.meta.env.VITE_ENABLE_IP_CAMERA === 'true
 
 export function getCameraSource(): CameraSource {
   if (!IP_CAMERA_ENABLED) return { type: 'webcam' };
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as CameraSource;
-      if (parsed.type === 'ip' && typeof parsed.url === 'string' && parsed.url) return parsed;
-    }
-  } catch {
-    /* fall through to default */
-  }
+  const parsed = storage.getJson<CameraSource>(KEY);
+  if (parsed?.type === 'ip' && typeof parsed.url === 'string' && parsed.url) return parsed;
   return { type: 'webcam' };
 }
 
 export function setCameraSource(source: CameraSource): void {
-  localStorage.setItem(KEY, JSON.stringify(source));
+  storage.setJson(KEY, source);
 }
 
 /**

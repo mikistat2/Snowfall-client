@@ -49,6 +49,7 @@ export function RegisterGymPage() {
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
+      
       setBusy(false);
     }
   }

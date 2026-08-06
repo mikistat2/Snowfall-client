@@ -1,20 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '../../lib/api';
 import { Modal } from '../ui/Modal';
 import { t } from '../../i18n/strings';
-import type { CheckIn } from '../../lib/types';
+import { useCheckOut, useOpenCheckIns } from '../../hooks/queries/useCheckIns';
 
 export function CheckoutModal({ onClose }: { onClose: () => void }) {
-  const queryClient = useQueryClient();
-  const { data: open = [] } = useQuery({
-    queryKey: ['check-ins-open'],
-    queryFn: async () => (await api.get<CheckIn[]>('/check-ins/open')).data,
-  });
-
-  const mutation = useMutation({
-    mutationFn: async (id: number) => api.post(`/check-ins/${id}/checkout`),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['check-ins-open'] }),
-  });
+  const { data: open = [] } = useOpenCheckIns();
+  const mutation = useCheckOut();
 
   return (
     <Modal title={t('monitor.checkOut')} onClose={onClose}>

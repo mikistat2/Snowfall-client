@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The field behind the adaptive-icon foreground. Slate-900, matching the
+      splash background in capacitor.config.ts so the launch sequence does not
+      change colour underneath the mark.
+
+      It must stay dark: the Snowfall logo's lifter is white, so on the stock
+      white background the figure disappears and only the snowflake reads.
+    -->
+    <color name="ic_launcher_background">#0F172A</color>
+</resources>
