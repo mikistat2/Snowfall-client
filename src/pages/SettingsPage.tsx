@@ -50,20 +50,29 @@ function LanguageSection() {
   ];
   return (
     <div className="card flex flex-wrap items-center gap-4">
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 sm:basis-auto">
         <h2 className="font-semibold">{t('settings.language')}</h2>
         <p className="text-xs text-fg-muted">{t('settings.languageHint')}</p>
       </div>
-      <div className="flex overflow-hidden rounded-lg border border-line">
+
+      {/* Phone: a full-width 3-up grid on its own line — equal columns keep the
+          control from overflowing a 360px card however long a label is, and
+          grid stretches every cell to match the tallest, so a label that wraps
+          to two lines does not leave the row ragged. Tablet and up: the
+          original inline segmented control. */}
+      <div className="grid w-full grid-cols-3 divide-x divide-line overflow-hidden rounded-lg border border-line sm:flex sm:w-auto">
         {options.map((o) => (
           <button
             key={o.value}
             type="button"
+            aria-pressed={current === o.value}
             onClick={() => choose(o.value)}
-            // px-3 not px-4: three options with "Afaan Oromoo" among them
-            // otherwise overflow the card on a 360px phone.
-            className={`whitespace-nowrap px-3 py-2 text-sm font-medium ${
-              current === o.value ? 'bg-slate-900 text-white' : 'bg-surface text-fg-muted hover:bg-surface-2'
+            className={`flex min-h-touch items-center justify-center px-2 py-2 text-center text-[13px] font-medium leading-tight sm:px-4 sm:text-sm ${
+              current === o.value
+                ? // slate-900 IS the dark-mode card surface, so the selected
+                  // pill vanished in dark mode — accent it instead.
+                  'bg-slate-900 text-white dark:bg-sky-600'
+                : 'bg-surface text-fg-muted hover:bg-surface-2'
             }`}
           >
             {o.label}
