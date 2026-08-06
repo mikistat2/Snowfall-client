@@ -7,10 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "mobile:sync": "npm run build && cap sync android",
+    "mobile:sync": "npm run build && cap sync android && node scripts/strip-web-only-assets.mjs",
     "mobile:open": "cap open android",
     "mobile:run": "cap run android",
-    "mobile:copy": "npm run build && cap copy android"
+    "mobile:copy": "npm run build && cap copy android && node scripts/strip-web-only-assets.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.6.8",
