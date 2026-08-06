@@ -2,7 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { t, getLocale, setLocale, type Locale } from '../i18n/strings';
+import { t, getLocale, setLocale, type Locale, type StringKey } from '../i18n/strings';
+import { useTheme } from '../hooks/useTheme';
+import { useMobileShell } from '../hooks/useIsMobile';
+import type { ThemeMode } from '../lib/theme';
 import { Modal } from '../components/ui/Modal';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { PhoneInput } from '../components/ui/PhoneInput';
@@ -18,15 +21,102 @@ import { useDeletePlan, usePlans, useSavePlan } from '../hooks/queries/usePlans'
 export function SettingsPage() {
   const { user } = useAuth();
   const isOwner = user?.role === 'owner';
+  // The mobile shell already owns Appearance under More, so showing it here too
+  // would put two identical controls two taps apart. Web has no other home for
+  // it, which is the gap this section fills.
+  const mobile = useMobileShell();
 
   return (
     <div className="max-w-4xl space-y-5">
       <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
+      {!mobile && <AppearanceSection />}
       <LanguageSection />
       <GymSection readOnly={!isOwner} />
       <PlansSection />
       {isOwner && <StaffSection />}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------- appearance
+/**
+ * Light/dark theme — the web counterpart of the phone's More → Appearance
+ * control, which until now was the only place a theme could be pinned. Same
+ * store (lib/theme), so the two stay consistent per device.
+ *
+ * No reload here, unlike the language switch: `useTheme` subscribes to the
+ * store, so the class on <html> and every component update together.
+ */
+const THEME_OPTIONS: readonly { mode: ThemeMode; labelKey: StringKey }[] = [
+  { mode: 'system', labelKey: 'more.theme.system' },
+  { mode: 'light', labelKey: 'more.theme.light' },
+  { mode: 'dark', labelKey: 'more.theme.dark' },
+];
+
+function AppearanceSection() {
+  const { mode, setMode } = useTheme();
+
+  return (
+    <div className="card flex flex-wrap items-center gap-4">
+      <div className="min-w-0 flex-1 sm:basis-auto">
+        {/* reuses the phone's label rather than duplicating "Appearance" in
+            three languages — same control, same word */}
+        <h2 className="font-semibold">{t('more.appearance')}</h2>
+        <p className="text-xs text-fg-muted">{t('settings.appearanceHint')}</p>
+      </div>
+
+      <div
+        role="radiogroup"
+        aria-label={t('more.appearance')}
+        className="grid w-full grid-cols-3 divide-x divide-line overflow-hidden rounded-lg border border-line sm:flex sm:w-auto"
+      >
+        {THEME_OPTIONS.map((option) => {
+          const selected = mode === option.mode;
+          return (
+            <button
+              key={option.mode}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setMode(option.mode)}
+              className={`flex min-h-touch items-center justify-center gap-1.5 px-2 py-2 text-center text-[13px] font-medium leading-tight transition-colors sm:px-4 sm:text-sm ${
+                selected ? 'bg-slate-900 text-white dark:bg-sky-600' : 'bg-surface text-fg-muted hover:bg-surface-2'
+              }`}
+            >
+              <ThemeIcon mode={option.mode} className="h-4 w-4 shrink-0" />
+              {t(option.labelKey)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ThemeIcon({ mode, className }: { mode: ThemeMode; className?: string }) {
+  if (mode === 'light') {
+    return (
+      <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden>
+        <path d="M10 3a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0 1a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zM3 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H4a1 1 0 0 1-1-1zm12 0a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1zM5.05 5.05a1 1 0 0 1 1.41 0l.71.71a1 1 0 0 1-1.41 1.41l-.71-.71a1 1 0 0 1 0-1.41zm7.78 7.78a1 1 0 0 1 1.41 0l.71.71a1 1 0 0 1-1.41 1.41l-.71-.71a1 1 0 0 1 0-1.41zm2.12-7.78a1 1 0 0 1 0 1.41l-.71.71a1 1 0 1 1-1.41-1.41l.71-.71a1 1 0 0 1 1.41 0zM7.17 12.83a1 1 0 0 1 0 1.41l-.71.71a1 1 0 0 1-1.41-1.41l.71-.71a1 1 0 0 1 1.41 0z" />
+      </svg>
+    );
+  }
+  if (mode === 'dark') {
+    return (
+      <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden>
+        <path d="M17.29 12.79A8 8 0 0 1 7.21 2.71a8.001 8.001 0 1 0 10.08 10.08z" />
+      </svg>
+    );
+  }
+  // system — a monitor, matching "follow the machine"
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" className={className} aria-hidden>
+      <path
+        fillRule="evenodd"
+        d="M3 5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3.5l.4 2H13a1 1 0 1 1 0 2H7a1 1 0 1 1 0-2h1.1l.4-2H5a2 2 0 0 1-2-2V5zm2 0v7h10V5H5z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }
 

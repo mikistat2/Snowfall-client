@@ -191,6 +191,8 @@ const en = {
   'settings.language': 'Language',
   'settings.languageHint':
     'Changes menus and labels on this device only — member names and everything you typed stay exactly as entered.',
+  'settings.appearanceHint':
+    'Applies to this device only. “System” follows your computer’s own light/dark setting.',
 
   // telegram / notifications
   'nav.notifications': 'Notifications',
@@ -523,6 +525,8 @@ const am: Partial<Record<StringKey, string>> = {
   'settings.language': 'ቋንቋ',
   'settings.languageHint':
     'ለዚህ መሣሪያ ምናሌዎችን እና መለያ ጽሁፎችን ብቻ ይቀይራል — የአባላት ስሞች እና ያስገቡት መረጃ በሙሉ እንደጻፉት ይቆያል።',
+  'settings.appearanceHint':
+    'ለዚህ መሣሪያ ብቻ ይሠራል። “ሲስተም” የኮምፒውተርዎን የብርሃን/ጨለማ ቅንብር ይከተላል።',
 
   // telegram / notifications
   'nav.notifications': 'ማሳወቂያዎች',
@@ -955,6 +959,8 @@ const om: Partial<Record<StringKey, string>> = {
   'settings.language': 'Afaan',
   'settings.languageHint':
     'Meeshaa kana irratti qofa baafata fi maqaawwan jijjiira — maqaan miseensotaa fi wanti ati galchite hundi akkuma jirutti hafa.',
+  'settings.appearanceHint':
+    'Meeshaa kana irratti qofa hojjeta. “Sirna” qindaaʼina ifaa/dukkanaaʼaa kompiitara keetii hordofa.',
 
   // notifications
   'notifications.title': 'Beeksisawwan',
