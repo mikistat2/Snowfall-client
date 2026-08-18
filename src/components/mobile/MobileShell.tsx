@@ -15,6 +15,8 @@ import type { StringKey } from '../../i18n/strings';
 /** Longest-prefix wins, so /members/enroll beats /members. */
 const TITLES: readonly (readonly [string, StringKey])[] = [
   ['/members/enroll', 'enroll.title'],
+  // more specific than '/members', so it must stay above it
+  ['/members/previous', 'prev.title'],
   ['/members', 'nav.members'],
   ['/payments', 'nav.payments'],
   ['/notifications', 'nav.notifications'],
