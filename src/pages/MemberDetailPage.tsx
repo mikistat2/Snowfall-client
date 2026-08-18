@@ -8,6 +8,7 @@ import { daysLeft, daysLeftColor } from '../lib/expiry';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { RenewModal } from '../components/members/RenewModal';
 import { RemoveMemberModal } from '../components/members/RemoveMemberModal';
+import { EditMemberModal } from '../components/members/EditMemberModal';
 import { useMember, useMemberTelegramLink, useSetMemberFrozen } from '../hooks/queries/useMembers';
 import { useAuth } from '../hooks/useAuth';
 import { qk } from '../hooks/queries/keys';
@@ -19,6 +20,7 @@ export function MemberDetailPage() {
   const { user } = useAuth();
   const [renewOpen, setRenewOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data, isLoading } = useMember(memberId);
 
@@ -77,6 +79,9 @@ export function MemberDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button className="btn-secondary" onClick={() => setEditOpen(true)}>
+            {t('edit.action')}
+          </button>
           <button className="btn-secondary" onClick={() => linkMutation.mutate()} disabled={linkMutation.isPending}>
             {member.telegram_chat_id ? t('telegram.relink') : t('telegram.link')}
           </button>
@@ -169,6 +174,9 @@ export function MemberDetailPage() {
         <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(linkMutation.error)}</p>
       )}
 
+      {editOpen && (
+        <EditMemberModal member={member} subscription={current} onClose={() => setEditOpen(false)} />
+      )}
       {renewOpen && <RenewModal memberId={memberId} onClose={() => setRenewOpen(false)} />}
       {removeOpen && (
         <RemoveMemberModal

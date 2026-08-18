@@ -62,6 +62,29 @@ export interface PreviousMemberInput {
   payment?: { amount?: number; method: PaymentMethod; note?: string };
 }
 
+/**
+ * Admin correction of an existing member — a patch, so anything left out keeps
+ * the value it already has.
+ *
+ * `phone` and `sex` are nullable rather than merely optional: `null` clears a
+ * value that was typed wrong, which `undefined` (= don't touch) cannot express.
+ * All dates are Gregorian "YYYY-MM-DD"; the form converts from the Ethiopian
+ * calendar before it gets here, exactly like the previous-member page.
+ */
+export interface UpdateMemberInput {
+  full_name?: string;
+  phone?: string | null;
+  sex?: 'male' | 'female' | null;
+  photo_url?: string | null;
+  joined_at?: string;
+  /** Rewrites the member's current period in place — never takes a payment. */
+  subscription?: {
+    plan_id?: number;
+    starts_at?: string;
+    expires_at?: string;
+  };
+}
+
 export interface RenewInput {
   plan_id: number;
   amount?: number;
@@ -94,6 +117,11 @@ export async function enrollMember(input: EnrollInput): Promise<Member> {
 
 export async function enrollPreviousMember(input: PreviousMemberInput): Promise<Member> {
   const { data } = await api.post<Member>('/members/previous', input);
+  return data;
+}
+
+export async function updateMember(id: number, input: UpdateMemberInput): Promise<Member> {
+  const { data } = await api.put<Member>(`/members/${id}`, input);
   return data;
 }
 

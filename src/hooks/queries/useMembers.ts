@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import * as membersApi from '../../api/members';
 import { qk } from './keys';
-import type { MemberFilter, RenewInput } from '../../api/members';
+import type { MemberFilter, RenewInput, UpdateMemberInput } from '../../api/members';
 
 /**
  * Anything that changes a membership moves the dashboard tiles and the list
@@ -47,6 +47,18 @@ export function useEnrollPreviousMember() {
       invalidateMember(qc);
       void qc.invalidateQueries({ queryKey: qk.paymentsAll });
     },
+  });
+}
+
+/**
+ * Admin correction. Editing the dates changes the member's status and their
+ * days-left count, so this invalidates the same three caches a renewal does.
+ */
+export function useUpdateMember(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateMemberInput) => membersApi.updateMember(memberId, input),
+    onSuccess: () => invalidateMember(qc, memberId),
   });
 }
 
