@@ -5,6 +5,8 @@ import { platformApi, platformToken, platformProfile, type PlatformPerms, type P
 import { apiErrorMessage } from '../lib/api';
 import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
+import { BillingAdmin } from '../components/billing/BillingAdmin';
+import { RecordPaymentSection } from '../components/billing/RecordPaymentSection';
 import loginLogo from "../assets/images/login-logo.png";
 
 /**
@@ -45,6 +47,8 @@ interface GymRow {
   approved_at: string | null;
   subscription_ends_at: string | null;
   is_trial: boolean;
+  /** Permanently exempt from the subscription paywall. */
+  comped?: boolean;
   created_at: string;
   owner_name: string | null;
   owner_email: string | null;
@@ -343,6 +347,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         {isOwner && <RegistrationModeCard onBanner={setBanner} />}
+        {isOwner && <BillingAdmin onBanner={setBanner} />}
         {isOwner && <TeamCard onBanner={setBanner} />}
 
         {/* gyms table */}
@@ -881,6 +886,19 @@ function ManageGymModal({
               {detailQ.isLoading && <div className="px-3 py-2 text-slate-400">Loading…</div>}
             </div>
           </div>
+
+          <RecordPaymentSection
+            gymId={gym.id}
+            gymName={gym.name}
+            comped={d?.comped ?? false}
+            canRecord={perms.renew}
+            isOwner={isOwner}
+            onDone={(msg) => {
+              onChanged();
+              void detailQ.refetch();
+              onBanner(msg);
+            }}
+          />
 
           <div>
             <div className="label">Private note (only you see this)</div>

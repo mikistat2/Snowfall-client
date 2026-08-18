@@ -35,7 +35,13 @@ export function MembersPage() {
     }
   }
 
-  const { data: members = [], isLoading } = useMembers({ search, status: status as MemberStatus | '' });
+  // "Archived" shares the status dropdown but is a different roster, not a status
+  const archived = status === 'archived';
+  const { data: members = [], isLoading } = useMembers({
+    search,
+    status: archived ? '' : (status as MemberStatus | ''),
+    archived,
+  });
 
   return (
     <div className="space-y-4">
@@ -45,6 +51,9 @@ export function MembersPage() {
           <button className="btn-secondary" onClick={() => void exportPdf()} disabled={exporting}>
             {exporting ? 'Exporting…' : '⬇ Export PDF'}
           </button>
+          <Link to="/members/previous" className="btn-secondary">
+            + {t('nav.addPrevious')}
+          </Link>
           <Link to="/members/enroll" className="btn-primary">
             + {t('members.enroll')}
           </Link>
@@ -66,6 +75,7 @@ export function MembersPage() {
               {t(`status.${s}`)}
             </option>
           ))}
+          <option value="archived">{t('members.archived')}</option>
         </select>
       </div>
 

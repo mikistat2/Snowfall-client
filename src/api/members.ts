@@ -4,6 +4,8 @@ import type { CheckIn, Member, MemberStatus, Payment, PaymentMethod, Subscriptio
 export interface MemberFilter {
   search?: string;
   status?: MemberStatus | '';
+  /** true = show the archived members instead of the active roster. */
+  archived?: boolean;
   /** Page size — omit for "everything" (the desktop table). */
   limit?: number;
   offset?: number;
@@ -30,6 +32,36 @@ export interface EnrollInput {
   payment: { amount?: number; method: PaymentMethod; note?: string };
 }
 
+/**
+ * A member who was already training before the system arrived, typed in from
+ * the gym's paper register. The dates are "YYYY-MM-DD" strings written in
+ * `calendar` — the server converts them, so Ethiopian dates are sent as-is.
+ */
+export interface PreviousMemberInput {
+  member: {
+    full_name: string;
+    phone?: string;
+    sex?: 'male' | 'female';
+    photo_url?: string | null;
+  };
+  descriptors: number[][];
+  plan_id: number;
+  /** Which calendar the three dates below are written in — the server converts. */
+  calendar: 'gregorian' | 'ethiopian';
+  /**
+   * Which calendar the clerk was reading from, for the audit log only. The web
+   * form converts as you type and therefore always sends `calendar: 'gregorian'`;
+   * this is the one that remembers the paper said "Nehase".
+   */
+  entered_calendar?: 'gregorian' | 'ethiopian';
+  joined_at: string;
+  starts_at: string;
+  /** Omit to let the plan's duration decide. */
+  expires_at?: string;
+  /** Omit when the historical payment is not being recorded. */
+  payment?: { amount?: number; method: PaymentMethod; note?: string };
+}
+
 export interface RenewInput {
   plan_id: number;
   amount?: number;
@@ -42,6 +74,7 @@ export async function listMembers(filter: MemberFilter = {}): Promise<Member[]> 
     params: {
       search: filter.search || undefined,
       status: filter.status || undefined,
+      archived: filter.archived ? 'true' : undefined,
       limit: filter.limit,
       offset: filter.offset,
     },
@@ -59,9 +92,24 @@ export async function enrollMember(input: EnrollInput): Promise<Member> {
   return data;
 }
 
+export async function enrollPreviousMember(input: PreviousMemberInput): Promise<Member> {
+  const { data } = await api.post<Member>('/members/previous', input);
+  return data;
+}
+
 export async function renewMember(id: number, input: RenewInput): Promise<unknown> {
   const { data } = await api.post(`/members/${id}/renew`, input);
   return data;
+}
+
+/** Off the roster, payment history kept. Reversible with `restoreMember`. */
+export async function setMemberArchived(id: number, archived: boolean): Promise<void> {
+  await api.post(`/members/${id}/${archived ? 'archive' : 'restore'}`);
+}
+
+/** Permanent. The server refuses (400) if the member has any payments. */
+export async function deleteMember(id: number): Promise<void> {
+  await api.delete(`/members/${id}`);
 }
 
 export async function setMemberFrozen(id: number, frozen: boolean): Promise<void> {

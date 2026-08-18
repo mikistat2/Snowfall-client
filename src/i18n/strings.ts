@@ -86,6 +86,7 @@ const en = {
 
   // audit log
   'nav.audit': 'Audit log',
+  'nav.billing': 'Billing',
   'audit.title': 'Audit log',
   'audit.when': 'When',
   'audit.who': 'Staff',
@@ -113,6 +114,25 @@ const en = {
   'members.renew': 'Renew / mark payment',
   'members.freeze': 'Freeze',
   'members.unfreeze': 'Unfreeze',
+
+  // removing a member
+  'members.remove': 'Remove',
+  'members.restore': 'Restore',
+  'members.archived': 'Archived',
+  'members.archivedBanner':
+    'This member is archived — they are off the roster, will not be recognised at the door, and receive no reminders.',
+  'remove.title': 'Remove member',
+  'remove.restoreTitle': 'Restore member',
+  'remove.archiveWhat':
+    'Archiving takes them off the members list, the door monitor and the reminders. Their payment history is kept and you can restore them at any time.',
+  'remove.hasPayments':
+    'This member has recorded payments, so they cannot be deleted permanently — that would change your past income records. Archiving is the only option.',
+  'remove.noPayments':
+    'This member has no recorded payments, so they can also be deleted permanently. That cannot be undone.',
+  'remove.restoreWhat':
+    'They go back on the members list and their status is recalculated from their expiry date.',
+  'remove.archive': 'Archive',
+  'remove.delete': 'Delete permanently',
   'members.telegram': 'Telegram',
   'members.linked': 'Linked',
   'members.notLinked': 'Not linked',
@@ -182,6 +202,49 @@ const en = {
   'settings.cameraOff': 'Disabled — this gym has no camera',
   'settings.cameraHint': 'Disable if this gym has no camera: members are enrolled without face photos and the monitor shows the gym name instead.',
   'enroll.noCamera': 'Camera is disabled for this gym — the member will be registered without face captures. You can enable the camera later in Settings.',
+
+  // previous members (back-filled from the gym's paper register)
+  'nav.addPrevious': 'Add previous member',
+  'prev.title': 'Add previous member',
+  'prev.intro':
+    'For members who were already training before this system was installed. Type the dates exactly as they are written in your paper register — the system works out the expiry and the status by itself.',
+  'prev.dates': 'Dates from the paper record',
+  'prev.calendar': 'The dates on the paper are in',
+  'prev.calendarEthiopian': 'Ethiopian (ዓ.ም)',
+  'prev.calendarGregorian': 'Gregorian (G.C.)',
+  'prev.joinedAt': 'First registered on',
+  'prev.startsAt': 'Current membership started on',
+  'prev.startsAtHint': 'The date of their most recent payment. Same as the registration date if they never renewed.',
+  'prev.expiresAt': 'Expires on',
+  'prev.customExpiry': 'Type the expiry date myself',
+  'prev.expiryFromPlan': 'Expiry = start date + the plan’s duration.',
+  'prev.preview': 'How it will be saved',
+  'prev.previewEmpty': 'Choose a plan and the dates to see the result.',
+  'prev.daysLeft': 'days left',
+  'prev.daysOverdue': 'days overdue',
+  'prev.expiredHint': 'This membership is already over, so the member will be refused at the door until they renew.',
+  'prev.payment': 'Past payment',
+  'prev.recordPayment': 'Record the payment they already made',
+  'prev.paymentHint': 'Saved with the start date above, so an old payment never shows up in this month’s income.',
+  'prev.captures': 'Face captures (optional)',
+  'prev.capturesHint':
+    'Only if the member is here right now. Leave empty and capture their face the next time they come in.',
+  'prev.submit': 'Add previous member',
+  'prev.addedThisSession': 'added — the form is ready for the next one',
+  'prev.errRequired': 'Fill in the name, the plan, and both dates.',
+  'prev.errJoinedFuture': 'The registration date is in the future — check the calendar setting above.',
+  'prev.errStartBeforeJoin': 'The membership cannot start before the member registered.',
+  'prev.errExpiryMissing': 'Choose a plan, or type the expiry date yourself.',
+  'prev.errExpiryBeforeStart': 'The expiry date cannot be before the start date.',
+  'prev.errCaptures': 'Capture at least 3 face shots, or remove them all and do it later.',
+  'date.day': 'Day',
+  'date.month': 'Month',
+  'date.year': 'Year',
+  'date.gregorianIs': 'Gregorian:',
+  'date.ethiopianIs': 'Ethiopian:',
+  'date.ethiopianHint': 'For example: 12 Nehase 2018',
+  'date.invalid': 'No such date in the Ethiopian calendar — check the day.',
+
   'settings.botToken': 'Telegram bot token',
   'settings.plans': 'Membership plans',
   'settings.addPlan': 'Add plan',
@@ -421,6 +484,7 @@ const am: Partial<Record<StringKey, string>> = {
 
   // audit log
   'nav.audit': 'የክንውን መዝገብ',
+  'nav.billing': 'ክፍያ',
   'audit.title': 'የክንውን መዝገብ',
   'audit.when': 'መቼ',
   'audit.who': 'ሠራተኛ',
@@ -444,6 +508,24 @@ const am: Partial<Record<StringKey, string>> = {
   'members.renew': 'አድስ / ክፍያ መዝግብ',
   'members.freeze': 'አግድ',
   'members.unfreeze': 'እገዳ አንሳ',
+
+  // removing a member
+  'members.remove': 'አስወግድ',
+  'members.restore': 'መልስ',
+  'members.archived': 'የተመዘገቡ (ተቀማጭ)',
+  'members.archivedBanner':
+    'ይህ አባል ተቀማጭ ተደርጓል — ከዝርዝሩ ውጪ ነው፣ በበሩ ላይ አይታወቅም፣ ማስታወሻዎችም አይላኩለትም።',
+  'remove.title': 'አባል አስወግድ',
+  'remove.restoreTitle': 'አባል መልስ',
+  'remove.archiveWhat':
+    'ተቀማጭ ማድረግ ከአባላት ዝርዝር፣ ከበር ሞኒተር እና ከማስታወሻዎች ያስወጣቸዋል። የክፍያ ታሪካቸው ይቀመጣል፤ በማንኛውም ጊዜ መመለስ ይችላሉ።',
+  'remove.hasPayments':
+    'ይህ አባል የተመዘገበ ክፍያ አለው፤ ስለዚህ በቋሚነት መሰረዝ አይቻልም — ያለፈውን የገቢ መዝገብ ስለሚቀይር። ተቀማጭ ማድረግ ብቻ ነው የሚቻለው።',
+  'remove.noPayments':
+    'ይህ አባል የተመዘገበ ክፍያ የለውም፤ ስለዚህ በቋሚነት መሰረዝም ይቻላል። ይህ አይመለስም።',
+  'remove.restoreWhat': 'ወደ አባላት ዝርዝር ይመለሳሉ፤ ሁኔታቸውም ከማብቂያ ቀናቸው እንደገና ይሰላል።',
+  'remove.archive': 'ተቀማጭ አድርግ',
+  'remove.delete': 'በቋሚነት ሰርዝ',
   'members.telegram': 'ቴሌግራም',
   'members.linked': 'ተገናኝቷል',
   'members.notLinked': 'አልተገናኘም',
@@ -476,6 +558,47 @@ const am: Partial<Record<StringKey, string>> = {
   'enroll.submit': 'አባል መዝግብ',
   'enroll.noCamera':
     'ለዚህ ጂም ካሜራ ጠፍቷል — አባሉ ያለ ፊት ፎቶ ይመዘገባል። በኋላ በቅንብሮች ውስጥ ማብራት ይችላሉ።',
+
+  // previous members
+  'nav.addPrevious': 'ነባር አባል ጨምር',
+  'prev.title': 'ነባር አባል ጨምር',
+  'prev.intro':
+    'ይህ ሲስተም ከመግባቱ በፊት ሲለማመዱ የነበሩ አባላት። ቀኖቹን በወረቀት መዝገብዎ ላይ እንደተጻፉት ያስገቡ — ሲስተሙ የመጠናቀቂያ ቀኑንና ሁኔታውን ራሱ ያሰላል።',
+  'prev.dates': 'ከወረቀት መዝገቡ የተወሰዱ ቀኖች',
+  'prev.calendar': 'በወረቀቱ ላይ ያሉት ቀኖች',
+  'prev.calendarEthiopian': 'የኢትዮጵያ (ዓ.ም)',
+  'prev.calendarGregorian': 'የፈረንጅ (እ.ኤ.አ)',
+  'prev.joinedAt': 'ለመጀመሪያ ጊዜ የተመዘገበበት ቀን',
+  'prev.startsAt': 'የአሁኑ አባልነት የጀመረበት ቀን',
+  'prev.startsAtHint': 'የመጨረሻ ክፍያቸው ቀን። ካላደሱ ከምዝገባው ቀን ጋር አንድ ነው።',
+  'prev.expiresAt': 'የሚያበቃበት ቀን',
+  'prev.customExpiry': 'የማብቂያ ቀኑን እኔ አስገባለሁ',
+  'prev.expiryFromPlan': 'ማብቂያ = የመጀመሪያ ቀን + የእቅዱ ቆይታ።',
+  'prev.preview': 'እንዴት እንደሚቀመጥ',
+  'prev.previewEmpty': 'ውጤቱን ለማየት እቅድና ቀኖቹን ይምረጡ።',
+  'prev.daysLeft': 'ቀናት ይቀራሉ',
+  'prev.daysOverdue': 'ቀናት አልፈዋል',
+  'prev.expiredHint': 'ይህ አባልነት አብቅቷል፤ እስኪያድሱ ድረስ አባሉ በበሩ ላይ ይከለከላል።',
+  'prev.payment': 'ያለፈ ክፍያ',
+  'prev.recordPayment': 'የከፈሉትን ክፍያ መዝግብ',
+  'prev.paymentHint': 'ከላይ ባለው የመጀመሪያ ቀን ይመዘገባል፤ ስለዚህ አሮጌ ክፍያ በዚህ ወር ገቢ ውስጥ አይታይም።',
+  'prev.captures': 'የፊት ፎቶዎች (አማራጭ)',
+  'prev.capturesHint': 'አባሉ አሁን እዚህ ካለ ብቻ። ካልሆነ ባዶ ይተውት፤ በሚቀጥለው ጊዜ ሲመጡ ያንሱ።',
+  'prev.submit': 'ነባር አባል ጨምር',
+  'prev.addedThisSession': 'ተጨምረዋል — ቅጹ ለቀጣዩ ዝግጁ ነው',
+  'prev.errRequired': 'ስም፣ እቅድና ሁለቱንም ቀኖች ይሙሉ።',
+  'prev.errJoinedFuture': 'የምዝገባው ቀን ወደፊት ነው — ከላይ ያለውን የቀን አቆጣጠር ያረጋግጡ።',
+  'prev.errStartBeforeJoin': 'አባልነቱ አባሉ ከመመዝገቡ በፊት ሊጀምር አይችልም።',
+  'prev.errExpiryMissing': 'እቅድ ይምረጡ ወይም የማብቂያ ቀኑን ያስገቡ።',
+  'prev.errExpiryBeforeStart': 'የማብቂያ ቀን ከመጀመሪያው ቀን በፊት ሊሆን አይችልም።',
+  'prev.errCaptures': 'ቢያንስ 3 የፊት ፎቶዎችን ያንሱ፣ ወይም ሁሉንም አስወግደው በኋላ ያድርጉት።',
+  'date.day': 'ቀን',
+  'date.month': 'ወር',
+  'date.year': 'ዓመት',
+  'date.gregorianIs': 'የፈረንጅ፡',
+  'date.ethiopianIs': 'የኢትዮጵያ፡',
+  'date.ethiopianHint': 'ለምሳሌ፡ 12 ነሐሴ 2018',
+  'date.invalid': 'በኢትዮጵያ ዘመን አቆጣጠር እንዲህ ያለ ቀን የለም — ቀኑን ያረጋግጡ።',
 
   // payments
   'payments.title': 'ክፍያዎች',
@@ -695,6 +818,7 @@ const om: Partial<Record<StringKey, string>> = {
   'nav.live': 'Kallattii',
   'nav.more': 'Dabalata',
   'nav.audit': 'Galmee hordoffii',
+  'nav.billing': 'Kaffaltii',
   'nav.notifications': 'Beeksisawwan',
   'nav.guide': 'Qajeelfama jalqabaa',
   'nav.feedback': 'Yaada / Fooyyessa',
@@ -809,6 +933,24 @@ const om: Partial<Record<StringKey, string>> = {
   'members.renew': 'Haaromsi / kaffaltii galmeessi',
   'members.freeze': 'Dhaabi',
   'members.unfreeze': 'Itti fufi',
+
+  // removing a member
+  'members.remove': 'Haqi',
+  'members.restore': 'Deebisi',
+  'members.archived': 'Kuusaa keessa',
+  'members.archivedBanner':
+    'Miseensi kun kuusaa keessa galeera — tarree keessa hin jiru, balbala irratti hin beekamu, yaadachiisnis hin ergamuuf.',
+  'remove.title': 'Miseensa haqi',
+  'remove.restoreTitle': 'Miseensa deebisi',
+  'remove.archiveWhat':
+    'Kuusaa keessa galchuun tarree miseensotaa, moonitara balbalaa fi yaadachiisa keessaa isaan baasa. Seenaan kaffaltii isaanii ni turaa, yeroo barbaaddetti deebisuu dandeessa.',
+  'remove.hasPayments':
+    'Miseensi kun kaffaltii galmaaʼe qaba, kanaafuu dhaabbataan haquun hin dandaʼamu — galii darbe waan jijjiiruuf. Kuusaa keessa galchuu qofatu dandaʼama.',
+  'remove.noPayments':
+    'Miseensi kun kaffaltii galmaaʼe hin qabu, kanaafuu dhaabbataan haquunis ni dandaʼama. Kun deebiʼuu hin dandaʼu.',
+  'remove.restoreWhat': 'Gara tarree miseensotaatti deebiʼu, haalli isaaniis guyyaa xumuraa irraa irra deebiʼee shallagama.',
+  'remove.archive': 'Kuusaa keessa galchi',
+  'remove.delete': 'Dhaabbataan haqi',
   'members.telegram': 'Telegram',
   'members.linked': 'Walqabate',
   'members.notLinked': 'Hin walqabanne',
@@ -841,6 +983,47 @@ const om: Partial<Record<StringKey, string>> = {
   'enroll.submit': 'Miseensa galmeessi',
   'enroll.noCamera':
     'Jimii kanaaf kaameraan cufameera — miseensi suuraa fuulaa malee galmaaʼa. Booda Qindaaʼina keessatti kaamera banuu dandeessa.',
+
+  // previous members
+  'nav.addPrevious': 'Miseensa duraanii galchi',
+  'prev.title': 'Miseensa duraanii galchi',
+  'prev.intro':
+    'Miseensota sirni kun hin ijaaramin dura leenjii turaniif. Guyyaawwan akkuma galmee waraqaa keessatti barreeffamanitti galchi — sirnichi guyyaa xumuraa fi haala miseensichaa ofumaan shallaga.',
+  'prev.dates': 'Guyyaawwan galmee waraqaa irraa',
+  'prev.calendar': 'Guyyaawwan waraqaa irratti jiran',
+  'prev.calendarEthiopian': 'Itoophiyaa (A.L.I)',
+  'prev.calendarGregorian': 'Giriigooriyaan (A.L.A)',
+  'prev.joinedAt': 'Guyyaa jalqaba itti galmaaʼe',
+  'prev.startsAt': 'Guyyaa miseensummaan ammaa itti jalqabe',
+  'prev.startsAtHint': 'Guyyaa kaffaltii isaanii dhumaa. Yoo hin haaromsin guyyaa galmeetiin wal qixa.',
+  'prev.expiresAt': 'Guyyaa itti xumuramu',
+  'prev.customExpiry': 'Guyyaa xumuraa ofuma kootiin nan galcha',
+  'prev.expiryFromPlan': 'Xumura = guyyaa jalqabaa + turtii karoorichaa.',
+  'prev.preview': 'Akkamitti akka olkaaʼamu',
+  'prev.previewEmpty': 'Buʼaa arguuf karoora fi guyyaawwan filadhu.',
+  'prev.daysLeft': 'guyyoota hafan',
+  'prev.daysOverdue': 'guyyoota darban',
+  'prev.expiredHint': 'Miseensummaan kun xumurameera; hanga haaromsanitti balbala irratti ni dhorkamu.',
+  'prev.payment': 'Kaffaltii darbe',
+  'prev.recordPayment': 'Kaffaltii isaan durumaan kaffalan galmeessi',
+  'prev.paymentHint': 'Guyyaa jalqabaa olii waliin olkaaʼama, kanaafuu kaffaltiin moofaan galii jiʼa kanaa keessatti hin mulʼatu.',
+  'prev.captures': 'Suuraa fuulaa (filannoo)',
+  'prev.capturesHint': 'Yoo miseensichi amma as jiru qofa. Yoo hin jirre duwwaa dhiisi; yeroo itti aanu dhufanitti kaasi.',
+  'prev.submit': 'Miseensa duraanii galchi',
+  'prev.addedThisSession': 'galfamaniiru — unkichi kan itti aanuuf qophiidha',
+  'prev.errRequired': 'Maqaa, karoora fi guyyaawwan lamaan guuti.',
+  'prev.errJoinedFuture': 'Guyyaan galmee gara fuulduraatti argama — qindaaʼina lakkoofsa guyyaa olii mirkaneessi.',
+  'prev.errStartBeforeJoin': 'Miseensummaan miseensichi utuu hin galmaaʼin dura jalqabuu hin dandaʼu.',
+  'prev.errExpiryMissing': 'Karoora filadhu, yookaan guyyaa xumuraa ofumaa galchi.',
+  'prev.errExpiryBeforeStart': 'Guyyaan xumuraa guyyaa jalqabaa dura taʼuu hin dandaʼu.',
+  'prev.errCaptures': 'Yoo xiqqaate suuraa fuulaa 3 kaasi, yookaan hunda haqxee booda raawwadhu.',
+  'date.day': 'Guyyaa',
+  'date.month': 'Jiʼa',
+  'date.year': 'Waggaa',
+  'date.gregorianIs': 'Giriigooriyaan:',
+  'date.ethiopianIs': 'Itoophiyaa:',
+  'date.ethiopianHint': 'Fakkeenyaaf: 12 Nehase 2018',
+  'date.invalid': 'Lakkoofsa guyyaa Itoophiyaa keessatti guyyaan akkasii hin jiru — guyyaa mirkaneessi.',
 
   // payments
   'payments.title': 'Kaffaltiiwwan',

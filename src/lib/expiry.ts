@@ -1,4 +1,4 @@
-import type { MemberStatus } from './types';
+import type { GymSettings, MemberStatus } from './types';
 
 /** Calendar days from today until the expiry date — matches the server's decisionEngine (negative = overdue). */
 export function daysLeft(expiresAt: string | Date): number {
@@ -6,6 +6,18 @@ export function daysLeft(expiresAt: string | Date): number {
   const now = new Date();
   const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((Date.UTC(y, m - 1, d) - today) / 86_400_000);
+}
+
+/**
+ * Status from an expiry date, mirroring the server's decisionEngine.deriveStatus.
+ * Used to preview what a back-filled paper membership will become before it is
+ * saved — the server still computes the stored value.
+ */
+export function deriveStatus(daysRemaining: number | null, settings: GymSettings): MemberStatus {
+  if (daysRemaining === null || daysRemaining < -settings.grace_period_days) return 'expired';
+  if (daysRemaining <= 0) return 'grace';
+  if (daysRemaining <= settings.expiry_reminder_days) return 'expiring';
+  return 'active';
 }
 
 /** Lifted a shade in dark mode — the 600s do not carry enough contrast on a dark surface. */

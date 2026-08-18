@@ -6,6 +6,8 @@ import { NATIVE } from './lib/platform';
 import { t } from './i18n/strings';
 import { Logo } from './components/ui/Logo';
 import { FrozenGymAlert } from './components/ui/FrozenGymAlert';
+import { PaymentRequiredRedirect } from './components/ui/PaymentRequiredRedirect';
+import { SubscriptionBanner } from './components/ui/SubscriptionBanner';
 import { LiveDate } from './components/ui/LiveDate';
 import { MobileShell } from './components/mobile/MobileShell';
 import { LoginPage } from './pages/LoginPage';
@@ -16,6 +18,7 @@ import { MonitorPage } from './pages/MonitorPage';
 import { MembersPage } from './pages/MembersPage';
 import { MemberDetailPage } from './pages/MemberDetailPage';
 import { EnrollPage } from './pages/EnrollPage';
+import { PreviousMemberPage } from './pages/PreviousMemberPage';
 import { PaymentsPage } from './pages/PaymentsPage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { AuditLogPage } from './pages/AuditLogPage';
@@ -25,6 +28,7 @@ import { LandingPage } from './pages/LandingPage';
 import { PricingPage } from './pages/PricingPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PlatformAdminPage } from './pages/PlatformAdminPage';
+import { BillingPage } from './pages/BillingPage';
 import { MorePage } from './pages/mobile/MorePage';
 import { LivePage } from './pages/mobile/LivePage';
 import { HomePage } from './pages/mobile/HomePage';
@@ -50,6 +54,14 @@ export function App() {
 
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
 
+      {/* Deliberately OUTSIDE the shell: an expired gym is locked out of the
+          normal navigation, so the billing page carries its own header and
+          logout and must stay reachable. */}
+      <Route
+        path="/billing"
+        element={user ? <BillingPage /> : <Navigate to={NATIVE ? '/login' : '/welcome'} replace />}
+      />
+
       <Route element={user ? <Shell /> : <Navigate to={NATIVE ? '/login' : '/welcome'} replace />}>
         {/* Home is the one screen with a genuinely different design per form
             factor: a phone-native hero + triage list, versus the desktop
@@ -62,6 +74,8 @@ export function App() {
         <Route path="/live" element={<LivePage />} />
         <Route path="/members" element={<MembersPage />} />
         <Route path="/members/enroll" element={<EnrollPage />} />
+        {/* back-fill of the gym's pre-installation paper register */}
+        <Route path="/members/previous" element={<PreviousMemberPage />} />
         <Route path="/members/:id" element={<MemberDetailPage />} />
         <Route path="/payments" element={<PaymentsPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
@@ -81,9 +95,12 @@ const nav = [
   { to: '/today', label: 'nav.today' },
   { to: '/monitor', label: 'nav.monitor' },
   { to: '/members', label: 'nav.members' },
+  { to: '/members/previous', label: 'nav.addPrevious' },
   { to: '/payments', label: 'nav.payments' },
   { to: '/notifications', label: 'nav.notifications' },
   { to: '/audit', label: 'nav.audit', ownerOnly: true },
+  // the owner pays the platform subscription, so only they need this
+  { to: '/billing', label: 'nav.billing', ownerOnly: true },
   { to: '/settings', label: 'nav.settings' },
   { to: '/guide', label: 'nav.guide' },
   { to: '/feedback', label: 'nav.feedback' },
@@ -174,10 +191,13 @@ function Layout() {
             <LiveDate />
           </div>
         </div>
+        <SubscriptionBanner />
         <Outlet />
       </main>
       {/* covers every page the moment the platform admin freezes this gym */}
       <FrozenGymAlert />
+      {/* sends the user to /billing the moment any call reports 402 */}
+      <PaymentRequiredRedirect />
     </div>
   );
 }

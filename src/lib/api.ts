@@ -79,12 +79,26 @@ export const GYM_FROZEN_EVENT = 'gym-frozen';
  */
 export const SESSION_EXPIRED_EVENT = 'session-expired';
 
+/**
+ * Fired when the gym's subscription has lapsed (any request → 402
+ * PAYMENT_REQUIRED). The app listens and routes to /billing.
+ *
+ * 402 is deliberately its own status: 401 already means "log in again" and 403
+ * already means "you are frozen", and an expired subscription is neither — the
+ * session is perfectly valid, there is simply nothing paid for.
+ */
+export const PAYMENT_REQUIRED_EVENT = 'payment-required';
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const data = error.response?.data as { error?: string; code?: string } | undefined;
     if (error.response?.status === 403 && data?.code === 'GYM_FROZEN') {
       window.dispatchEvent(new CustomEvent(GYM_FROZEN_EVENT, { detail: data.error }));
+      throw error;
+    }
+    if (error.response?.status === 402 && data?.code === 'PAYMENT_REQUIRED') {
+      window.dispatchEvent(new CustomEvent(PAYMENT_REQUIRED_EVENT, { detail: data.error }));
       throw error;
     }
     const original = error.config as (InternalAxiosRequestConfig & { _retried?: boolean }) | undefined;

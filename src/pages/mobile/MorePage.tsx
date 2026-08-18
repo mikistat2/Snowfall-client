@@ -14,6 +14,7 @@ import type { ThemeMode } from '../../lib/theme';
 
 const LINKS: readonly { to: string; labelKey: StringKey; ownerOnly?: boolean }[] = [
   { to: '/today', labelKey: 'nav.today' },
+  { to: '/members/previous', labelKey: 'nav.addPrevious' },
   { to: '/notifications', labelKey: 'nav.notifications' },
   { to: '/settings', labelKey: 'nav.settings' },
   { to: '/audit', labelKey: 'nav.audit', ownerOnly: true },

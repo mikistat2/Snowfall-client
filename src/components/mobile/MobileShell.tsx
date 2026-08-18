@@ -7,6 +7,8 @@ import { exitApp, useAndroidBackButton } from '../../hooks/useAndroidBackButton'
 import { consumeBackPress } from '../../lib/backInterceptor';
 import { useToast } from '../ui/Toast';
 import { FrozenGymAlert } from '../ui/FrozenGymAlert';
+import { PaymentRequiredRedirect } from '../ui/PaymentRequiredRedirect';
+import { SubscriptionBanner } from '../ui/SubscriptionBanner';
 import { t } from '../../i18n/strings';
 import type { StringKey } from '../../i18n/strings';
 
@@ -85,9 +87,15 @@ export function MobileShell() {
 
       <main className="mobile-scroll">
         {isHome ? (
-          <Outlet />
+          <>
+            <div className="px-4 pt-4">
+              <SubscriptionBanner />
+            </div>
+            <Outlet />
+          </>
         ) : (
           <div className="px-4 py-4">
+            <SubscriptionBanner />
             <Outlet />
           </div>
         )}
@@ -97,6 +105,8 @@ export function MobileShell() {
 
       {/* covers the whole shell the moment the platform admin freezes this gym */}
       <FrozenGymAlert />
+      {/* sends the user to /billing the moment any call reports 402 */}
+      <PaymentRequiredRedirect />
     </div>
   );
 }

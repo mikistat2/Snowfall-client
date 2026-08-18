@@ -7,14 +7,18 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { daysLeft, daysLeftColor } from '../lib/expiry';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { RenewModal } from '../components/members/RenewModal';
+import { RemoveMemberModal } from '../components/members/RemoveMemberModal';
 import { useMember, useMemberTelegramLink, useSetMemberFrozen } from '../hooks/queries/useMembers';
+import { useAuth } from '../hooks/useAuth';
 import { qk } from '../hooks/queries/keys';
 
 export function MemberDetailPage() {
   const { id } = useParams();
   const memberId = Number(id);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [renewOpen, setRenewOpen] = useState(false);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   const { data, isLoading } = useMember(memberId);
 
@@ -29,6 +33,7 @@ export function MemberDetailPage() {
   if (isLoading || !data) return <p className="text-fg-subtle">{t('common.loading')}</p>;
   const { member } = data;
   const frozen = member.status === 'frozen';
+  const archived = Boolean(member.archived_at);
   const current = data.subscriptions[0];
   const remaining = current ? daysLeft(current.expires_at) : null;
 
@@ -78,15 +83,27 @@ export function MemberDetailPage() {
           <button
             className="btn-secondary"
             onClick={() => freezeMutation.mutate(!frozen)}
-            disabled={freezeMutation.isPending}
+            disabled={freezeMutation.isPending || archived}
           >
             {frozen ? t('members.unfreeze') : t('members.freeze')}
           </button>
-          <button className="btn-primary" onClick={() => setRenewOpen(true)}>
+          {/* destructive, so owner-only — same rule as the audit log and staff accounts */}
+          {user?.role === 'owner' && (
+            <button className="btn-secondary" onClick={() => setRemoveOpen(true)}>
+              {archived ? t('members.restore') : t('members.remove')}
+            </button>
+          )}
+          <button className="btn-primary" onClick={() => setRenewOpen(true)} disabled={archived}>
             {t('members.renew')}
           </button>
         </div>
       </div>
+
+      {archived && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+          {t('members.archivedBanner')}
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="card overflow-x-auto">
@@ -153,6 +170,15 @@ export function MemberDetailPage() {
       )}
 
       {renewOpen && <RenewModal memberId={memberId} onClose={() => setRenewOpen(false)} />}
+      {removeOpen && (
+        <RemoveMemberModal
+          memberId={memberId}
+          memberName={member.full_name}
+          paymentCount={data.payments.length}
+          archived={archived}
+          onClose={() => setRemoveOpen(false)}
+        />
+      )}
       {linkUrl && (
         <TelegramLinkModal
           url={linkUrl}

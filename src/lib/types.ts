@@ -38,6 +38,8 @@ export interface Member {
   photo_url: string | null;
   status: MemberStatus;
   joined_at: string;
+  /** Set = off the active roster, kept only for their payment history. */
+  archived_at?: string | null;
   plan_name?: string | null;
   expires_at?: string | null;
 }

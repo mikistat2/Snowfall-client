@@ -38,6 +38,18 @@ export function useEnrollMember() {
   });
 }
 
+/** Back-fill from the paper register — may also write a backdated payment. */
+export function useEnrollPreviousMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: membersApi.enrollPreviousMember,
+    onSuccess: () => {
+      invalidateMember(qc);
+      void qc.invalidateQueries({ queryKey: qk.paymentsAll });
+    },
+  });
+}
+
 export function useRenewMember(memberId: number) {
   const qc = useQueryClient();
   return useMutation({
@@ -54,6 +66,26 @@ export function useSetMemberFrozen(memberId: number) {
   return useMutation({
     mutationFn: (frozen: boolean) => membersApi.setMemberFrozen(memberId, frozen),
     onSuccess: () => invalidateMember(qc, memberId),
+  });
+}
+
+export function useSetMemberArchived(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (archived: boolean) => membersApi.setMemberArchived(memberId, archived),
+    onSuccess: () => invalidateMember(qc, memberId),
+  });
+}
+
+/** Permanent — the member page must navigate away afterwards. */
+export function useDeleteMember(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => membersApi.deleteMember(memberId),
+    onSuccess: () => {
+      qc.removeQueries({ queryKey: qk.member(memberId) });
+      invalidateMember(qc);
+    },
   });
 }
 
