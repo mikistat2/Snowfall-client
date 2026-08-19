@@ -6,6 +6,7 @@ import { apiErrorMessage } from '../lib/api';
 import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
 import { BillingAdmin } from '../components/billing/BillingAdmin';
+import type { BillingCycle } from '../lib/billing';
 import { RecordPaymentSection } from '../components/billing/RecordPaymentSection';
 import loginLogo from "../assets/images/login-logo.png";
 
@@ -526,7 +527,7 @@ interface AdminRow {
 const PERM_LABELS: { key: keyof PlatformPerms; label: string; hint: string }[] = [
   { key: 'approve', label: 'Approve', hint: 'approve pending gym registrations' },
   { key: 'freeze', label: 'Freeze', hint: 'freeze / unfreeze gym accounts' },
-  { key: 'renew', label: 'Renew', hint: 'renew subscriptions +1 year' },
+  { key: 'renew', label: 'Renew', hint: 'extend subscriptions, convert trials, record payments' },
   { key: 'export', label: 'Export PDFs', hint: 'download member data as PDF' },
 ];
 
@@ -756,6 +757,10 @@ function ManageGymModal({
   const [view, setView] = useState<'detail' | 'freeze' | 'delete'>('detail');
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
+  // Free extension length (no payment recorded) — a trial usually converts onto a month.
+  const [renewCycle, setRenewCycle] = useState<BillingCycle>(gym.is_trial ? 'MONTHLY' : 'YEARLY');
+  // Bumping this opens the payment panel below, prefilled with the cycle.
+  const [payRequest, setPayRequest] = useState<{ seq: number; cycle: BillingCycle } | null>(null);
 
   // one-click PDF of this gym's members (same layout as the gym's own export)
   async function exportMembers() {
@@ -811,9 +816,15 @@ function ManageGymModal({
     doneAndClose(`"${gym.name}" approved — subscription runs for 1 year.`),
     setError,
   );
+  // Free/goodwill extension: no payment row is written. Converting a trial
+  // starts the paid period today (the server drops the unused trial days).
   const renew = useMutationHelper(
-    () => platformApi.post(`/gyms/${gym.id}/renew`),
-    doneAndClose(`"${gym.name}" renewed for 1 more year.`),
+    () => platformApi.post(`/gyms/${gym.id}/renew`, { cycle: renewCycle }),
+    doneAndClose(
+      `"${gym.name}" ${gym.is_trial ? 'converted to paid' : 'renewed'} for 1 more ${
+        renewCycle === 'MONTHLY' ? 'month' : 'year'
+      } (no payment recorded).`,
+    ),
     setError,
   );
 
@@ -893,6 +904,9 @@ function ManageGymModal({
             comped={d?.comped ?? false}
             canRecord={perms.renew}
             isOwner={isOwner}
+            isTrial={gym.is_trial && gym.status !== 'pending'}
+            subscriptionEndsAt={gym.subscription_ends_at}
+            openRequest={payRequest}
             onDone={(msg) => {
               onChanged();
               void detailQ.refetch();
@@ -926,10 +940,34 @@ function ManageGymModal({
                 {approve.busy ? 'Approving…' : '✓ Approve — start 1-year subscription'}
               </button>
             )}
-            {gym.status !== 'pending' && perms.renew && (
-              <button className="btn-secondary" onClick={() => renew.run()} disabled={renew.busy}>
-                {renew.busy ? 'Renewing…' : gym.is_trial ? '⭐ Convert trial → paid year' : '↻ Renew +1 year'}
+            {gym.status !== 'pending' && perms.renew && gym.is_trial && (
+              <button
+                className="btn-primary"
+                onClick={() => setPayRequest({ seq: Date.now(), cycle: 'MONTHLY' })}
+              >
+                ⭐ Convert trial → paid month
               </button>
+            )}
+            {gym.status !== 'pending' && perms.renew && (
+              <div className="flex items-center gap-1">
+                <select
+                  className="input w-28 py-1.5 text-sm"
+                  value={renewCycle}
+                  onChange={(e) => setRenewCycle(e.target.value as BillingCycle)}
+                  title="How long to extend for"
+                >
+                  <option value="MONTHLY">1 month</option>
+                  <option value="YEARLY">1 year</option>
+                </select>
+                <button
+                  className="btn-secondary"
+                  onClick={() => renew.run()}
+                  disabled={renew.busy}
+                  title="Extends the subscription without recording any payment"
+                >
+                  {renew.busy ? 'Extending…' : '↻ Extend free'}
+                </button>
+              </div>
             )}
             {gym.status === 'active' && perms.freeze && (
               <button className="btn-secondary" onClick={() => setView('freeze')}>
