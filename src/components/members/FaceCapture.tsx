@@ -118,8 +118,8 @@ export function FaceCapture({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-slate-500">{hint ?? t('enroll.captureHint')}</p>
-      <div className="relative overflow-hidden rounded-xl bg-black">
+      <p className="text-sm leading-relaxed text-fg-muted">{hint ?? t('enroll.captureHint')}</p>
+      <div className="relative overflow-hidden rounded-2xl border border-line bg-black">
         <CameraFeed
           source={source}
           elementRef={camRef}
@@ -168,14 +168,14 @@ export function FaceCapture({
           {t('enroll.capture')} ({captures.length}/{max})
         </button>
         {feedback && (
-          <span className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-orange-600'}`}>{feedback.text}</span>
+          <span className={`text-sm ${feedback.ok ? 'text-green-500' : 'text-orange-400'}`}>{feedback.text}</span>
         )}
       </div>
       {captures.length > 0 && (
         <div className="flex gap-2">
           {captures.map((c, i) => (
             <div key={i} className="relative">
-              <img src={c.thumbnail} alt="" className="h-16 w-16 rounded-lg object-cover" />
+              <img src={c.thumbnail} alt="" className="h-16 w-16 rounded-xl border border-line object-cover" />
               <button
                 type="button"
                 title={t('enroll.retake')}
@@ -189,7 +189,7 @@ export function FaceCapture({
         </div>
       )}
       {captures.length < min && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-fg-subtle">
           {t('enroll.captureAtLeast')} {min}
         </p>
       )}

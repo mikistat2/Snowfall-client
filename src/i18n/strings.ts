@@ -150,6 +150,10 @@ const en = {
 
   // enroll
   'enroll.title': 'Enroll new member',
+  'enroll.subtitle': 'Register someone new, take their first payment and capture their face for the door — in one pass.',
+  'enroll.namePlaceholder': 'e.g. Abebe Kebede',
+  'enroll.paymentHint': 'Pick the package they are on; the amount defaults to its price.',
+  'enroll.needPlan': 'Choose a plan to continue.',
   'enroll.details': 'Member details',
   'enroll.captures': 'Face captures',
   'enroll.captureHint': 'Capture 3–5 shots: look straight, then slightly left and right.',

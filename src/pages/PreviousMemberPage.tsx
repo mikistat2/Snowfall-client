@@ -5,7 +5,7 @@ import { t } from '../i18n/strings';
 import { FaceCapture, type Capture } from '../components/members/FaceCapture';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
-import { PageTitle } from '../components/ui/PageTitle';
+import { EnrollShell, FormSection } from '../components/members/EnrollShell';
 import { SexPicker } from '../components/members/SexPicker';
 import { paymentMethodOptions } from '../lib/payments';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -136,39 +136,30 @@ export function PreviousMemberPage() {
   }
 
   return (
-    <div className="max-w-4xl space-y-4">
-      <div>
-        <PageTitle>{t('prev.title')}</PageTitle>
-        <p className="text-sm text-fg-muted">{t('prev.intro')}</p>
-      </div>
-
-      {mutation.isError && (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
-          {apiErrorMessage(mutation.error)}
-        </p>
-      )}
+    <EnrollShell title={t('prev.title')} subtitle={t('prev.intro')}>
+      {mutation.isError && <p className="alert-error mb-4">{apiErrorMessage(mutation.error)}</p>}
 
       {added.length > 0 && (
-        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm dark:border-green-900 dark:bg-green-950/40">
-          <p className="font-medium text-green-800 dark:text-green-300">
+        <div className="alert-success mb-4">
+          <p className="font-semibold">
             {added.length} {t('prev.addedThisSession')}
           </p>
-          <ul className="mt-1 space-y-1">
+          <ul className="mt-1.5 space-y-1">
             {added.map((m) => (
               <li key={m.id} className="flex items-center gap-2">
                 <Link to={`/members/${m.id}`} className="underline underline-offset-2 hover:no-underline">
                   {m.name}
                 </Link>
-                <StatusBadge status={m.status} />
+                <StatusBadge status={m.status} dot />
               </li>
             ))}
           </ul>
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="grid gap-5 lg:grid-cols-2">
-        <div className="card space-y-4">
-          <h2 className="font-semibold">{t('enroll.details')}</h2>
+      <form onSubmit={onSubmit} className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="space-y-4">
+          <FormSection step={1} title={t('enroll.details')}>
           <div>
             <label className="label">{t('members.fullName')}</label>
             <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} />
@@ -196,7 +187,9 @@ export function PreviousMemberPage() {
             />
           </div>
 
-          <h2 className="pt-2 font-semibold">{t('prev.payment')}</h2>
+          </FormSection>
+
+          <FormSection step={2} title={t('prev.payment')}>
           <label className="flex items-start gap-2 text-sm text-fg-muted">
             <input
               type="checkbox"
@@ -210,7 +203,7 @@ export function PreviousMemberPage() {
             </span>
           </label>
           {recordPayment && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="field-row">
               <div>
                 <label className="label">{t('enroll.amount')}</label>
                 <input
@@ -233,21 +226,25 @@ export function PreviousMemberPage() {
               </div>
             </div>
           )}
+          </FormSection>
         </div>
 
-        <div className="space-y-5">
-          <div className="card space-y-4">
-            <h2 className="font-semibold">{t('prev.dates')}</h2>
-
+        <div className="space-y-4">
+          <FormSection step={3} title={t('prev.dates')}>
             <div>
               <label className="label">{t('prev.calendar')}</label>
-              <div className="flex gap-2">
+              {/* One exclusive choice of two — a segmented control, not a pair
+                  of buttons where the unselected one still looks clickable in
+                  its own right. */}
+              <div role="radiogroup" aria-label={t('prev.calendar')} className="segmented grid-cols-2">
                 {(['ethiopian', 'gregorian'] as const).map((system) => (
                   <button
                     key={system}
                     type="button"
+                    role="radio"
+                    aria-checked={paperCalendar === system}
                     onClick={() => setPaperCalendar(system)}
-                    className={paperCalendar === system ? 'btn-primary flex-1' : 'btn-secondary flex-1'}
+                    className="segmented-item"
                   >
                     {t(system === 'ethiopian' ? 'prev.calendarEthiopian' : 'prev.calendarGregorian')}
                   </button>
@@ -289,18 +286,18 @@ export function PreviousMemberPage() {
             ) : (
               <p className="text-xs text-fg-subtle">{t('prev.expiryFromPlan')}</p>
             )}
-          </div>
+          </FormSection>
 
           {/* What the record will look like once saved — the whole point of the
               page is that the system, not the person typing, decides this. */}
-          <div className="card space-y-2">
-            <h2 className="font-semibold">{t('prev.preview')}</h2>
+          <div className="card space-y-2 border-accent/25 bg-accent/[0.06]">
+            <h2 className="text-[15px] font-semibold text-fg">{t('prev.preview')}</h2>
             {effectiveExpiry && previewStatus && remaining !== null ? (
               <>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-fg-muted">{t('members.expires')}:</span>
-                  <span className="font-medium">{effectiveExpiry}</span>
-                  <StatusBadge status={previewStatus} />
+                  <span className="font-semibold tabular-nums">{effectiveExpiry}</span>
+                  <StatusBadge status={previewStatus} dot />
                 </div>
                 <p className="text-sm text-fg-muted">
                   {remaining >= 0
@@ -315,21 +312,21 @@ export function PreviousMemberPage() {
           </div>
 
           {cameraEnabled && (
-            <div className="card">
-              <h2 className="mb-1 font-semibold">{t('prev.captures')}</h2>
-              <p className="mb-3 text-xs text-fg-subtle">{t('prev.capturesHint')}</p>
+            <FormSection step={4} title={t('prev.captures')} hint={t('prev.capturesHint')}>
               <FaceCapture captures={captures} onChange={setCaptures} />
-            </div>
+            </FormSection>
           )}
 
-          <div className="card space-y-2">
-            {error && fullName !== '' && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          <div className="card space-y-3">
+            {error && fullName !== '' && (
+              <p className="text-xs leading-relaxed text-red-400">{error}</p>
+            )}
             <button className="btn-primary w-full" disabled={mutation.isPending || Boolean(error)}>
-              {t('prev.submit')}
+              {mutation.isPending ? `${t('prev.submit')}…` : t('prev.submit')}
             </button>
           </div>
         </div>
       </form>
-    </div>
+    </EnrollShell>
   );
 }

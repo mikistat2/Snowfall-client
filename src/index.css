@@ -123,6 +123,99 @@
     @apply font-display font-extrabold uppercase tracking-wider bg-gradient-to-br from-sky-400 via-sky-500 to-sky-700 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(56,189,248,0.4)];
   }
 
+  /* --- alerts ---------------------------------------------------------- */
+
+  /*
+   * Tinted rather than filled: bg-red-50 with a dark: pair only works on the
+   * two backgrounds the app normally has. These read correctly on any surface,
+   * which is what the enrollment screens need — they are dark even while the
+   * rest of the app is light.
+   */
+  .alert-error {
+    @apply rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300;
+  }
+  .alert-success {
+    @apply rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-800 dark:text-green-300;
+  }
+
+  /* --- premium dark surface -------------------------------------------- */
+
+  /*
+   * Enrollment is the one flow where a phone is held up next to someone's face
+   * and a camera preview is the main subject. A white screen behind that both
+   * blows out the preview and makes the app feel like a form; these two
+   * screens therefore run on their own dark palette REGARDLESS of the app
+   * theme, while everything else — nav, tabs, every other page — stays as it
+   * was.
+   *
+   * It works by re-pointing the same semantic tokens the whole app already
+   * uses, so .card, .input, .btn-*, Select, PhoneInput and FaceCapture all
+   * follow with no per-component knowledge of this palette. Only the handful
+   * of overrides below are specific to it.
+   */
+  .theme-premium {
+    /*
+     * The ramp is lifted a full step off the original near-black: #070A13 read
+     * as an OLED void with the card barely separable from the page. These keep
+     * the same midnight-violet character and the same relationships — page <
+     * card < pressed — while sitting where a modern app's dark surface
+     * actually sits. The accent and primary text are unchanged.
+     */
+    --c-bg: 20 26 42; /* #141A2A page */
+    --c-surface: 28 36 57; /* #1C2439 card */
+    --c-surface-2: 39 49 74; /* #27314A card hover/pressed */
+    --c-line: 51 62 88; /* #333E58 card border */
+    --c-fg: 248 250 252; /* #F8FAFC primary text */
+    --c-fg-muted: 148 163 184; /* #94A3B8 secondary text */
+    /* Lifted from #64748B: the same grey loses contrast against a lighter
+       card, and these are hints people actually have to read. */
+    --c-fg-subtle: 124 138 160; /* #7C8AA0 muted text */
+    --c-accent: 139 92 246; /* #8B5CF6 */
+    --c-accent-soft: 42 36 86; /* deep violet, for chips and avatars */
+    /* Makes the WebView render date/time/number widgets and scrollbars dark. */
+    color-scheme: dark;
+    @apply bg-canvas text-fg;
+  }
+
+  /* Bleeds to the edges of whichever shell it is in: the phone's content
+     padding is px-4/pb-8, the desktop layout's is p-6 from md up. */
+  .theme-premium-page {
+    @apply -mx-4 -mb-8 rounded-t-3xl px-4 pb-10 pt-5 md:-mx-6 md:-mb-6 md:px-6;
+  }
+
+  .theme-premium .card {
+    @apply rounded-2xl border-line bg-surface shadow-lg shadow-black/25;
+  }
+  .theme-premium .input {
+    /* A shade below the card, so a field reads as a well rather than a patch. */
+    @apply border-line bg-[#161D2F] text-fg placeholder:text-fg-subtle;
+    @apply focus:border-accent focus:ring-2 focus:ring-accent/30;
+  }
+  /* violet-500 and purple-500 are exactly #8B5CF6 and #A855F7. */
+  .theme-premium .btn-primary {
+    @apply border-0 bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-lg shadow-violet-500/25;
+    @apply hover:brightness-110 dark:from-violet-500 dark:to-purple-500;
+  }
+  .theme-premium .btn-secondary {
+    @apply border-line bg-surface-2 text-fg hover:bg-[#313C57];
+  }
+  .theme-premium .segmented {
+    @apply bg-[#161D2F];
+  }
+  .theme-premium .segmented-item[aria-checked='true'],
+  .theme-premium .segmented-item[aria-selected='true'] {
+    @apply bg-accent/15 text-fg ring-1 ring-accent/30;
+  }
+  .theme-premium .chip {
+    @apply bg-accent/10 text-fg-muted;
+  }
+  .theme-premium .alert-error {
+    @apply border-red-400/25 bg-red-500/10 text-red-300;
+  }
+  .theme-premium .alert-success {
+    @apply border-emerald-400/25 bg-emerald-500/10 text-emerald-300;
+  }
+
   /* --- mobile shell helpers ------------------------------------------- */
 
   /* Every interactive element in the mobile shell must clear 44px. */
