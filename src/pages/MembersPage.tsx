@@ -5,14 +5,20 @@ import { t } from '../i18n/strings';
 import { useMembers } from '../hooks/queries/useMembers';
 import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { Select } from '../components/ui/Select';
+import { PageTitle } from '../components/ui/PageTitle';
+import { ChevronRightIcon } from '../components/mobile/icons';
+import { PhoneIcon, TicketIcon } from '../components/ui/icons';
+import { useMobileShell } from '../hooks/useIsMobile';
 import { daysLeft, daysLeftColor } from '../lib/expiry';
 import type { MemberExportRow } from '../lib/membersPdf';
-import type { MemberStatus } from '../lib/types';
+import type { Member, MemberStatus } from '../lib/types';
 
 const STATUSES: MemberStatus[] = ['active', 'expiring', 'grace', 'expired', 'frozen'];
 
 export function MembersPage() {
   const { gym } = useAuth();
+  const isMobile = useMobileShell();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [exporting, setExporting] = useState(false);
@@ -27,7 +33,7 @@ export function MembersPage() {
         import('../lib/membersPdf'),
         api.get<MemberExportRow[]>('/members/export'),
       ]);
-      downloadMembersPdf(gym?.name ?? 'Gym', data);
+      await downloadMembersPdf(gym?.name ?? 'Gym', data);
     } catch (err) {
       setExportError(apiErrorMessage(err));
     } finally {
@@ -45,42 +51,54 @@ export function MembersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">{t('members.title')}</h1>
-        {/* wraps: three actions do not fit one phone-width row, and without
-            this the last ones are pushed off the right edge */}
-        <div className="flex flex-wrap gap-2">
-          <button className="btn-secondary" onClick={() => void exportPdf()} disabled={exporting}>
-            {exporting ? 'Exporting…' : '⬇ Export PDF'}
-          </button>
-          <Link to="/members/previous" className="btn-secondary">
-            + {t('nav.addPrevious')}
-          </Link>
-          <Link to="/members/enroll" className="btn-primary">
-            + {t('members.enroll')}
-          </Link>
-        </div>
-      </div>
+      {/* Enrolling is the reason this screen exists, so on a phone it gets a
+          full-width primary button and the rarer actions share the row below. */}
+      <PageTitle
+        actions={
+          <>
+            <Link to="/members/enroll" className="btn-primary w-full sm:w-auto">
+              + {t('members.enroll')}
+            </Link>
+            <Link to="/members/previous" className="btn-secondary flex-1 sm:flex-none">
+              + {t('nav.addPrevious')}
+            </Link>
+            <button
+              className="btn-secondary flex-1 sm:flex-none"
+              onClick={() => void exportPdf()}
+              disabled={exporting}
+            >
+              {exporting ? 'Exporting…' : '⬇ Export PDF'}
+            </button>
+          </>
+        }
+      >
+        {t('members.title')}
+      </PageTitle>
       {exportError && <div className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{exportError}</div>}
 
       <div className="flex flex-wrap gap-3">
         <input
-          className="input max-w-xs"
+          className="input w-full sm:max-w-xs"
           placeholder={t('members.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select className="input max-w-[170px]" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">{t('members.allStatuses')}</option>
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {t(`status.${s}`)}
-            </option>
-          ))}
-          <option value="archived">{t('members.archived')}</option>
-        </select>
+        <Select
+          className="w-full sm:max-w-[190px]"
+          value={status}
+          onChange={setStatus}
+          label={t('members.allStatuses')}
+          options={[
+            { value: '', label: t('members.allStatuses') },
+            ...STATUSES.map((s) => ({ value: s as string, label: t(`status.${s}`) })),
+            { value: 'archived', label: t('members.archived') },
+          ]}
+        />
       </div>
 
+      {isMobile ? (
+        <MemberCards members={members} isLoading={isLoading} />
+      ) : (
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
@@ -134,6 +152,125 @@ export function MembersPage() {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
+}
+
+/**
+ * The phone roster. A five-column table on a 360px screen is a horizontal
+ * scroll no one performs, so each member becomes their own card: the full name
+ * on top — never truncated, because picking the right Abebe out of four is the
+ * whole job — then sex and phone, then the plan, with the status and the days
+ * remaining held on the right where the eye scans for them.
+ */
+function MemberCards({ members, isLoading }: { members: Member[]; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="list-stack">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="list-card flex items-start gap-3">
+            <span className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-surface-2" />
+            <span className="flex-1 space-y-2 py-1">
+              <span className="block h-3.5 w-2/3 animate-pulse rounded bg-surface-2" />
+              <span className="block h-3 w-1/2 animate-pulse rounded bg-surface-2" />
+            </span>
+            <span className="h-5 w-16 shrink-0 animate-pulse rounded-full bg-surface-2" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (members.length === 0) {
+    return <p className="card py-10 text-center text-sm text-fg-muted">{t('members.noneFound')}</p>;
+  }
+  return (
+    <div className="list-stack">
+      {members.map((m) => (
+        <MemberCard key={m.id} member={m} />
+      ))}
+    </div>
+  );
+}
+
+function MemberCard({ member }: { member: Member }) {
+  const left = member.expires_at != null ? daysLeft(member.expires_at) : null;
+
+  return (
+    <Link to={`/members/${member.id}`} className="list-card flex items-start gap-3">
+      <Avatar member={member} />
+
+      <div className="min-w-0 flex-1">
+        {/* Wraps rather than truncates — two lines of real name beat one line
+            of "Bereket Hailu A…". */}
+        <p className="break-words pr-1 text-[15px] font-bold leading-snug text-fg">{member.full_name}</p>
+
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-fg-muted">
+          {member.sex && (
+            <span className="flex items-center gap-1">
+              <span aria-hidden className="text-sm leading-none text-fg-subtle">
+                {member.sex === 'female' ? '♀' : '♂'}
+              </span>
+              {t(member.sex === 'female' ? 'members.female' : 'members.male')}
+            </span>
+          )}
+          {member.sex && member.phone && <Dot />}
+          {member.phone && (
+            <span className="flex items-center gap-1">
+              <PhoneIcon className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+              <span className="tabular-nums">{member.phone}</span>
+            </span>
+          )}
+        </p>
+
+        {member.plan_name && (
+          <p className="mt-0.5 flex items-center gap-1 text-xs text-fg-muted">
+            <TicketIcon className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+            <span className="truncate font-medium">{member.plan_name}</span>
+          </p>
+        )}
+      </div>
+
+      <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
+        <StatusBadge status={member.status} dot />
+        {left !== null && member.status !== 'frozen' && (
+          <span className={`text-[11px] font-semibold ${daysLeftColor[member.status]}`}>
+            {remainingText(left)}
+          </span>
+        )}
+      </div>
+
+      <ChevronRightIcon className="h-5 w-5 shrink-0 self-center text-fg-subtle" />
+    </Link>
+  );
+}
+
+/** The member's photo when there is one, their initial when there is not. */
+function Avatar({ member }: { member: Member }) {
+  if (member.photo_url) {
+    return (
+      <img
+        src={member.photo_url}
+        alt=""
+        className="h-10 w-10 shrink-0 rounded-full object-cover"
+        loading="lazy"
+      />
+    );
+  }
+  return (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-base font-bold uppercase text-accent">
+      {member.full_name.trim().charAt(0) || '?'}
+    </span>
+  );
+}
+
+function Dot() {
+  return <span aria-hidden className="text-fg-subtle">·</span>;
+}
+
+/** "61 days left" / "1 day overdue" — singular matters at the edge that stings. */
+function remainingText(days: number): string {
+  if (days >= 0) return `${days} ${t(days === 1 ? 'members.dayLeft' : 'members.daysLeft')}`;
+  const overdue = -days;
+  return `${overdue} ${t(overdue === 1 ? 'members.dayOverdue' : 'members.daysOverdue')}`;
 }

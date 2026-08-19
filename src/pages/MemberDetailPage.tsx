@@ -5,6 +5,7 @@ import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { daysLeft, daysLeftColor } from '../lib/expiry';
+import { paymentMethodLabel } from '../lib/payments';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { RenewModal } from '../components/members/RenewModal';
 import { RemoveMemberModal } from '../components/members/RemoveMemberModal';
@@ -12,6 +13,22 @@ import { EditMemberModal } from '../components/members/EditMemberModal';
 import { useMember, useMemberTelegramLink, useSetMemberFrozen } from '../hooks/queries/useMembers';
 import { useAuth } from '../hooks/useAuth';
 import { qk } from '../hooks/queries/keys';
+
+/** One labelled fact in the member's summary grid. */
+function Fact({ label, value, tone }: { label: string; value: string; tone?: 'good' | 'muted' }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[11px] font-medium uppercase tracking-wide text-fg-muted">{label}</dt>
+      <dd
+        className={`mt-0.5 break-words text-sm font-medium ${
+          tone === 'good' ? 'text-green-600 dark:text-green-400' : tone === 'muted' ? 'text-fg-muted' : 'text-fg'
+        }`}
+      >
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 export function MemberDetailPage() {
   const { id } = useParams();
@@ -41,44 +58,57 @@ export function MemberDetailPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      {/*
+        * Identity first, then the facts about this membership, then what you
+        * can do about it. On a phone that is three stacked blocks rather than
+        * one wide row of chips — a name wrapping around a photo with six
+        * pills trailing off the edge told you nothing at a glance.
+        */}
+      <section className="card">
         <div className="flex items-center gap-4">
           {member.photo_url ? (
-            <img src={member.photo_url} alt="" className="h-16 w-16 rounded-full object-cover" />
+            <img src={member.photo_url} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
           ) : (
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-2 text-xl font-bold text-fg-muted">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-bold uppercase text-accent">
               {member.full_name[0]}
             </div>
           )}
-          <div>
-            <h1 className="text-2xl font-bold">{member.full_name}</h1>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-fg-muted">
-              <StatusBadge status={member.status} />
-              {current && (
-                <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-medium text-fg-muted">
-                  {current.plan_name}
-                </span>
-              )}
+          <div className="min-w-0 flex-1">
+            <h1 className="break-words text-xl font-bold leading-snug sm:text-2xl">{member.full_name}</h1>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <StatusBadge status={member.status} dot />
               {remaining != null && !frozen && (
                 <span className={`text-xs font-bold ${daysLeftColor[member.status]}`}>
                   {remaining >= 0
-                    ? `${remaining} ${t('members.daysLeft')}`
-                    : `${-remaining} ${t('members.daysOverdue')}`}
+                    ? `${remaining} ${t(remaining === 1 ? 'members.dayLeft' : 'members.daysLeft')}`
+                    : `${-remaining} ${t(-remaining === 1 ? 'members.dayOverdue' : 'members.daysOverdue')}`}
                 </span>
               )}
-              <span>{member.phone}</span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs ${
-                  member.telegram_chat_id ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300' : 'bg-surface-2 text-fg-muted'
-                }`}
-              >
-                {t('members.telegram')}: {member.telegram_chat_id ? t('members.linked') : t('members.notLinked')}
-              </span>
-              <span className="text-xs text-fg-subtle">{data.descriptor_count} face captures</span>
             </div>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+
+        <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-4 sm:grid-cols-4">
+          <Fact label={t('members.plan')} value={current?.plan_name ?? '—'} />
+          <Fact label={t('auth.phone')} value={member.phone || '—'} />
+          <Fact
+            label={t('members.telegram')}
+            value={member.telegram_chat_id ? t('members.linked') : t('members.notLinked')}
+            tone={member.telegram_chat_id ? 'good' : 'muted'}
+          />
+          <Fact label={t('members.faceCaptures')} value={String(data.descriptor_count)} />
+        </dl>
+
+        {/* Renewing is why this screen gets opened; it leads, full width on a
+            phone, and the rest share the row beneath it. */}
+        <div className="mt-4 grid grid-cols-2 gap-2 border-t border-line pt-4 sm:flex sm:flex-wrap sm:justify-end">
+          <button
+            className="btn-primary col-span-2 sm:order-last"
+            onClick={() => setRenewOpen(true)}
+            disabled={archived}
+          >
+            {t('members.renew')}
+          </button>
           <button className="btn-secondary" onClick={() => setEditOpen(true)}>
             {t('edit.action')}
           </button>
@@ -98,11 +128,8 @@ export function MemberDetailPage() {
               {archived ? t('members.restore') : t('members.remove')}
             </button>
           )}
-          <button className="btn-primary" onClick={() => setRenewOpen(true)} disabled={archived}>
-            {t('members.renew')}
-          </button>
         </div>
-      </div>
+      </section>
 
       {archived && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
@@ -110,43 +137,61 @@ export function MemberDetailPage() {
         </div>
       )}
 
+      {/*
+        * Both histories were three- and four-column tables with a 380px floor,
+        * which on a phone meant a sideways scroll to read a date. They are
+        * rows now: the identifying fact on the left, the number or state on
+        * the right, detail underneath — the same shape at every width.
+        */}
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="card overflow-x-auto">
-          <h2 className="mb-3 font-semibold">{t('members.subscriptions')}</h2>
-          <table className="w-full min-w-[380px] text-sm">
-            <tbody>
-              {data.subscriptions.map((s) => (
-                <tr key={s.id} className="border-b border-line last:border-0">
-                  <td className="py-2 font-medium">{s.plan_name}</td>
-                  <td className="py-2 text-fg-muted">
-                    {String(s.starts_at).slice(0, 10)} → {String(s.expires_at).slice(0, 10)}
-                  </td>
-                  <td className="py-2 text-right text-xs uppercase text-fg-subtle">
+        <section className="card">
+          <h2 className="mb-1 font-semibold">{t('members.subscriptions')}</h2>
+          <div>
+            {data.subscriptions.map((s) => (
+              <div key={s.id} className="border-t border-line py-3 first:border-t-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 break-words text-sm font-semibold text-fg">{s.plan_name}</span>
+                  <span className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-fg-subtle">
                     {s.status}
-                    {s.status === 'frozen' && s.frozen_days_remaining != null && ` (${s.frozen_days_remaining}d left)`}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </span>
+                </div>
+                <p className="mt-0.5 text-xs tabular-nums text-fg-muted">
+                  {String(s.starts_at).slice(0, 10)} → {String(s.expires_at).slice(0, 10)}
+                  {s.status === 'frozen' && s.frozen_days_remaining != null && (
+                    <span className="ml-2 font-medium text-fg-subtle">
+                      {s.frozen_days_remaining} {t('members.daysLeft')}
+                    </span>
+                  )}
+                </p>
+              </div>
+            ))}
+            {data.subscriptions.length === 0 && (
+              <p className="py-6 text-center text-sm text-fg-muted">—</p>
+            )}
+          </div>
         </section>
 
-        <section className="card overflow-x-auto">
-          <h2 className="mb-3 font-semibold">{t('members.paymentHistory')}</h2>
-          <table className="w-full min-w-[380px] text-sm">
-            <tbody>
-              {data.payments.map((p) => (
-                <tr key={p.id} className="border-b border-line last:border-0">
-                  <td className="py-2">{String(p.created_at).slice(0, 10)}</td>
-                  <td className="py-2 font-medium">
-                    {Number(p.amount)} {t('common.birr')}
-                  </td>
-                  <td className="py-2 text-fg-muted">{p.method}</td>
-                  <td className="py-2 text-right text-fg-subtle">{p.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <section className="card">
+          <h2 className="mb-1 font-semibold">{t('members.paymentHistory')}</h2>
+          <div>
+            {data.payments.map((p) => (
+              <div key={p.id} className="border-t border-line py-3 first:border-t-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-sm font-bold tabular-nums text-fg">
+                    {Number(p.amount).toLocaleString()} {t('common.birr')}
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-fg-muted">
+                    {String(p.created_at).slice(0, 10)}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="chip">{paymentMethodLabel(p.method)}</span>
+                  {p.note && <span className="min-w-0 truncate text-xs text-fg-subtle">{p.note}</span>}
+                </div>
+              </div>
+            ))}
+            {data.payments.length === 0 && <p className="py-6 text-center text-sm text-fg-muted">—</p>}
+          </div>
         </section>
 
         <section className="card lg:col-span-2">

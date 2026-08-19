@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { t } from '../i18n/strings';
+import { PageTitle } from '../components/ui/PageTitle';
+import { Select } from '../components/ui/Select';
 
 interface AuditRow {
   id: number;
@@ -31,17 +33,19 @@ export function AuditLogPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('audit.title')}</h1>
+      <PageTitle>{t('audit.title')}</PageTitle>
 
       <div className="flex flex-wrap gap-3">
-        <select className="input max-w-[180px]" value={entity} onChange={(e) => setEntity(e.target.value)}>
-          <option value="">{t('audit.allEntities')}</option>
-          {ENTITIES.map((v) => (
-            <option key={v} value={v}>
-              {v}
-            </option>
-          ))}
-        </select>
+        <Select
+          className="w-full sm:max-w-[200px]"
+          value={entity}
+          onChange={setEntity}
+          label={t('audit.allEntities')}
+          options={[
+            { value: '', label: t('audit.allEntities') },
+            ...ENTITIES.map((v) => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) })),
+          ]}
+        />
         <input
           className="input max-w-xs"
           placeholder={t('audit.searchAction')}

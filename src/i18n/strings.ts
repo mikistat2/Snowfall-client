@@ -105,12 +105,15 @@ const en = {
   'members.search': 'Search name or phone…',
   'members.enroll': 'Enroll member',
   'members.allStatuses': 'All statuses',
+  'members.noneFound': 'No members match this filter.',
   'members.name': 'Name',
   'members.plan': 'Plan',
   'members.expires': 'Expires',
   'members.status': 'Status',
   'members.daysLeft': 'days left',
   'members.daysOverdue': 'days overdue',
+  'members.dayLeft': 'day left',
+  'members.dayOverdue': 'day overdue',
   'members.renew': 'Renew / mark payment',
   'members.freeze': 'Freeze',
   'members.unfreeze': 'Unfreeze',
@@ -134,6 +137,7 @@ const en = {
   'remove.archive': 'Archive',
   'remove.delete': 'Delete permanently',
   'members.telegram': 'Telegram',
+  'members.faceCaptures': 'Face captures',
   'members.linked': 'Linked',
   'members.notLinked': 'Not linked',
   'members.subscriptions': 'Subscription history',
@@ -182,11 +186,22 @@ const en = {
   'dashboard.revenue': 'Revenue this month',
   'dashboard.expiringSoon': 'Expiring in 7 days',
   'dashboard.peakHours': 'Peak hours (last 14 days)',
+  // shown in place of the live/check-in tiles when the gym runs without a camera
+  'dashboard.membersTotal': 'Members',
+  'dashboard.bySex': 'Male / female',
+  'dashboard.noCameraHint': 'Camera off — showing your roster instead of live entry data.',
 
   // settings
   'settings.title': 'Settings',
   'settings.gym': 'Gym profile',
   'settings.rules': 'Entry & lifecycle rules',
+  'settings.rulesHint': 'How this gym decides who may enter, when a membership lapses, and when the system reaches out.',
+  'settings.gracePeriodHint': 'Days after expiry a member may still be let in before they count as expired.',
+  'settings.reminderDaysHint': 'How many days before expiry the reminder goes out — and when a membership starts showing as expiring.',
+  'settings.autoCheckoutHint': 'A session still open after this long is checked out automatically.',
+  'settings.nudgeDaysHint': 'Nudge a member over Telegram once they have not visited for this many days.',
+  'settings.thresholdHint': 'Face-match strictness. Lower is stricter; 0.5 suits most gyms.',
+  'settings.closingHint': 'Anyone still checked in is checked out at this time.',
   'settings.gracePeriod': 'Grace period (days)',
   'settings.autoCheckout': 'Auto-checkout after (hours)',
   'settings.reminderDays': 'Expiry reminder (days before)',
@@ -345,6 +360,11 @@ const en = {
   'telegram.linkMyChat': 'Link my chat (admin alerts)',
   'telegram.myChatLinked': 'Your chat is linked',
 
+  // custom dropdown (components/ui/Select)
+  'select.search': 'Search',
+  'select.noResults': 'No matches',
+  'select.none': 'None',
+
   // common
   'common.cancel': 'Cancel',
   'common.back': 'Back',
@@ -373,6 +393,9 @@ const en = {
   'home.actionPayments': 'Payments',
   'home.actionLive': 'Live',
   'home.checkInsToday': 'Check-ins',
+  'home.membersTotal': 'Members',
+  'home.onTheRoster': 'on the roster',
+  'home.bySex': 'Male / female',
   'home.collectedToday': 'Collected',
   'home.expiringSoon': 'Expiring',
   'home.newToday': 'New today',
@@ -409,6 +432,7 @@ const en = {
   'common.loading': 'Loading…',
   'common.error': 'Something went wrong',
   'common.days': 'days',
+  'common.hours': 'hours',
   'common.birr': 'ETB',
 } as const;
 

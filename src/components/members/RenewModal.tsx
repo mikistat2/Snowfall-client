@@ -2,11 +2,12 @@ import { useState, type FormEvent } from 'react';
 import { apiErrorMessage } from '../../lib/api';
 import { Modal } from '../ui/Modal';
 import { t } from '../../i18n/strings';
+import { Select } from '../ui/Select';
+import { paymentMethodOptions } from '../../lib/payments';
 import { useActivePlans } from '../../hooks/queries/usePlans';
 import { useRenewMember } from '../../hooks/queries/useMembers';
 import type { PaymentMethod } from '../../lib/types';
 
-const METHODS: PaymentMethod[] = ['cash', 'telebirr', 'bank', 'other'];
 
 export function RenewModal({ memberId, onClose }: { memberId: number; onClose: () => void }) {
   const { data: plans = [] } = useActivePlans();
@@ -42,21 +43,18 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
         )}
         <div>
           <label className="label">{t('enroll.plan')}</label>
-          <select
-            className="input"
+          <Select
             value={planId}
-            onChange={(e) => setPlanId(e.target.value === '' ? '' : Number(e.target.value))}
-            required
-          >
-            <option value="">—</option>
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} · {p.duration_days} {t('common.days')} · {Number(p.price)} {t('common.birr')}
-              </option>
-            ))}
-          </select>
+            onChange={setPlanId}
+            label={t('enroll.plan')}
+            options={plans.map((p) => ({
+              value: p.id,
+              label: p.name,
+              hint: `${p.duration_days} ${t('common.days')} · ${Number(p.price)} ${t('common.birr')}`,
+            }))}
+          />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="field-row">
           <div>
             <label className="label">{t('enroll.amount')}</label>
             <input
@@ -70,13 +68,12 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
           </div>
           <div>
             <label className="label">{t('enroll.method')}</label>
-            <select className="input" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-              {METHODS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={method}
+              onChange={setMethod}
+              label={t('enroll.method')}
+              options={paymentMethodOptions()}
+            />
           </div>
         </div>
         <div>

@@ -2,14 +2,17 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
+import { PageTitle } from '../components/ui/PageTitle';
 import { FaceCapture, type Capture } from '../components/members/FaceCapture';
 import { PhoneInput } from '../components/ui/PhoneInput';
+import { Select } from '../components/ui/Select';
+import { SexPicker } from '../components/members/SexPicker';
+import { paymentMethodOptions } from '../lib/payments';
 import { useActivePlans } from '../hooks/queries/usePlans';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { useEnrollMember } from '../hooks/queries/useMembers';
 import type { PaymentMethod } from '../lib/types';
 
-const METHODS: PaymentMethod[] = ['cash', 'telebirr', 'bank', 'other'];
 
 export function EnrollPage() {
   const navigate = useNavigate();
@@ -51,7 +54,7 @@ export function EnrollPage() {
 
   return (
     <div className="max-w-4xl space-y-4">
-      <h1 className="text-2xl font-bold">{t('enroll.title')}</h1>
+      <PageTitle>{t('enroll.title')}</PageTitle>
       {mutation.isError && (
         <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(mutation.error)}</p>
       )}
@@ -62,38 +65,32 @@ export function EnrollPage() {
             <label className="label">{t('members.fullName')}</label>
             <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">{t('auth.phone')}</label>
-              <PhoneInput value={phone} onChange={setPhone} />
-            </div>
-            <div>
-              <label className="label">{t('members.sex')}</label>
-              <select className="input" value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-                <option value="">—</option>
-                <option value="male">{t('members.male')}</option>
-                <option value="female">{t('members.female')}</option>
-              </select>
-            </div>
+          {/* The phone field carries a country selector inside it, so it owns a
+              full row — pairing it with anything squeezed both to unusable
+              widths on a phone. */}
+          <div className="field">
+            <label className="label">{t('auth.phone')}</label>
+            <PhoneInput value={phone} onChange={setPhone} />
           </div>
-          <div>
+          <div className="field">
+            <label className="label">{t('members.sex')}</label>
+            <SexPicker value={sex} onChange={setSex} />
+          </div>
+          <div className="field">
             <label className="label">{t('enroll.plan')}</label>
-            <select
-              className="input"
+            <Select
               value={planId}
-              onChange={(e) => setPlanId(e.target.value === '' ? '' : Number(e.target.value))}
-              required
-            >
-              <option value="">—</option>
-              {plans.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} · {p.duration_days} {t('common.days')} · {Number(p.price)} {t('common.birr')}
-                </option>
-              ))}
-            </select>
+              onChange={setPlanId}
+              label={t('enroll.plan')}
+              options={plans.map((p) => ({
+                value: p.id,
+                label: p.name,
+                hint: `${p.duration_days} ${t('common.days')} · ${Number(p.price)} ${t('common.birr')}`,
+              }))}
+            />
           </div>
           <h2 className="pt-2 font-semibold">{t('enroll.payment')}</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="field-row">
             <div>
               <label className="label">{t('enroll.amount')}</label>
               <input
@@ -107,13 +104,12 @@ export function EnrollPage() {
             </div>
             <div>
               <label className="label">{t('enroll.method')}</label>
-              <select className="input" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-                {METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+              <Select
+                value={method}
+                onChange={setMethod}
+                label={t('enroll.method')}
+                options={paymentMethodOptions()}
+              />
             </div>
           </div>
           <button

@@ -3,6 +3,8 @@ import { apiErrorMessage } from '../../lib/api';
 import { t } from '../../i18n/strings';
 import { Modal } from '../ui/Modal';
 import { PhoneInput } from '../ui/PhoneInput';
+import { Select } from '../ui/Select';
+import { SexPicker } from './SexPicker';
 import { StatusBadge } from '../ui/StatusBadge';
 import { CalendarDateInput, type CalendarSystem } from '../ui/CalendarDateInput';
 import { usePlans } from '../../hooks/queries/usePlans';
@@ -152,11 +154,7 @@ export function EditMemberModal({
             </div>
             <div>
               <label className="label">{t('members.sex')}</label>
-              <select className="input" value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-                <option value="">—</option>
-                <option value="male">{t('members.male')}</option>
-                <option value="female">{t('members.female')}</option>
-              </select>
+              <SexPicker value={sex} onChange={setSex} />
             </div>
 
             <div>
@@ -196,11 +194,10 @@ export function EditMemberModal({
               <>
                 <div>
                   <label className="label">{t('enroll.plan')}</label>
-                  <select
-                    className="input"
+                  <Select
                     value={planId}
-                    onChange={(e) => {
-                      const next = e.target.value === '' ? '' : Number(e.target.value);
+                    label={t('enroll.plan')}
+                    onChange={(next) => {
                       setPlanId(next);
                       // a different package is a different length, so the expiry
                       // that came from the old one is re-derived rather than left
@@ -208,16 +205,12 @@ export function EditMemberModal({
                       const plan = plans.find((p) => p.id === next);
                       if (plan && startsAt) setExpiresAt(addDaysIso(startsAt, plan.duration_days));
                     }}
-                    required
-                  >
-                    <option value="">—</option>
-                    {plans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} · {p.duration_days} {t('common.days')}
-                        {p.active ? '' : ` · ${t('edit.planInactive')}`}
-                      </option>
-                    ))}
-                  </select>
+                    options={plans.map((p) => ({
+                      value: p.id,
+                      label: p.name,
+                      hint: `${p.duration_days} ${t('common.days')}${p.active ? '' : ` · ${t('edit.planInactive')}`}`,
+                    }))}
+                  />
                 </div>
 
                 <CalendarDateInput

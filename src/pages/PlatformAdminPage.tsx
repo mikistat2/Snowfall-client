@@ -5,6 +5,7 @@ import { platformApi, platformToken, platformProfile, type PlatformPerms, type P
 import { apiErrorMessage } from '../lib/api';
 import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
+import { Select } from '../components/ui/Select';
 import { BillingAdmin } from '../components/billing/BillingAdmin';
 import type { BillingCycle } from '../lib/billing';
 import { RecordPaymentSection } from '../components/billing/RecordPaymentSection';
@@ -223,7 +224,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
         import('../lib/membersPdf'),
         platformApi.get<import('../lib/membersPdf').GymBackupEntry[]>('/export'),
       ]);
-      downloadPlatformBackupPdf(data);
+      await downloadPlatformBackupPdf(data);
       const total = data.reduce((sum, e) => sum + e.members.length, 0);
       setBanner(`Backup PDF downloaded — ${data.length} gyms, ${total} members. Keep it somewhere safe.`);
     } catch (err) {
@@ -772,7 +773,7 @@ function ManageGymModal({
           `/gyms/${gym.id}/export`,
         ),
       ]);
-      downloadMembersPdf(data.gym_name, data.members);
+      await downloadMembersPdf(data.gym_name, data.members);
       setError('');
     } catch (err) {
       setError(apiErrorMessage(err));
@@ -950,15 +951,17 @@ function ManageGymModal({
             )}
             {gym.status !== 'pending' && perms.renew && (
               <div className="flex items-center gap-1">
-                <select
-                  className="input w-28 py-1.5 text-sm"
+                <Select
+                  className="w-28"
                   value={renewCycle}
-                  onChange={(e) => setRenewCycle(e.target.value as BillingCycle)}
-                  title="How long to extend for"
-                >
-                  <option value="MONTHLY">1 month</option>
-                  <option value="YEARLY">1 year</option>
-                </select>
+                  onChange={setRenewCycle}
+                  label="Extend by"
+                  aria-label="How long to extend for"
+                  options={[
+                    { value: 'MONTHLY', label: '1 month' },
+                    { value: 'YEARLY', label: '1 year' },
+                  ]}
+                />
                 <button
                   className="btn-secondary"
                   onClick={() => renew.run()}

@@ -19,6 +19,10 @@
     --c-fg-muted: 100 116 139; /* slate-500 */
     --c-fg-subtle: 148 163 184; /* slate-400 */
     --c-line: 226 232 240; /* slate-200 */
+    /* One accent drives every selected/focused state, so a control never has
+       to know whether it is on a light or a dark screen. */
+    --c-accent: 2 132 199; /* sky-600 */
+    --c-accent-soft: 224 242 254; /* sky-100 — selected row / chip background */
   }
 
   .dark {
@@ -31,6 +35,8 @@
     --c-fg-muted: 148 163 184; /* slate-400 */
     --c-fg-subtle: 100 116 139; /* slate-500 */
     --c-line: 51 65 85; /* slate-700 */
+    --c-accent: 56 189 248; /* sky-400 — lifted, so it reads on slate-900 */
+    --c-accent-soft: 12 74 110; /* sky-900 */
   }
 
   html {
@@ -61,26 +67,56 @@
 }
 
 @layer components {
+  /* Radii, focus rings and press feedback are defined once here. A screen
+     that hand-rolls its own button is the thing that makes an app look
+     unfinished, so every surface below is expected to reuse these. */
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex select-none items-center justify-center gap-1.5 rounded-xl px-4 py-2 text-sm font-semibold transition-all;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas;
+    @apply disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100;
+    @apply active:scale-[0.98];
   }
   .btn-primary {
-    @apply btn bg-slate-900 text-white hover:bg-slate-700 dark:bg-sky-600 dark:text-white dark:hover:bg-sky-500;
+    @apply btn bg-slate-900 text-white shadow-sm hover:bg-slate-700 dark:bg-sky-600 dark:text-white dark:hover:bg-sky-500;
   }
   .btn-secondary {
     @apply btn border border-line bg-surface text-fg hover:bg-surface-2;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-500;
+    @apply btn bg-red-600 text-white shadow-sm hover:bg-red-500;
+  }
+  /* Borderless action for toolbars and list rows. */
+  .btn-ghost {
+    @apply btn bg-transparent text-fg-muted hover:bg-surface-2 hover:text-fg;
   }
   .input {
-    @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-fg outline-none placeholder:text-fg-subtle focus:border-slate-500 focus:ring-1 focus:ring-slate-400 dark:focus:border-sky-500 dark:focus:ring-sky-500;
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-sm text-fg outline-none transition-colors;
+    @apply placeholder:text-fg-subtle focus:border-accent focus:ring-2 focus:ring-accent/25;
+    @apply disabled:cursor-not-allowed disabled:bg-surface-2 disabled:text-fg-muted;
   }
   .label {
-    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-fg-muted;
+    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-fg-muted;
   }
   .card {
-    @apply rounded-xl border border-line bg-surface p-5 shadow-sm;
+    @apply rounded-2xl border border-line bg-surface p-5 shadow-sm;
+  }
+  /* Small status pill — plan names, counts, statuses. */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-fg-muted;
+  }
+
+  /* Segmented control: two or three exclusive choices that deserve to be
+     visible at once rather than hidden behind a dropdown. */
+  .segmented {
+    @apply grid gap-1 rounded-xl bg-surface-2 p-1;
+  }
+  .segmented-item {
+    @apply flex min-h-[38px] items-center justify-center rounded-lg px-2 text-sm font-medium text-fg-muted transition-colors;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50;
+  }
+  .segmented-item[aria-checked='true'],
+  .segmented-item[aria-selected='true'] {
+    @apply bg-surface text-fg shadow-sm;
   }
   /* gym name display treatment — matches the Snowfall brand mark on the landing page */
   .gym-name {
@@ -94,9 +130,68 @@
     @apply flex min-h-touch min-w-touch items-center justify-center;
   }
 
-  /* Scroll region between a fixed stack header and the bottom tab bar. */
+  /*
+   * Scroll region between a fixed stack header and the bottom tab bar.
+   *
+   * overflow-x is pinned to hidden on purpose. Setting only overflow-y makes
+   * the other axis compute to `auto`, so ONE oversized element anywhere on a
+   * screen let the whole app slide sideways under the fixed chrome. Content
+   * that is legitimately wide (the desktop tables) carries its own
+   * `overflow-x-auto` wrapper and still scrolls inside its card.
+   */
   .mobile-scroll {
-    @apply flex-1 overflow-y-auto overscroll-contain;
+    @apply flex-1 overflow-y-auto overflow-x-hidden overscroll-contain;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /*
+   * A list of records on a phone: each row is its own card, and the stack
+   * reclaims a little of the screen's side padding — a member's full name has
+   * to fit on one or two lines without being cut off, which is the whole point
+   * of leaving the table behind.
+   */
+  .list-stack {
+    @apply -mx-1 space-y-2.5;
+  }
+  .list-card {
+    @apply block rounded-2xl border border-line bg-surface p-3.5 shadow-sm transition-colors;
+  }
+  a.list-card,
+  button.list-card {
+    @apply active:bg-surface-2;
+  }
+
+  /* One field, one row. Used by every form on the phone — see .field-row for
+     the rare pair that genuinely belongs side by side. */
+  .field {
+    @apply block w-full;
+  }
+  .field-row {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
+  }
+}
+
+/*
+ * Touch scaling. Anything a thumb has to hit grows to Android's 44px minimum
+ * and to a 16px font (smaller text in a WebView invites a zoom gesture on
+ * focus). Scoped to a coarse pointer or a phone-width viewport so the desktop
+ * app keeps its denser rhythm.
+ */
+@media (max-width: 767px), (pointer: coarse) {
+  .input {
+    @apply min-h-touch py-3 text-[15px];
+  }
+  .btn {
+    @apply min-h-touch px-4 text-[15px];
+  }
+  .card {
+    @apply rounded-2xl p-4;
+  }
+  .label {
+    @apply mb-2 normal-case tracking-normal text-fg-muted;
+    font-size: 0.8125rem;
+  }
+  .segmented-item {
+    @apply min-h-touch;
   }
 }

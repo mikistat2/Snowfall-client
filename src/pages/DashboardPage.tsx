@@ -2,12 +2,19 @@ import { t } from '../i18n/strings';
 import { useAuth } from '../hooks/useAuth';
 import { useSocket } from '../hooks/useSocket';
 import { useDashboardStats } from '../hooks/queries/useDashboard';
-import { useState } from 'react';
+import { useGymSettings } from '../hooks/queries/useSettings';
+import { SexSplit } from '../components/ui/SexSplit';
+import { useState, type ReactNode } from 'react';
 
 export function DashboardPage() {
   const { gym } = useAuth();
   const [liveOccupancy, setLiveOccupancy] = useState<number | null>(null);
   const { data, isLoading } = useDashboardStats();
+  // A gym running without a camera records no check-ins and has no live
+  // occupancy, so those two tiles would sit at zero forever. They are given
+  // over to the roster instead: how many members there are, and their split.
+  const { data: gymSettings } = useGymSettings();
+  const cameraEnabled = gymSettings?.settings.camera_enabled ?? true;
 
   useSocket({
     'occupancy:update': (payload: { count: number }) => setLiveOccupancy(payload.count),
@@ -15,12 +22,28 @@ export function DashboardPage() {
 
   if (isLoading || !data) return <p className="text-fg-subtle">{t('common.loading')}</p>;
 
-  const tiles = [
-    { label: t('dashboard.checkInsToday'), value: data.check_ins_today },
-    { label: t('dashboard.occupancy'), value: liveOccupancy ?? data.occupancy },
-    { label: t('dashboard.revenue'), value: `${data.revenue_this_month.toLocaleString()} ${t('common.birr')}` },
-    { label: t('dashboard.expiringSoon'), value: data.expiring_in_7_days },
-  ];
+  const revenueTile = {
+    label: t('dashboard.revenue'),
+    value: `${data.revenue_this_month.toLocaleString()} ${t('common.birr')}` as ReactNode,
+  };
+  const expiringTile = { label: t('dashboard.expiringSoon'), value: data.expiring_in_7_days as ReactNode };
+
+  const tiles: { label: string; value: ReactNode }[] = cameraEnabled
+    ? [
+        { label: t('dashboard.checkInsToday'), value: data.check_ins_today },
+        { label: t('dashboard.occupancy'), value: liveOccupancy ?? data.occupancy },
+        revenueTile,
+        expiringTile,
+      ]
+    : [
+        { label: t('dashboard.membersTotal'), value: data.members_total },
+        {
+          label: t('dashboard.bySex'),
+          value: <SexSplit male={data.members_by_sex.male} female={data.members_by_sex.female} />,
+        },
+        revenueTile,
+        expiringTile,
+      ];
 
   return (
     <div className="space-y-5">
@@ -35,12 +58,18 @@ export function DashboardPage() {
         {tiles.map((tile) => (
           <div key={tile.label} className="card">
             <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{tile.label}</p>
-            <p className="mt-1 text-3xl font-bold">{tile.value}</p>
+            <p className="mt-1 text-3xl font-bold tabular-nums">{tile.value}</p>
           </div>
         ))}
       </div>
 
-      <PeakHoursChart data={data.peak_hours} />
+      {/* Peak hours is a histogram of check-ins; with no camera there are none
+          to plot, so an empty chart would just be furniture. */}
+      {cameraEnabled ? (
+        <PeakHoursChart data={data.peak_hours} />
+      ) : (
+        <p className="text-center text-xs text-fg-muted">{t('dashboard.noCameraHint')}</p>
+      )}
     </div>
   );
 }

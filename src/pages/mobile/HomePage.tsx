@@ -11,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../hooks/useAuth';
 import { useSocket } from '../../hooks/useSocket';
 import { useDashboardStats, useTodayDigest } from '../../hooks/queries/useDashboard';
+import { useGymSettings } from '../../hooks/queries/useSettings';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { qk } from '../../hooks/queries/keys';
 import { Logo } from '../../components/ui/Logo';
@@ -27,6 +28,7 @@ import {
   UserPlusIcon,
 } from '../../components/mobile/icons';
 import { daysLeftColor } from '../../lib/expiry';
+import { SexSplit } from '../../components/ui/SexSplit';
 import { t, type StringKey } from '../../i18n/strings';
 import type { DashboardStats, MemberStatus, TodayDigest } from '../../lib/types';
 
@@ -51,6 +53,7 @@ export function HomePage() {
   const queryClient = useQueryClient();
   const stats = useDashboardStats();
   const digest = useTodayDigest();
+  const { data: gymSettings } = useGymSettings();
 
   const [liveOccupancy, setLiveOccupancy] = useState<number | null>(null);
   useSocket({
@@ -69,6 +72,9 @@ export function HomePage() {
   const loading = stats.isLoading || digest.isLoading;
   const failed = stats.isError && !stats.data;
 
+  // Without a camera there are no check-ins and no live occupancy: the two
+  // entry-driven cards show the roster instead (see OccupancyCard/StatGrid).
+  const cameraEnabled = gymSettings?.settings.camera_enabled ?? true;
   const occupancy = liveOccupancy ?? stats.data?.occupancy ?? 0;
   const attention = (digest.data?.expiring ?? []).slice(0, 4);
 
@@ -88,7 +94,12 @@ export function HomePage() {
         <Hero gymName={gym?.name ?? t('app.name')} userName={user?.name} />
 
         <div className="space-y-6 px-4 pb-6">
-          <OccupancyCard count={occupancy} loading={loading} live={liveOccupancy !== null} />
+          <OccupancyCard
+            count={cameraEnabled ? occupancy : (stats.data?.members_total ?? 0)}
+            loading={loading}
+            live={cameraEnabled && liveOccupancy !== null}
+            cameraEnabled={cameraEnabled}
+          />
 
           {failed ? (
             <ErrorCard onRetry={() => void refresh()} />
@@ -96,6 +107,8 @@ export function HomePage() {
             <>
               <StatGrid
                 loading={loading}
+                cameraEnabled={cameraEnabled}
+                bySex={stats.data?.members_by_sex}
                 checkIns={stats.data?.check_ins_today ?? 0}
                 collected={digest.data?.payments_today.total ?? 0}
                 expiring={stats.data?.expiring_in_7_days ?? 0}
@@ -213,7 +226,17 @@ function PullIndicator({ state }: { state: { distance: number; armed: boolean; r
 
 /* ------------------------------------------------------- occupancy card */
 
-function OccupancyCard({ count, loading, live }: { count: number; loading: boolean; live: boolean }) {
+function OccupancyCard({
+  count,
+  loading,
+  live,
+  cameraEnabled,
+}: {
+  count: number;
+  loading: boolean;
+  live: boolean;
+  cameraEnabled: boolean;
+}) {
   return (
     // `-mt-12` lifts the card into the hero's pb-16, which is the intended
     // floating-card look. `relative z-10` is what makes it survive: the hero is
@@ -232,7 +255,7 @@ function OccupancyCard({ count, loading, live }: { count: number; loading: boole
             />
           </span>
           <span className="text-[10px] font-bold uppercase tracking-widest text-fg-muted">
-            {t('home.liveLabel')}
+            {cameraEnabled ? t('home.liveLabel') : t('home.membersTotal')}
           </span>
         </div>
 
@@ -243,16 +266,20 @@ function OccupancyCard({ count, loading, live }: { count: number; loading: boole
         )}
 
         <p className="mt-1.5 text-sm text-fg-muted">
-          {t('home.insideNow')} · {count === 1 ? t('home.person') : t('home.people')}
+          {cameraEnabled
+            ? `${t('home.insideNow')} · ${count === 1 ? t('home.person') : t('home.people')}`
+            : `${count === 1 ? t('home.person') : t('home.people')} ${t('home.onTheRoster')}`}
         </p>
       </div>
 
+      {/* The card's action follows its subject: the live feed when there is a
+          camera, the roster when there is not. */}
       <Link
-        to="/live"
-        aria-label={t('live.title')}
+        to={cameraEnabled ? '/live' : '/members'}
+        aria-label={cameraEnabled ? t('live.title') : t('nav.members')}
         className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 active:bg-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:active:bg-sky-500/20"
       >
-        <LiveIcon className="h-7 w-7" />
+        {cameraEnabled ? <LiveIcon className="h-7 w-7" /> : <MembersIcon className="h-7 w-7" />}
       </Link>
     </section>
   );
@@ -262,6 +289,8 @@ function OccupancyCard({ count, loading, live }: { count: number; loading: boole
 
 function StatGrid({
   loading,
+  cameraEnabled,
+  bySex,
   checkIns,
   collected,
   expiring,
@@ -269,6 +298,8 @@ function StatGrid({
   onOpen,
 }: {
   loading: boolean;
+  cameraEnabled: boolean;
+  bySex?: { male: number; female: number };
   checkIns: number;
   collected: number;
   expiring: number;
@@ -278,13 +309,25 @@ function StatGrid({
   // Each tile opens a sheet with the rows behind the number instead of jumping
   // to a full page — the question a glance raises is "who?", and answering it
   // in place keeps the user on the home screen.
-  const tiles: { key: StringKey; value: string; id: SheetId; accent: string }[] = [
-    {
-      key: 'home.checkInsToday',
-      value: String(checkIns),
-      id: 'checkins',
-      accent: 'text-sky-600 dark:text-sky-400',
-    },
+  const tiles: { key: StringKey; value: ReactNode; id: SheetId; accent: string; to?: string }[] = [
+    cameraEnabled
+      ? {
+          key: 'home.checkInsToday',
+          value: String(checkIns),
+          id: 'checkins',
+          accent: 'text-sky-600 dark:text-sky-400',
+        }
+      : {
+          // No camera, no check-ins — the roster's split takes the slot, and
+          // tapping it goes to the roster rather than opening an empty sheet.
+          // Stacked: two badge-and-figure pairs do not fit across a half-width
+          // tile on a 360px screen.
+          key: 'home.bySex',
+          value: <SexSplit male={bySex?.male ?? 0} female={bySex?.female ?? 0} stack />,
+          id: 'checkins',
+          accent: 'text-fg',
+          to: '/members',
+        },
     {
       key: 'home.collectedToday',
       value: `${collected.toLocaleString()} ${t('common.birr')}`,
@@ -305,30 +348,39 @@ function StatGrid({
     },
   ];
 
+  const body = (tile: (typeof tiles)[number]) => (
+    <>
+      <span className="min-w-0">
+        <span className="block text-[11px] font-medium uppercase tracking-wide text-fg-muted">
+          {t(tile.key)}
+        </span>
+        {loading ? (
+          <span className="mt-2 block h-7 w-16 animate-pulse rounded bg-surface-2" />
+        ) : (
+          <span className={`mt-1 block text-2xl font-bold tabular-nums ${tile.accent}`}>
+            {tile.value}
+          </span>
+        )}
+      </span>
+      <ChevronRightIcon className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" />
+    </>
+  );
+  const tileClass =
+    'card flex items-start justify-between gap-2 p-4 text-left transition-transform active:scale-[0.98] active:bg-surface-2';
+
   return (
     <div className="grid grid-cols-2 gap-3">
-      {tiles.map((tile) => (
-        <button
-          key={tile.key}
-          type="button"
-          onClick={() => onOpen(tile.id)}
-          className="card flex items-start justify-between gap-2 p-4 text-left transition-transform active:scale-[0.98] active:bg-surface-2"
-        >
-          <span className="min-w-0">
-            <span className="block text-[11px] font-medium uppercase tracking-wide text-fg-muted">
-              {t(tile.key)}
-            </span>
-            {loading ? (
-              <span className="mt-2 block h-7 w-16 animate-pulse rounded bg-surface-2" />
-            ) : (
-              <span className={`mt-1 block truncate text-2xl font-bold tabular-nums ${tile.accent}`}>
-                {tile.value}
-              </span>
-            )}
-          </span>
-          <ChevronRightIcon className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" />
-        </button>
-      ))}
+      {tiles.map((tile) =>
+        tile.to ? (
+          <Link key={tile.key} to={tile.to} className={tileClass}>
+            {body(tile)}
+          </Link>
+        ) : (
+          <button key={tile.key} type="button" onClick={() => onOpen(tile.id)} className={tileClass}>
+            {body(tile)}
+          </button>
+        ),
+      )}
     </div>
   );
 }

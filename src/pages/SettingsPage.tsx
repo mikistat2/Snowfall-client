@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
@@ -6,9 +6,12 @@ import { t, getLocale, setLocale, type Locale, type StringKey } from '../i18n/st
 import { useTheme } from '../hooks/useTheme';
 import { useMobileShell } from '../hooks/useIsMobile';
 import type { ThemeMode } from '../lib/theme';
+import type { Plan } from '../lib/types';
 import { Modal } from '../components/ui/Modal';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { PhoneInput } from '../components/ui/PhoneInput';
+import { Select } from '../components/ui/Select';
+import { PageTitle } from '../components/ui/PageTitle';
 import {
   useCreateStaff,
   useDeleteStaff,
@@ -28,7 +31,7 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-4xl space-y-5">
-      <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
+      <PageTitle>{t('settings.title')}</PageTitle>
       {!mobile && <AppearanceSection />}
       <LanguageSection />
       <GymSection readOnly={!isOwner} />
@@ -239,98 +242,206 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card space-y-4">
-      <h2 className="font-semibold">{t('settings.gym')}</h2>
-      {mutation.isError && (
-        <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(mutation.error)}</p>
-      )}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <label className="label">{t('auth.gymName')}</label>
-          <input className="input" value={form.name} onChange={set('name')} disabled={readOnly} />
+    <form onSubmit={onSubmit} className="space-y-5">
+      <section className="card space-y-4">
+        <h2 className="font-semibold">{t('settings.gym')}</h2>
+        {mutation.isError && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
+            {apiErrorMessage(mutation.error)}
+          </p>
+        )}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="label">{t('auth.gymName')}</label>
+            <input className="input" value={form.name} onChange={set('name')} disabled={readOnly} />
+          </div>
+          <div>
+            <label className="label">{t('auth.address')}</label>
+            <input className="input" value={form.address} onChange={set('address')} disabled={readOnly} />
+          </div>
+          <div>
+            <label className="label">{t('auth.phone')}</label>
+            <PhoneInput
+              value={form.phone}
+              onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
+              disabled={readOnly}
+            />
+          </div>
         </div>
         <div>
-          <label className="label">{t('auth.address')}</label>
-          <input className="input" value={form.address} onChange={set('address')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('auth.phone')}</label>
-          <PhoneInput
-            value={form.phone}
-            onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
-            disabled={readOnly}
-          />
-        </div>
-      </div>
-      <div>
-        <label className="label">{t('settings.botToken')}</label>
-        <input
-          className="input"
-          value={form.telegram_bot_token}
-          onChange={set('telegram_bot_token')}
-          disabled={readOnly}
-          placeholder="123456:ABC-DEF… (from @BotFather)"
-        />
-        <BotStatus />
-      </div>
-
-      <h2 className="pt-2 font-semibold">{t('settings.rules')}</h2>
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <label className="label">{t('settings.gracePeriod')}</label>
-          <input type="number" min="0" className="input" value={form.grace_period_days} onChange={set('grace_period_days')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('settings.reminderDays')}</label>
-          <input type="number" min="0" className="input" value={form.expiry_reminder_days} onChange={set('expiry_reminder_days')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('settings.autoCheckout')}</label>
-          <input type="number" min="0.5" step="0.5" className="input" value={form.auto_checkout_hours} onChange={set('auto_checkout_hours')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('settings.nudgeDays')}</label>
-          <input type="number" min="1" className="input" value={form.absence_nudge_days} onChange={set('absence_nudge_days')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('settings.threshold')}</label>
-          <input type="number" min="0.2" max="0.9" step="0.05" className="input" value={form.match_threshold} onChange={set('match_threshold')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('settings.closing')}</label>
-          <input type="time" className="input" value={form.closing_time} onChange={set('closing_time')} disabled={readOnly} />
-        </div>
-        <div>
-          <label className="label">{t('settings.entryMode')}</label>
-          <select className="input" value={form.entry_mode} onChange={set('entry_mode')} disabled={readOnly}>
-            <option value="auto">{t('settings.entryAuto')}</option>
-            <option value="manual">{t('settings.entryManual')}</option>
-          </select>
-          <p className="mt-1 text-xs text-fg-subtle">{t('settings.entryModeHint')}</p>
-        </div>
-        <div>
-          <label className="label">{t('settings.camera')}</label>
-          <select
+          <label className="label">{t('settings.botToken')}</label>
+          <input
             className="input"
-            value={form.camera_enabled ? 'on' : 'off'}
-            onChange={(e) => setForm((f) => ({ ...f, camera_enabled: e.target.value === 'on' }))}
+            value={form.telegram_bot_token}
+            onChange={set('telegram_bot_token')}
             disabled={readOnly}
-          >
-            <option value="on">{t('settings.cameraOn')}</option>
-            <option value="off">{t('settings.cameraOff')}</option>
-          </select>
-          <p className="mt-1 text-xs text-fg-subtle">{t('settings.cameraHint')}</p>
+            placeholder="123456:ABC-DEF… (from @BotFather)"
+          />
+          <BotStatus />
         </div>
-      </div>
+      </section>
+
+      {/*
+       * The rules are settings, not a form to fill in: each is a single value
+       * with a consequence worth explaining. Laid out as a grid of bare inputs
+       * they read as eight unlabelled numbers floating in a card — so they are
+       * rows instead, each carrying its name, its effect and its control on
+       * the right, which is the shape every phone's own settings use.
+       */}
+      <section className="card">
+        <h2 className="font-semibold">{t('settings.rules')}</h2>
+        <p className="mt-1 text-xs text-fg-muted">{t('settings.rulesHint')}</p>
+
+        <div className="mt-4">
+          <RuleRow label={t('settings.gracePeriod')} hint={t('settings.gracePeriodHint')}>
+            <NumberField
+              value={form.grace_period_days}
+              onChange={set('grace_period_days')}
+              min="0"
+              unit={t('common.days')}
+              disabled={readOnly}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.reminderDays')} hint={t('settings.reminderDaysHint')}>
+            <NumberField
+              value={form.expiry_reminder_days}
+              onChange={set('expiry_reminder_days')}
+              min="0"
+              unit={t('common.days')}
+              disabled={readOnly}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.nudgeDays')} hint={t('settings.nudgeDaysHint')}>
+            <NumberField
+              value={form.absence_nudge_days}
+              onChange={set('absence_nudge_days')}
+              min="1"
+              unit={t('common.days')}
+              disabled={readOnly}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.autoCheckout')} hint={t('settings.autoCheckoutHint')}>
+            <NumberField
+              value={form.auto_checkout_hours}
+              onChange={set('auto_checkout_hours')}
+              min="0.5"
+              step="0.5"
+              unit={t('common.hours')}
+              disabled={readOnly}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.closing')} hint={t('settings.closingHint')}>
+            <input
+              type="time"
+              className="input w-32 tabular-nums"
+              value={form.closing_time}
+              onChange={set('closing_time')}
+              disabled={readOnly}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.threshold')} hint={t('settings.thresholdHint')}>
+            <NumberField
+              value={form.match_threshold}
+              onChange={set('match_threshold')}
+              min="0.2"
+              max="0.9"
+              step="0.05"
+              disabled={readOnly}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.entryMode')} hint={t('settings.entryModeHint')}>
+            <Select
+              className="w-40"
+              value={form.entry_mode}
+              onChange={(entry_mode) => setForm((f) => ({ ...f, entry_mode }))}
+              disabled={readOnly}
+              label={t('settings.entryMode')}
+              options={[
+                { value: 'auto', label: t('settings.entryAuto') },
+                { value: 'manual', label: t('settings.entryManual') },
+              ]}
+            />
+          </RuleRow>
+
+          <RuleRow label={t('settings.camera')} hint={t('settings.cameraHint')}>
+            <Select
+              className="w-40"
+              value={form.camera_enabled ? 'on' : 'off'}
+              onChange={(v) => setForm((f) => ({ ...f, camera_enabled: v === 'on' }))}
+              disabled={readOnly}
+              label={t('settings.camera')}
+              options={[
+                { value: 'on', label: t('settings.cameraOn') },
+                { value: 'off', label: t('settings.cameraOff') },
+              ]}
+            />
+          </RuleRow>
+        </div>
+      </section>
+
       {!readOnly && (
         <div className="flex items-center gap-3">
-          <button className="btn-primary" disabled={mutation.isPending}>
+          <button className="btn-primary w-full sm:w-auto" disabled={mutation.isPending}>
             {t('settings.save')}
           </button>
-          {saved && <span className="text-sm text-green-600">✓</span>}
+          {saved && <span className="text-sm font-medium text-green-600">✓</span>}
         </div>
       )}
     </form>
+  );
+}
+
+/** One setting: what it is, what it does, and its control — never a bare box. */
+function RuleRow({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="border-t border-line py-3 first:border-t-0 first:pt-0 last:pb-0">
+      <div className="flex items-center justify-between gap-3">
+        <p className="min-w-0 text-sm font-medium text-fg">{label}</p>
+        <div className="shrink-0">{children}</div>
+      </div>
+      {hint && <p className="mt-1 text-xs leading-relaxed text-fg-muted">{hint}</p>}
+    </div>
+  );
+}
+
+/** A number with its unit beside it, so "3" is never left to mean anything. */
+function NumberField({
+  value,
+  onChange,
+  unit,
+  disabled,
+  min,
+  max,
+  step,
+}: {
+  value: number;
+  onChange: (e: { target: { value: string } }) => void;
+  unit?: string;
+  disabled?: boolean;
+  min?: string;
+  max?: string;
+  step?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        className="input w-20 text-right tabular-nums"
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        min={min}
+        max={max}
+        step={step}
+      />
+      {unit && <span className="w-10 text-xs text-fg-muted">{unit}</span>}
+    </div>
   );
 }
 
@@ -393,9 +504,24 @@ const emptyPlan = {
   active: true,
 };
 
+/** A saved plan → the shape the edit form works in. */
+function editValues(plan: Plan): typeof emptyPlan & { id: number } {
+  return {
+    id: plan.id,
+    name: plan.name,
+    duration_days: plan.duration_days,
+    price: Number(plan.price),
+    sessions_per_day: plan.sessions_per_day,
+    allowed_hours: plan.allowed_hours ?? '',
+    includes: Object.keys(plan.includes ?? {}).join(', '),
+    active: plan.active,
+  };
+}
+
 function PlansSection() {
   // the plan builder edits inactive plans too, so this is the unfiltered list
   const { data: plans = [] } = usePlans();
+  const mobile = useMobileShell();
   const [editing, setEditing] = useState<(typeof emptyPlan & { id?: number }) | null>(null);
 
   const save = useSavePlan();
@@ -426,12 +552,55 @@ function PlansSection() {
 
   return (
     <section className="card space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">{t('settings.plans')}</h2>
+      {/* Wrapping, not justify-between: "Karoorota miseensummaa" next to
+          "Karoora dabali" is wider than a 360px card, and a non-wrapping row
+          pushed the whole screen sideways. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="min-w-0 font-semibold">{t('settings.plans')}</h2>
         <button className="btn-secondary" onClick={() => setEditing({ ...emptyPlan })}>
           + {t('settings.addPlan')}
         </button>
       </div>
+
+      {mobile ? (
+        <ul className="list-stack">
+          {plans.map((p) => (
+            <li key={p.id} className={`list-card ${p.active ? '' : 'opacity-60'}`}>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="min-w-0 break-words text-[15px] font-bold leading-snug text-fg">{p.name}</span>
+                <span className="shrink-0 text-sm font-bold tabular-nums text-fg">
+                  {Number(p.price)} {t('common.birr')}
+                </span>
+              </div>
+              <p className="mt-0.5 break-words text-xs text-fg-muted">
+                {p.duration_days} {t('common.days')} ·{' '}
+                {p.sessions_per_day === 1 ? '1 session/day' : 'unlimited'}
+                {p.allowed_hours ? ` · ${p.allowed_hours}` : ''}
+                {Object.keys(p.includes ?? {}).length > 0
+                  ? ` · ${Object.keys(p.includes).join(', ')}`
+                  : ''}
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  className="btn-secondary flex-1 !py-1.5 text-xs"
+                  onClick={() => setEditing(editValues(p))}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="btn-secondary flex-1 !py-1.5 text-xs text-red-600 dark:text-red-400"
+                  onClick={() => remove.mutate(p.id)}
+                >
+                  {t('common.delete')}
+                </button>
+              </div>
+            </li>
+          ))}
+          {plans.length === 0 && <li className="py-6 text-center text-sm text-fg-muted">—</li>}
+        </ul>
+      ) : (
       <div className="overflow-x-auto">
       <table className="w-full min-w-[520px] text-sm">
         <tbody>
@@ -450,21 +619,7 @@ function PlansSection() {
                 {Object.keys(p.includes ?? {}).length > 0 ? ` · ${Object.keys(p.includes).join(', ')}` : ''}
               </td>
               <td className="py-2 text-right">
-                <button
-                  className="text-xs text-fg-muted hover:text-fg"
-                  onClick={() =>
-                    setEditing({
-                      id: p.id,
-                      name: p.name,
-                      duration_days: p.duration_days,
-                      price: Number(p.price),
-                      sessions_per_day: p.sessions_per_day,
-                      allowed_hours: p.allowed_hours ?? '',
-                      includes: Object.keys(p.includes ?? {}).join(', '),
-                      active: p.active,
-                    })
-                  }
-                >
+                <button className="text-xs text-fg-muted hover:text-fg" onClick={() => setEditing(editValues(p))}>
                   Edit
                 </button>
                 <button className="ml-3 text-xs text-red-500 hover:text-red-700" onClick={() => remove.mutate(p.id)}>
@@ -476,6 +631,7 @@ function PlansSection() {
         </tbody>
       </table>
       </div>
+      )}
 
       {editing && (
         <Modal title={editing.id ? editing.name : t('settings.addPlan')} onClose={() => setEditing(null)}>
@@ -493,7 +649,7 @@ function PlansSection() {
               <label className="label">{t('members.name')}</label>
               <input className="input" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} required />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="field-row">
               <div>
                 <label className="label">Duration ({t('common.days')})</label>
                 <input type="number" min="1" className="input" value={editing.duration_days} onChange={(e) => setEditing({ ...editing, duration_days: Number(e.target.value) })} required />
@@ -503,17 +659,18 @@ function PlansSection() {
                 <input type="number" min="0" className="input" value={editing.price} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} required />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="field-row">
               <div>
                 <label className="label">Sessions per day</label>
-                <select
-                  className="input"
-                  value={editing.sessions_per_day === 1 ? '1' : ''}
-                  onChange={(e) => setEditing({ ...editing, sessions_per_day: e.target.value === '1' ? 1 : null })}
-                >
-                  <option value="">Unlimited</option>
-                  <option value="1">1 per day</option>
-                </select>
+                <Select
+                  value={editing.sessions_per_day === 1 ? '1' : 'unlimited'}
+                  onChange={(v) => setEditing({ ...editing, sessions_per_day: v === '1' ? 1 : null })}
+                  label="Sessions per day"
+                  options={[
+                    { value: 'unlimited', label: 'Unlimited' },
+                    { value: '1', label: '1 per day' },
+                  ]}
+                />
               </div>
               <div>
                 <label className="label">Allowed hours (HH:MM-HH:MM)</label>
@@ -552,6 +709,7 @@ function PlansSection() {
 // ---------------------------------------------------------------- staff
 
 function StaffSection() {
+  const mobile = useMobileShell();
   const { data: staff = [] } = useStaff();
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -570,12 +728,37 @@ function StaffSection() {
 
   return (
     <section className="card space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold">{t('settings.staff')}</h2>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="min-w-0 font-semibold">{t('settings.staff')}</h2>
         <button className="btn-secondary" onClick={() => setAdding(true)}>
           + {t('settings.addStaff')}
         </button>
       </div>
+
+      {mobile ? (
+        <ul className="list-stack">
+          {staff.map((s) => (
+            <li key={s.id} className="list-card flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                <span className="block break-words text-[15px] font-bold leading-snug text-fg">{s.name}</span>
+                <span className="block truncate text-xs text-fg-muted">{s.email}</span>
+              </span>
+              <span className="chip shrink-0 uppercase">{s.role}</span>
+              {s.role !== 'owner' && (
+                <button
+                  type="button"
+                  aria-label={t('common.delete')}
+                  className="shrink-0 text-xs font-medium text-red-500"
+                  onClick={() => remove.mutate(s.id)}
+                >
+                  {t('common.delete')}
+                </button>
+              )}
+            </li>
+          ))}
+          {staff.length === 0 && <li className="py-6 text-center text-sm text-fg-muted">—</li>}
+        </ul>
+      ) : (
       <div className="overflow-x-auto">
       <table className="w-full min-w-[420px] text-sm">
         <tbody>
@@ -596,6 +779,7 @@ function StaffSection() {
         </tbody>
       </table>
       </div>
+      )}
 
       {adding && (
         <Modal title={t('settings.addStaff')} onClose={() => setAdding(false)}>

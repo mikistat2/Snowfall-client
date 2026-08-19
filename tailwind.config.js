@@ -17,6 +17,9 @@ export default {
         'fg-muted': 'rgb(var(--c-fg-muted) / <alpha-value>)',
         'fg-subtle': 'rgb(var(--c-fg-subtle) / <alpha-value>)',
         line: 'rgb(var(--c-line) / <alpha-value>)',
+        // Single accent for focus rings, selected rows and active tabs.
+        accent: 'rgb(var(--c-accent) / <alpha-value>)',
+        'accent-soft': 'rgb(var(--c-accent-soft) / <alpha-value>)',
       },
       spacing: {
         // Android status bar / gesture bar. Resolve to 0 in the browser, so the
@@ -36,6 +39,11 @@ export default {
       },
       minWidth: {
         touch: '44px',
+      },
+      boxShadow: {
+        // App-bar elevation: a hairline plus a soft drop, rather than a border
+        // that looks drawn-on over a scrolling list.
+        appbar: '0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px -6px rgb(0 0 0 / 0.18)',
       },
       fontFamily: {
         // Noto Sans Ethiopic renders Amharic cleanly; falls back to system sans
@@ -75,6 +83,11 @@ export default {
           from: { opacity: '0' },
           to: { opacity: '1' },
         },
+        // Screen enter — a few pixels of rise, enough to read as a push.
+        'rise-in': {
+          from: { opacity: '0', transform: 'translateY(6px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'float-slow': 'float-slow 6s ease-in-out infinite',
@@ -84,6 +97,7 @@ export default {
         blink: 'blink 1.4s ease-in-out infinite',
         'sheet-up': 'sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1)',
         'fade-in': 'fade-in 200ms ease-out',
+        'rise-in': 'rise-in 220ms cubic-bezier(0.22, 1, 0.36, 1)',
       },
     },
   },

@@ -87,7 +87,9 @@ export function MobileShell() {
     <div className="flex h-[100dvh] flex-col bg-canvas">
       {!isHome && <StackHeader title={titleFor(pathname)} />}
 
-      <main className="mobile-scroll">
+      {/* Keying on the path replays the enter animation per screen, which is
+          what makes a push read as a push rather than a repaint. */}
+      <main key={pathname} className="mobile-scroll motion-safe:animate-rise-in">
         {isHome ? (
           <>
             <div className="px-4 pt-4">
@@ -96,7 +98,7 @@ export function MobileShell() {
             <Outlet />
           </>
         ) : (
-          <div className="px-4 py-4">
+          <div className="px-4 pb-8 pt-4">
             <SubscriptionBanner />
             <Outlet />
           </div>

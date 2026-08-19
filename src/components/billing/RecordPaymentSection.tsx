@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { platformApi } from '../../lib/platformApi';
 import { apiErrorMessage } from '../../lib/api';
+import { Select } from '../ui/Select';
 import { daysUntil, formatDate, priceFor, type BillingCycle, type BillingPlan } from '../../lib/billing';
 
 /**
@@ -176,40 +177,43 @@ export function RecordPaymentSection({
       {open && (
         <div className="mt-3 space-y-2">
           <div className="flex flex-wrap gap-2">
-            <select
-              className="input w-40"
+            <Select
+              className="w-40"
               value={planId}
-              onChange={(e) => {
-                const id = e.target.value === '' ? '' : Number(e.target.value);
+              label="Plan"
+              placeholder="No plan"
+              clearable
+              onChange={(id) => {
                 setPlanId(id);
                 const picked = plansQ.data?.find((p) => p.id === id);
                 if (picked) setAmount(String(priceFor(picked, cycle)));
               }}
-            >
-              <option value="">No plan</option>
-              {plansQ.data?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <select
-              className="input w-32"
+              options={(plansQ.data ?? []).map((p) => ({ value: p.id, label: p.name }))}
+            />
+            <Select
+              className="w-32"
               value={cycle}
-              onChange={(e) => {
-                const c = e.target.value as BillingCycle;
+              label="Billing cycle"
+              onChange={(c) => {
                 setCycle(c);
                 if (plan) setAmount(String(priceFor(plan, c)));
               }}
-            >
-              <option value="MONTHLY">1 month</option>
-              <option value="YEARLY">1 year</option>
-            </select>
-            <select className="input w-32" value={provider} onChange={(e) => setProvider(e.target.value as 'CASH')}>
-              <option value="CASH">Cash</option>
-              <option value="CBE">CBE</option>
-              <option value="TELEBIRR">Telebirr</option>
-            </select>
+              options={[
+                { value: 'MONTHLY', label: '1 month' },
+                { value: 'YEARLY', label: '1 year' },
+              ]}
+            />
+            <Select
+              className="w-32"
+              value={provider}
+              label="Received by"
+              onChange={setProvider}
+              options={[
+                { value: 'CASH', label: 'Cash' },
+                { value: 'CBE', label: 'CBE' },
+                { value: 'TELEBIRR', label: 'Telebirr' },
+              ]}
+            />
             <input
               className="input w-32"
               type="number"

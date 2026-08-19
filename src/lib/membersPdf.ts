@@ -1,11 +1,16 @@
 import { jsPDF } from 'jspdf';
 import autoTable, { type UserOptions } from 'jspdf-autotable';
+import { saveFile } from './saveFile';
 
 /**
  * Builds member-export PDFs entirely in the browser (no server PDF deps, so
- * it works the same locally and on Vercel/Render) and triggers a download.
+ * it works the same locally and on Vercel/Render) and hands them to the user.
  *  - downloadMembersPdf: one gym (the gym-facing Members page export)
  *  - downloadPlatformBackupPdf: every gym on the platform (admin recovery backup)
+ *
+ * Delivery goes through `saveFile` rather than jsPDF's own `doc.save()`:
+ * inside the Android WebView that call is a no-op, which is why the export
+ * button did nothing on the phone. See lib/saveFile.ts.
  */
 
 export interface MemberExportRow {
@@ -105,7 +110,7 @@ function addFooters(doc: jsPDF, label: string): void {
 
 // ------------------------------------------------------------ single gym ----
 
-export function downloadMembersPdf(gymName: string, rows: MemberExportRow[]): void {
+export async function downloadMembersPdf(gymName: string, rows: MemberExportRow[]): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const now = new Date();
 
@@ -139,13 +144,13 @@ export function downloadMembersPdf(gymName: string, rows: MemberExportRow[]): vo
 
   addFooters(doc, `${gymName} — members export — ${stampOf(now)}`);
   const slug = gymName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'gym';
-  doc.save(`${slug}-members-${stampOf(now)}.pdf`);
+  await saveFile(`${slug}-members-${stampOf(now)}.pdf`, doc.output('blob'));
 }
 
 // --------------------------------------------------- platform-wide backup ----
 
 /** Cover page with a gym index, then one section per gym with all its members. */
-export function downloadPlatformBackupPdf(data: GymBackupEntry[]): void {
+export async function downloadPlatformBackupPdf(data: GymBackupEntry[]): Promise<void> {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
   const now = new Date();
   const totalMembers = data.reduce((sum, e) => sum + e.members.length, 0);
@@ -208,5 +213,5 @@ export function downloadPlatformBackupPdf(data: GymBackupEntry[]): void {
   }
 
   addFooters(doc, `Snowfall platform backup — ${stampOf(now)}`);
-  doc.save(`snowfall-backup-${stampOf(now)}.pdf`);
+  await saveFile(`snowfall-backup-${stampOf(now)}.pdf`, doc.output('blob'));
 }

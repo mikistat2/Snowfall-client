@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getLocale, t } from '../../i18n/strings';
+import { Select } from './Select';
 import {
   ETHIOPIAN_MONTHS,
   ethiopianToGregorian,
@@ -106,21 +107,18 @@ export function CalendarDateInput({
             required={required}
             onChange={(e) => setPart({ day: e.target.value })}
           />
-          <select
-            className="input"
+          <Select
             aria-label={`${label} — ${t('date.month')}`}
+            label={t('date.month')}
+            placeholder={t('date.month')}
             value={parts.month}
             disabled={disabled}
-            required={required}
-            onChange={(e) => setPart({ month: e.target.value })}
-          >
-            <option value="">{t('date.month')}</option>
-            {ETHIOPIAN_MONTHS.map((month, index) => (
-              <option key={month.en} value={index + 1}>
-                {locale === 'am' ? month.am : month.en}
-              </option>
-            ))}
-          </select>
+            onChange={(month) => setPart({ month })}
+            options={ETHIOPIAN_MONTHS.map((month, index) => ({
+              value: String(index + 1),
+              label: locale === 'am' ? month.am : month.en,
+            }))}
+          />
           <input
             className="input"
             type="number"

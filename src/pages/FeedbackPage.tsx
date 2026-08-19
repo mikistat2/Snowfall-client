@@ -2,6 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
+import { PageTitle } from '../components/ui/PageTitle';
+import { Select } from '../components/ui/Select';
 
 /**
  * Feedback / Improvement page. Submits to the server, which emails the
@@ -37,7 +39,7 @@ export function FeedbackPage() {
 
   return (
     <div className="max-w-2xl space-y-4">
-      <h1 className="text-2xl font-bold">{t('feedback.title')}</h1>
+      <PageTitle>{t('feedback.title')}</PageTitle>
       <p className="text-sm text-fg-muted">{t('feedback.intro')}</p>
 
       <form onSubmit={onSubmit} className="card space-y-4">
@@ -51,13 +53,12 @@ export function FeedbackPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
             <label className="label">{t('feedback.category')}</label>
-            <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
-              {categories.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={category}
+              onChange={setCategory}
+              label={t('feedback.category')}
+              options={categories}
+            />
           </div>
           <div>
             <label className="label">{t('feedback.subject')}</label>

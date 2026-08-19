@@ -4,6 +4,10 @@ import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import { FaceCapture, type Capture } from '../components/members/FaceCapture';
 import { PhoneInput } from '../components/ui/PhoneInput';
+import { Select } from '../components/ui/Select';
+import { PageTitle } from '../components/ui/PageTitle';
+import { SexPicker } from '../components/members/SexPicker';
+import { paymentMethodOptions } from '../lib/payments';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { CalendarDateInput, type CalendarSystem } from '../components/ui/CalendarDateInput';
 import { useActivePlans } from '../hooks/queries/usePlans';
@@ -13,7 +17,6 @@ import { addDaysIso, todayIso } from '../lib/ethiopian';
 import { daysLeft, deriveStatus } from '../lib/expiry';
 import type { Member, MemberStatus, PaymentMethod } from '../lib/types';
 
-const METHODS: PaymentMethod[] = ['cash', 'telebirr', 'bank', 'other'];
 
 /**
  * Back-filling the paper register.
@@ -135,8 +138,8 @@ export function PreviousMemberPage() {
   return (
     <div className="max-w-4xl space-y-4">
       <div>
-        <h1 className="text-2xl font-bold">{t('prev.title')}</h1>
-        <p className="mt-1 text-sm text-fg-muted">{t('prev.intro')}</p>
+        <PageTitle>{t('prev.title')}</PageTitle>
+        <p className="text-sm text-fg-muted">{t('prev.intro')}</p>
       </div>
 
       {mutation.isError && (
@@ -170,35 +173,27 @@ export function PreviousMemberPage() {
             <label className="label">{t('members.fullName')}</label>
             <input className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">{t('auth.phone')}</label>
-              <PhoneInput value={phone} onChange={setPhone} />
-            </div>
-            <div>
-              <label className="label">{t('members.sex')}</label>
-              <select className="input" value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-                <option value="">—</option>
-                <option value="male">{t('members.male')}</option>
-                <option value="female">{t('members.female')}</option>
-              </select>
-            </div>
+          {/* Phone owns its row — it already contains a country selector. */}
+          <div className="field">
+            <label className="label">{t('auth.phone')}</label>
+            <PhoneInput value={phone} onChange={setPhone} />
+          </div>
+          <div className="field">
+            <label className="label">{t('members.sex')}</label>
+            <SexPicker value={sex} onChange={setSex} />
           </div>
           <div>
             <label className="label">{t('enroll.plan')}</label>
-            <select
-              className="input"
+            <Select
               value={planId}
-              onChange={(e) => setPlanId(e.target.value === '' ? '' : Number(e.target.value))}
-              required
-            >
-              <option value="">—</option>
-              {plans.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} · {p.duration_days} {t('common.days')} · {Number(p.price)} {t('common.birr')}
-                </option>
-              ))}
-            </select>
+              onChange={setPlanId}
+              label={t('enroll.plan')}
+              options={plans.map((p) => ({
+                value: p.id,
+                label: p.name,
+                hint: `${p.duration_days} ${t('common.days')} · ${Number(p.price)} ${t('common.birr')}`,
+              }))}
+            />
           </div>
 
           <h2 className="pt-2 font-semibold">{t('prev.payment')}</h2>
@@ -229,13 +224,12 @@ export function PreviousMemberPage() {
               </div>
               <div>
                 <label className="label">{t('enroll.method')}</label>
-                <select className="input" value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-                  {METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={method}
+                  onChange={setMethod}
+                  label={t('enroll.method')}
+                  options={paymentMethodOptions()}
+                />
               </div>
             </div>
           )}

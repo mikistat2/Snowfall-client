@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, apiErrorMessage } from '../../lib/api';
 import { Modal } from '../ui/Modal';
 import { t } from '../../i18n/strings';
+import { Select } from '../ui/Select';
 import { FaceCapture, type Capture } from '../members/FaceCapture';
 
 /** Day-pass guest: name + one face capture; pass ends tonight (or +N days). */
@@ -38,19 +39,24 @@ export function AddGuestModal({ onClose }: { onClose: () => void }) {
         {mutation.isError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{apiErrorMessage(mutation.error)}</p>
         )}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="field-row">
           <div>
             <label className="label">{t('members.name')}</label>
             <input className="input" value={name} onChange={(e) => setName(e.target.value)} required minLength={2} />
           </div>
           <div>
             <label className="label">{t('guests.validity')}</label>
-            <select className="input" value={validDays} onChange={(e) => setValidDays(Number(e.target.value))}>
-              <option value={0}>{t('guests.today')}</option>
-              <option value={1}>+1 {t('common.days')}</option>
-              <option value={3}>+3 {t('common.days')}</option>
-              <option value={7}>+7 {t('common.days')}</option>
-            </select>
+            <Select
+              value={validDays}
+              onChange={setValidDays}
+              label={t('guests.validity')}
+              options={[
+                { value: 0, label: t('guests.today') },
+                { value: 1, label: `+1 ${t('common.days')}` },
+                { value: 3, label: `+3 ${t('common.days')}` },
+                { value: 7, label: `+7 ${t('common.days')}` },
+              ]}
+            />
           </div>
         </div>
         <FaceCapture captures={captures} onChange={setCaptures} min={1} max={2} hint={t('guests.captureHint')} />

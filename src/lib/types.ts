@@ -154,6 +154,10 @@ export interface DashboardStats {
   revenue_this_month: number;
   expiring_in_7_days: number;
   members_by_status: Partial<Record<MemberStatus, number>>;
+  /** Roster split by sex — what the dashboard shows when the camera is off. */
+  members_by_sex: { male: number; female: number; unspecified: number };
+  /** Members on the roster (archived excluded), matching members_by_sex. */
+  members_total: number;
   peak_hours: { hour: number; count: number }[];
 }
 

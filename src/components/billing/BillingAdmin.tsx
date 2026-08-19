@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformApi } from '../../lib/platformApi';
 import { apiErrorMessage } from '../../lib/api';
 import { ProviderMark } from './ProviderMark';
+import { Select } from '../ui/Select';
 import { money, type BillingPayment, type BillingPlan, type BillingStatus } from '../../lib/billing';
 
 /**
@@ -532,18 +533,20 @@ function AttemptsTable() {
             setPage(1);
           }}
         />
-        <select
-          className="input w-40"
+        <Select
+          className="w-40"
           value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as BillingStatus | '');
+          label="Status"
+          onChange={(next) => {
+            setStatus(next as BillingStatus | '');
             setPage(1);
           }}
-        >
-          <option value="">All statuses</option>
-          <option value="VERIFIED">Verified</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
+          options={[
+            { value: '', label: 'All statuses' },
+            { value: 'VERIFIED', label: 'Verified' },
+            { value: 'REJECTED', label: 'Rejected' },
+          ]}
+        />
       </div>
 
       <div className="-mx-5 overflow-x-auto px-5">

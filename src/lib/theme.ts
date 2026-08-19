@@ -4,9 +4,13 @@ import { NATIVE } from './platform';
 /**
  * Light/dark theme.
  *
- * Default is 'system' — gym floors are often dim and the phone is usually
- * already set to dark there — but staff can pin a theme from Settings, so this
- * is a class on <html> rather than a pure `prefers-color-scheme` media query.
+ * Default is 'light'. Following the phone's setting sounds friendlier, but it
+ * means two staff on the same shift see different-looking apps and neither can
+ * say why; the product is designed and screenshotted light, so that is what a
+ * fresh install gets. 'system' is still one tap away in Settings → Appearance.
+ *
+ * It is a class on <html> rather than a pure `prefers-color-scheme` media
+ * query precisely so a pinned choice can win over the OS.
  */
 
 export type ThemeMode = 'system' | 'light' | 'dark';
@@ -24,7 +28,9 @@ function systemPrefersDark(): boolean {
 export function getMode(): ThemeMode {
   if (mode === null) {
     const stored = storage.get('theme');
-    mode = stored === 'light' || stored === 'dark' ? stored : 'system';
+    // Anything already pinned wins — including 'system', which is only ever
+    // stored because someone chose it.
+    mode = stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'light';
   }
   return mode;
 }
@@ -34,12 +40,17 @@ export function resolveTheme(m: ThemeMode = getMode()): ResolvedTheme {
   return m;
 }
 
-/** Status bar icons must invert with the theme or they vanish against it. */
-async function syncNativeChrome(theme: ResolvedTheme): Promise<void> {
+/**
+ * Status bar icons are white in BOTH themes, because what sits behind them is
+ * not the page — it is the app bar, which draws the same sky gradient light or
+ * dark (the WebView renders under the status bar). Capacitor's naming is the
+ * trap here: `Style.Dark` means "dark background, so use light content".
+ */
+async function syncNativeChrome(_theme: ResolvedTheme): Promise<void> {
   if (!NATIVE) return;
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
-    await StatusBar.setStyle({ style: theme === 'dark' ? Style.Dark : Style.Light });
+    await StatusBar.setStyle({ style: Style.Dark });
   } catch {
     /* cosmetic only */
   }

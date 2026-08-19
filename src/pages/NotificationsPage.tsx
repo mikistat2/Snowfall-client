@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { t } from '../i18n/strings';
+import { PageTitle } from '../components/ui/PageTitle';
+import { Select } from '../components/ui/Select';
+import { useMobileShell } from '../hooks/useIsMobile';
 
 interface Notification {
   id: number;
@@ -17,12 +20,25 @@ interface Notification {
 const TYPES = ['expiry_reminder', 'expired', 'absence_nudge', 'receipt', 'admin_alert', 'admin_summary'];
 
 const statusStyle: Record<Notification['status'], string> = {
-  sent: 'bg-green-100 text-green-800',
-  failed: 'bg-red-100 text-red-800',
-  skipped_no_chat_id: 'bg-orange-100 text-orange-800',
+  sent: 'bg-green-100 text-green-800 dark:bg-green-950/60 dark:text-green-300',
+  failed: 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300',
+  skipped_no_chat_id: 'bg-orange-100 text-orange-800 dark:bg-orange-950/60 dark:text-orange-300',
 };
 
+const statusDot: Record<Notification['status'], string> = {
+  sent: 'bg-green-500',
+  failed: 'bg-red-500',
+  skipped_no_chat_id: 'bg-orange-500',
+};
+
+function statusLabel(status: Notification['status']): string {
+  if (status === 'sent') return t('notifications.sent');
+  if (status === 'failed') return t('notifications.failed');
+  return t('notifications.skipped');
+}
+
 export function NotificationsPage() {
+  const isMobile = useMobileShell();
   const [type, setType] = useState('');
   const [status, setStatus] = useState('');
 
@@ -39,25 +55,36 @@ export function NotificationsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">{t('notifications.title')}</h1>
+      <PageTitle>{t('notifications.title')}</PageTitle>
 
       <div className="flex flex-wrap gap-3">
-        <select className="input max-w-[200px]" value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="">{t('notifications.allTypes')}</option>
-          {TYPES.map((v) => (
-            <option key={v} value={v}>
-              {v.replace(/_/g, ' ')}
-            </option>
-          ))}
-        </select>
-        <select className="input max-w-[190px]" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">{t('notifications.allStatuses')}</option>
-          <option value="sent">{t('notifications.sent')}</option>
-          <option value="failed">{t('notifications.failed')}</option>
-          <option value="skipped_no_chat_id">{t('notifications.skipped')}</option>
-        </select>
+        <Select
+          className="w-full sm:max-w-[220px]"
+          value={type}
+          onChange={setType}
+          label={t('notifications.type')}
+          options={[
+            { value: '', label: t('notifications.allTypes') },
+            ...TYPES.map((v) => ({ value: v, label: v.replace(/_/g, ' ') })),
+          ]}
+        />
+        <Select
+          className="w-full sm:max-w-[200px]"
+          value={status}
+          onChange={setStatus}
+          label={t('notifications.status')}
+          options={[
+            { value: '', label: t('notifications.allStatuses') },
+            { value: 'sent', label: t('notifications.sent') },
+            { value: 'failed', label: t('notifications.failed') },
+            { value: 'skipped_no_chat_id', label: t('notifications.skipped') },
+          ]}
+        />
       </div>
 
+      {isMobile ? (
+        <NotificationCards rows={rows} isLoading={isLoading} />
+      ) : (
       <div className="card overflow-x-auto p-0">
         <table className="w-full text-sm">
           <thead>
@@ -119,6 +146,75 @@ export function NotificationsPage() {
           </tbody>
         </table>
       </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The phone log. Same card rhythm as the roster: the thing that identifies the
+ * entry (who it went to) leads, the message body is the point of the row, and
+ * delivery status is held right where the eye lands.
+ */
+function NotificationCards({ rows, isLoading }: { rows: Notification[]; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <div className="list-stack">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="list-card space-y-2">
+            <span className="flex items-center justify-between gap-3">
+              <span className="h-3.5 w-1/2 animate-pulse rounded bg-surface-2" />
+              <span className="h-5 w-16 animate-pulse rounded-full bg-surface-2" />
+            </span>
+            <span className="block h-3 w-3/4 animate-pulse rounded bg-surface-2" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return <p className="card py-10 text-center text-sm text-fg-muted">—</p>;
+  }
+  return (
+    <div className="list-stack">
+      {rows.map((n) => (
+        <div key={n.id} className="list-card">
+          <div className="flex items-start justify-between gap-3">
+            {n.member_id ? (
+              <Link
+                to={`/members/${n.member_id}`}
+                className="min-w-0 break-words text-[15px] font-bold leading-snug text-fg"
+              >
+                {n.member_name}
+              </Link>
+            ) : (
+              <span className="text-[15px] font-bold leading-snug text-fg-subtle">admin</span>
+            )}
+            <span
+              className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusStyle[n.status]}`}
+            >
+              <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${statusDot[n.status]}`} />
+              {statusLabel(n.status)}
+            </span>
+          </div>
+
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-fg-muted">
+            <span className="chip">{n.type.replace(/_/g, ' ')}</span>
+            <span className="tabular-nums">{new Date(n.sent_at).toLocaleString()}</span>
+          </p>
+
+          {n.payload.text && (
+            <p className="mt-1.5 line-clamp-3 whitespace-pre-line break-words text-xs text-fg-muted">
+              {n.payload.text}
+            </p>
+          )}
+          {n.status !== 'sent' && (
+            <p className="mt-1.5 break-words text-xs text-red-600 dark:text-red-400">
+              {n.status === 'skipped_no_chat_id' ? t('notifications.skippedHint') : n.payload.error}
+            </p>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

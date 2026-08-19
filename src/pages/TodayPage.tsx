@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { t } from '../i18n/strings';
+import { PageTitle } from '../components/ui/PageTitle';
 import { useTodayDigest } from '../hooks/queries/useDashboard';
 
 /**
@@ -34,7 +35,7 @@ export function TodayPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold">{t('today.title')}</h1>
+        <PageTitle>{t('today.title')}</PageTitle>
         <p className="text-sm text-fg-muted">{t('today.subtitle')}</p>
       </div>
 
