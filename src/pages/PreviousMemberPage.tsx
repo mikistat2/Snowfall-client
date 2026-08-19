@@ -319,7 +319,7 @@ export function PreviousMemberPage() {
 
           <div className="card space-y-3">
             {error && fullName !== '' && (
-              <p className="text-xs leading-relaxed text-red-400">{error}</p>
+              <p className="text-danger text-xs leading-relaxed">{error}</p>
             )}
             <button className="btn-primary w-full" disabled={mutation.isPending || Boolean(error)}>
               {mutation.isPending ? `${t('prev.submit')}…` : t('prev.submit')}

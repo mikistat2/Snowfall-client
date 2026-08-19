@@ -1,15 +1,19 @@
 import type { ReactNode } from 'react';
 import { PageTitle } from '../ui/PageTitle';
+import { useMobileShell } from '../../hooks/useIsMobile';
 
 /**
  * The chrome shared by the two enrollment screens (new member, back-filled
  * member).
  *
- * Both are long forms that end in a camera preview, so they run on the app's
- * premium dark palette whatever theme the rest of the app is in — see
- * `.theme-premium` in index.css. The wrapper bleeds to the edges of whichever
- * shell it is mounted in, so the dark surface is the screen rather than a card
- * floating on a light page.
+ * On a phone both are long forms that end in a camera preview, so they run on
+ * the premium dark palette whatever theme the app is in — a white screen
+ * behind a face preview blows the preview out and makes the flow feel like
+ * paperwork. See `.theme-premium` in index.css.
+ *
+ * The desktop site keeps its ordinary light cards: there the form sits inside
+ * the standard page chrome next to the sidebar, and a single dark slab in the
+ * middle of an otherwise light app reads as a bug rather than a decision.
  */
 export function EnrollShell({
   title,
@@ -20,14 +24,20 @@ export function EnrollShell({
   subtitle: string;
   children: ReactNode;
 }) {
+  const dark = useMobileShell();
+
   return (
-    <div className="theme-premium theme-premium-page min-h-[70vh]">
-      <div className="mx-auto max-w-5xl">
+    <div className={dark ? 'theme-premium theme-premium-page min-h-[70vh]' : ''}>
+      <div className={dark ? 'mx-auto max-w-5xl' : 'max-w-5xl'}>
         <header className="mb-5">
           <PageTitle>{title}</PageTitle>
           {/* A hairline of accent under the heading: enough to say "this screen
               is a deliberate place", without decoration for its own sake. */}
-          <span className="mt-2 block h-0.5 w-12 rounded-full bg-gradient-to-r from-violet-500 to-purple-500" />
+          <span
+            className={`mt-2 block h-0.5 w-12 rounded-full ${
+              dark ? 'bg-gradient-to-r from-violet-500 to-purple-500' : 'bg-accent'
+            }`}
+          />
           <p className="mt-2.5 max-w-prose text-sm leading-relaxed text-fg-muted">{subtitle}</p>
         </header>
         {children}

@@ -134,6 +134,10 @@
   .alert-error {
     @apply rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300;
   }
+  /* Inline validation text — readable on light, dark and premium surfaces. */
+  .text-danger {
+    @apply text-red-600 dark:text-red-400;
+  }
   .alert-success {
     @apply rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-800 dark:text-green-300;
   }
@@ -211,6 +215,9 @@
   }
   .theme-premium .alert-error {
     @apply border-red-400/25 bg-red-500/10 text-red-300;
+  }
+  .theme-premium .text-danger {
+    @apply text-red-300;
   }
   .theme-premium .alert-success {
     @apply border-emerald-400/25 bg-emerald-500/10 text-emerald-300;
