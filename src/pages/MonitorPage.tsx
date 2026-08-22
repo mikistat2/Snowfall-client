@@ -62,11 +62,38 @@ export function MonitorPage() {
   // undefined while settings load; false = gym has no camera → name-board mode
   const cameraEnabled = gym ? gym.settings.camera_enabled !== false : undefined;
 
-  const { data: descriptors = [] } = useQuery({
-    queryKey: ['descriptors'],
-    queryFn: async () => (await api.get<MemberDescriptors[]>('/members/descriptors')).data,
+  // Descriptors are large (~2.6 KB per capture) and change only when someone
+  // enrols, is archived, or flips status — but the change usually happens on
+  // the office machine, not this tablet, so it has to be discovered by
+  // polling. Poll a ~50-byte hash instead of the payload: the full download
+  // then happens only on the poll where the hash actually moved.
+  const { data: descriptorsVersion, isError: versionUnavailable } = useQuery({
+    queryKey: ['descriptors-version'],
+    queryFn: async () =>
+      (await api.get<{ version: string }>('/members/descriptors/version')).data.version,
     refetchInterval: 60_000,
+    retry: 1,
     enabled: cameraEnabled === true, // pointless without a camera
+  });
+
+  // The version endpoint is newer than this page. Against a server that
+  // predates it the query 404s, and gating the descriptors on a version that
+  // will never arrive would leave the door recognising nobody — so a failing
+  // version check falls back to the old behaviour (fetch the full payload,
+  // poll it directly) rather than to an empty set.
+  const versionReady = descriptorsVersion !== undefined || versionUnavailable;
+
+  const { data: descriptors = [] } = useQuery({
+    queryKey: ['descriptors', descriptorsVersion ?? 'unversioned'],
+    queryFn: async () => (await api.get<MemberDescriptors[]>('/members/descriptors')).data,
+    enabled: cameraEnabled === true && versionReady,
+    // A given version is immutable by construction, so it never needs
+    // refetching. With no version to trust, fall back to polling the payload.
+    staleTime: versionUnavailable ? 0 : Infinity,
+    refetchInterval: versionUnavailable ? 60_000 : false,
+    // Keep recognising against the previous set while the new one downloads,
+    // so an enrolment never opens a gap at the door.
+    placeholderData: (previous) => previous,
   });
   const { data: guestDescriptors = [] } = useQuery({
     queryKey: ['guest-descriptors'],
