@@ -207,6 +207,13 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
     });
   }, [gym]);
 
+  // Platform entitlements. These are not preferences — the server refuses the
+  // matching endpoints outright — so the controls are locked rather than
+  // merely ignored, and say who to ask. Default true so an older server that
+  // does not send the flags behaves exactly as before.
+  const cameraAllowed = gym?.camera_allowed !== false;
+  const telegramAllowed = gym?.telegram_allowed !== false;
+
   const mutation = useUpdateGym();
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
@@ -274,10 +281,17 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
             className="input"
             value={form.telegram_bot_token}
             onChange={set('telegram_bot_token')}
-            disabled={readOnly}
+            disabled={readOnly || !telegramAllowed}
             placeholder="123456:ABC-DEF… (from @BotFather)"
           />
-          <BotStatus />
+          {telegramAllowed ? (
+            <BotStatus />
+          ) : (
+            <p className="mt-2 text-sm text-slate-500">
+              🔒 Telegram notifications are turned off for this gym by the platform administrator. Any
+              token you saved is kept, and reconnects if it is turned back on.
+            </p>
+          )}
         </div>
       </section>
 
@@ -369,12 +383,19 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
             />
           </RuleRow>
 
-          <RuleRow label={t('settings.camera')} hint={t('settings.cameraHint')}>
+          <RuleRow
+            label={t('settings.camera')}
+            hint={
+              cameraAllowed
+                ? t('settings.cameraHint')
+                : '🔒 Turned off for this gym by the platform administrator. Enrolled faces are kept.'
+            }
+          >
             <Select
               className="w-40"
-              value={form.camera_enabled ? 'on' : 'off'}
+              value={cameraAllowed && form.camera_enabled ? 'on' : 'off'}
               onChange={(v) => setForm((f) => ({ ...f, camera_enabled: v === 'on' }))}
-              disabled={readOnly}
+              disabled={readOnly || !cameraAllowed}
               label={t('settings.camera')}
               options={[
                 { value: 'on', label: t('settings.cameraOn') },

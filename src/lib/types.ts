@@ -145,7 +145,15 @@ export interface Gym {
   address: string | null;
   phone: string | null;
   telegram_bot_token: string | null;
+  /**
+   * Already narrowed by the platform entitlements below — `camera_enabled` is
+   * false here whenever the platform has revoked the camera, whatever the gym
+   * itself last chose. Read this for behaviour; read the flags for *why*.
+   */
   settings: GymSettings;
+  /** Platform-level entitlements. Only the platform owner can change them. */
+  camera_allowed?: boolean;
+  telegram_allowed?: boolean;
 }
 
 export interface DashboardStats {

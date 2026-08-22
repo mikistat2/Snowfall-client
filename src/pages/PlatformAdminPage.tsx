@@ -51,6 +51,9 @@ interface GymRow {
   is_trial: boolean;
   /** Permanently exempt from the subscription paywall. */
   comped?: boolean;
+  /** Platform feature entitlements — owner-only switches. */
+  camera_allowed?: boolean;
+  telegram_allowed?: boolean;
   created_at: string;
   owner_name: string | null;
   owner_email: string | null;
@@ -899,6 +902,19 @@ function ManageGymModal({
             </div>
           </div>
 
+          <FeatureAccessCard
+            gymId={gym.id}
+            cameraAllowed={d?.camera_allowed ?? gym.camera_allowed ?? true}
+            telegramAllowed={d?.telegram_allowed ?? gym.telegram_allowed ?? true}
+            isOwner={isOwner}
+            onChanged={() => {
+              onChanged();
+              void detailQ.refetch();
+            }}
+            onBanner={onBanner}
+            gymName={gym.name}
+          />
+
           <RecordPaymentSection
             gymId={gym.id}
             gymName={gym.name}
@@ -1077,6 +1093,106 @@ function Info({ label, value }: { label: string; value: string }) {
 }
 
 /** Tiny mutation wrapper: run/busy/done + error → setError. */
+/**
+ * Per-gym feature entitlements (platform owner only).
+ *
+ * Revoking is a lock, not a wipe: enrolled face data and the stored bot token
+ * survive, so a gym switched off by mistake is restored by switching it back
+ * on. The copy says so, because "disable camera" reads like "delete the faces"
+ * and the difference matters when you are about to click it.
+ */
+function FeatureAccessCard({
+  gymId,
+  gymName,
+  cameraAllowed,
+  telegramAllowed,
+  isOwner,
+  onChanged,
+  onBanner,
+}: {
+  gymId: number;
+  gymName: string;
+  cameraAllowed: boolean;
+  telegramAllowed: boolean;
+  isOwner: boolean;
+  onChanged: () => void;
+  onBanner: (msg: string) => void;
+}) {
+  const [error, setError] = useState('');
+  const [pending, setPending] = useState<'camera' | 'telegram' | null>(null);
+
+  const save = useMutation({
+    mutationFn: (body: { camera_allowed?: boolean; telegram_allowed?: boolean }) =>
+      platformApi.put(`/gyms/${gymId}/features`, body),
+    onSuccess: (_res, body) => {
+      setError('');
+      const on = body.camera_allowed ?? body.telegram_allowed;
+      const what = 'camera_allowed' in body ? 'Face recognition' : 'Telegram';
+      onBanner(`${what} ${on ? 'enabled' : 'disabled'} for "${gymName}".`);
+      onChanged();
+    },
+    onError: (err) => setError(apiErrorMessage(err)),
+    onSettled: () => setPending(null),
+  });
+
+  function toggle(feature: 'camera' | 'telegram', next: boolean) {
+    setPending(feature);
+    save.mutate(feature === 'camera' ? { camera_allowed: next } : { telegram_allowed: next });
+  }
+
+  const rows = [
+    {
+      key: 'camera' as const,
+      label: 'Face recognition',
+      on: cameraAllowed,
+      hint: cameraAllowed
+        ? 'The gym can use the door camera, enrol faces and auto check-in.'
+        : 'Locked — the gym runs in name-board mode. Enrolled faces are kept and come back if you re-enable.',
+    },
+    {
+      key: 'telegram' as const,
+      label: 'Telegram notifications',
+      on: telegramAllowed,
+      hint: telegramAllowed
+        ? 'The gym can connect a bot and send reminders, nudges and summaries.'
+        : 'Locked — the bot is stopped and no messages are sent. The saved token is kept.',
+    },
+  ];
+
+  return (
+    <div className="rounded-lg border border-slate-200 p-4">
+      <div className="label">Feature access</div>
+      <p className="mb-3 text-xs text-slate-500">
+        What this gym is allowed to use. Turning something off stops it immediately, everywhere — the gym
+        owner cannot switch it back on. Nothing is deleted.
+      </p>
+      <div className="divide-y divide-slate-100">
+        {rows.map((r) => (
+          <div key={r.key} className="flex items-start justify-between gap-4 py-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium">{r.label}</div>
+              <div className="text-xs text-slate-500">{r.hint}</div>
+            </div>
+            <button
+              type="button"
+              className={r.on ? 'btn-secondary shrink-0' : 'btn-primary shrink-0'}
+              disabled={!isOwner || pending !== null}
+              title={isOwner ? undefined : 'Only the platform owner can change feature access'}
+              onClick={() => toggle(r.key, !r.on)}
+            >
+              {pending === r.key ? '…' : r.on ? 'Disable' : 'Enable'}
+            </button>
+          </div>
+        ))}
+      </div>
+      {!isOwner && (
+        <p className="mt-2 text-xs text-slate-400">Only the platform owner can change these.</p>
+      )}
+      {error && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+    </div>
+  );
+}
+
 function useMutationHelper(
   fn: () => Promise<{ data: unknown }>,
   onSuccess: (data: unknown) => void,
