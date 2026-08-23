@@ -85,15 +85,26 @@ The stream is relayed through `GET /api/v1/camera-proxy` (JWT-checked, restricte
 to private-network URLs) so face-api.js can read pixels without CORS tainting.
 iPhone users can use any app that serves MJPEG over HTTP the same way.
 
-## Deploying (Vercel + Render + Neon)
+## Deploying (Vercel + Render + Supabase)
 
 One cloud deployment serves every gym — gyms self-register and all data is
 scoped by `gym_id`. Deploy in this order:
 
-### 1. Neon (database)
-1. Create a project at neon.tech → copy the **connection string**
-   (`postgres://…neon.tech/neondb?sslmode=require`). SSL is detected
-   automatically; no extra config.
+### 1. Supabase (database)
+1. Create a project at supabase.com → **Connect** → copy the **Session pooler**
+   string:
+   `postgresql://postgres.<ref>:<password>@<region>.pooler.supabase.com:5432/postgres`
+
+   Use the **pooler** host, not the direct `db.<ref>.supabase.co` one: the
+   direct host is IPv6-only and Render dials out over IPv4, so it cannot
+   connect at all. Port **5432** is session mode, which is what Knex and the
+   migrations need — port 6543 is transaction mode and drops session state
+   between statements.
+
+   SSL is detected automatically; no extra config.
+2. Close the Data API, which Supabase opens over `public` by default and this
+   app never uses: `psql "$DATABASE_URL" -f server/scripts/supabase-harden.sql`,
+   and remove `public` under Settings → API → Exposed schemas.
 
 ### 2. Render (API server)
 1. New → **Web Service** → connect the repo. Region: **Frankfurt** (closest to Ethiopia).
@@ -101,7 +112,7 @@ scoped by `gym_id`. Deploy in this order:
 3. Environment variables:
    | Key | Value |
    |---|---|
-   | `DATABASE_URL` | the Neon connection string |
+   | `DATABASE_URL` | the Supabase session-pooler connection string |
    | `CLIENT_URL` | your Vercel URL(s), comma-separated (add it after step 3) |
    | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | long random strings (`openssl rand -hex 32`) |
    | `SMTP_USER` / `SMTP_PASS` / `FEEDBACK_TO` | Gmail + App Password for the feedback page |
