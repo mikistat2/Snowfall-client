@@ -79,7 +79,9 @@ export function VerifyingOverlay({
           className="absolute inset-0 rounded-full bg-sky-400/25 motion-safe:animate-pulse-ring"
           aria-hidden
         />
-        <span className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-2xl">
+        {/* px-4 keeps Telebirr's wide wordmark clear of the circle's edge; it
+            is capped by max-w-full rather than allowed to overflow. */}
+        <span className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white px-4 shadow-2xl">
           <ProviderMark provider={provider} size="h-12" tile={false} />
         </span>
       </div>

@@ -763,6 +763,9 @@ function ManageGymModal({
   const [exporting, setExporting] = useState(false);
   // Free extension length (no payment recorded) — a trial usually converts onto a month.
   const [renewCycle, setRenewCycle] = useState<BillingCycle>(gym.is_trial ? 'MONTHLY' : 'YEARLY');
+  const [trialDays, setTrialDays] = useState(30);
+  /** Two-step, because this one SHORTENS access — see the button below. */
+  const [confirmTrial, setConfirmTrial] = useState(false);
   // Bumping this opens the payment panel below, prefilled with the cycle.
   const [payRequest, setPayRequest] = useState<{ seq: number; cycle: BillingCycle } | null>(null);
 
@@ -829,6 +832,14 @@ function ManageGymModal({
         renewCycle === 'MONTHLY' ? 'month' : 'year'
       } (no payment recorded).`,
     ),
+    setError,
+  );
+
+  // The undo for "Extend free". Runs the trial FROM TODAY and clears any comp,
+  // so the end date it shows is one that will actually arrive.
+  const setTrial = useMutationHelper(
+    () => platformApi.post(`/gyms/${gym.id}/trial`, { days: trialDays }),
+    doneAndClose(`"${gym.name}" is on a ${trialDays}-day free trial starting today.`),
     setError,
   );
 
@@ -985,6 +996,40 @@ function ManageGymModal({
                   title="Extends the subscription without recording any payment"
                 >
                   {renew.busy ? 'Extending…' : '↻ Extend free'}
+                </button>
+              </div>
+            )}
+            {gym.status !== 'pending' && perms.renew && (
+              <div className="flex items-center gap-1">
+                <label className="sr-only" htmlFor="trial-days">
+                  Trial length in days
+                </label>
+                <input
+                  id="trial-days"
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={trialDays}
+                  onChange={(e) => {
+                    setTrialDays(Math.min(365, Math.max(1, Number(e.target.value) || 1)));
+                    setConfirmTrial(false);
+                  }}
+                  className="input w-20"
+                />
+                <button
+                  className={confirmTrial ? 'btn-danger' : 'btn-secondary'}
+                  onClick={() => (confirmTrial ? setTrial.run() : setConfirmTrial(true))}
+                  disabled={setTrial.busy}
+                  title={
+                    'Ends any paid time and starts a free trial from today. ' +
+                    'Also removes this gym from the comped list.'
+                  }
+                >
+                  {setTrial.busy
+                    ? 'Setting…'
+                    : confirmTrial
+                      ? `Confirm — replace with ${trialDays}-day trial`
+                      : '⟲ Put back on trial'}
                 </button>
               </div>
             )}
