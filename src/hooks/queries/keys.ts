@@ -20,6 +20,7 @@ export const qk = {
   paymentsAll: ['payments'] as const,
 
   settings: ['settings'] as const,
+  features: ['features'] as const,
   staff: ['staff'] as const,
 
   events: ['events'] as const,

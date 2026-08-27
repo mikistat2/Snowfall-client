@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { t } from '../i18n/strings';
 import { PageTitle } from '../components/ui/PageTitle';
+import { FeatureLockBanner } from '../components/ui/FeatureLockBanner';
+import { PlatformNoticeHistory } from '../components/ui/PlatformNoticeHistory';
 import { Select } from '../components/ui/Select';
 import { useMobileShell } from '../hooks/useIsMobile';
 
@@ -56,6 +58,14 @@ export function NotificationsPage() {
   return (
     <div className="space-y-4">
       <PageTitle>{t('notifications.title')}</PageTitle>
+
+      {/* An empty list looks like a quiet week; this says it is a lock. */}
+      <FeatureLockBanner
+        feature="telegram"
+        what="No new messages are being sent. What is listed below is history."
+      />
+
+      <PlatformNoticeHistory />
 
       <div className="flex flex-wrap gap-3">
         <Select

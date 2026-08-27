@@ -6,6 +6,7 @@ import { NATIVE } from './lib/platform';
 import { t } from './i18n/strings';
 import { Logo } from './components/ui/Logo';
 import { FrozenGymAlert } from './components/ui/FrozenGymAlert';
+import { FeatureNoticeAlert } from './components/ui/FeatureNoticeAlert';
 import { PaymentRequiredRedirect } from './components/ui/PaymentRequiredRedirect';
 import { SubscriptionBanner } from './components/ui/SubscriptionBanner';
 import { LiveDate } from './components/ui/LiveDate';
@@ -196,6 +197,8 @@ function Layout() {
       </main>
       {/* covers every page the moment the platform admin freezes this gym */}
       <FrozenGymAlert />
+      {/* announces a camera/Telegram entitlement the platform has just changed */}
+      <FeatureNoticeAlert />
       {/* sends the user to /billing the moment any call reports 402 */}
       <PaymentRequiredRedirect />
     </div>

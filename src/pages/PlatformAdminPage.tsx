@@ -1120,15 +1120,22 @@ function FeatureAccessCard({
 }) {
   const [error, setError] = useState('');
   const [pending, setPending] = useState<'camera' | 'telegram' | null>(null);
+  const [note, setNote] = useState('');
 
   const save = useMutation({
-    mutationFn: (body: { camera_allowed?: boolean; telegram_allowed?: boolean }) =>
+    mutationFn: (body: { camera_allowed?: boolean; telegram_allowed?: boolean; note?: string }) =>
       platformApi.put(`/gyms/${gymId}/features`, body),
-    onSuccess: (_res, body) => {
+    onSuccess: (res, body) => {
       setError('');
+      setNote('');
       const on = body.camera_allowed ?? body.telegram_allowed;
       const what = 'camera_allowed' in body ? 'Face recognition' : 'Telegram';
-      onBanner(`${what} ${on ? 'enabled' : 'disabled'} for "${gymName}".`);
+      // The gym sees this in-app whatever happens to Telegram and email, so
+      // the banner says so rather than leaving a failed alert looking silent.
+      onBanner(
+        `${what} ${on ? 'enabled' : 'disabled'} for "${gymName}". ` +
+          `The owner sees it in the app on their next screen. ${notifiedSummary(res.data)}`,
+      );
       onChanged();
     },
     onError: (err) => setError(apiErrorMessage(err)),
@@ -1137,7 +1144,12 @@ function FeatureAccessCard({
 
   function toggle(feature: 'camera' | 'telegram', next: boolean) {
     setPending(feature);
-    save.mutate(feature === 'camera' ? { camera_allowed: next } : { telegram_allowed: next });
+    const reason = note.trim() || undefined;
+    save.mutate(
+      feature === 'camera'
+        ? { camera_allowed: next, note: reason }
+        : { telegram_allowed: next, note: reason },
+    );
   }
 
   const rows = [
@@ -1166,6 +1178,28 @@ function FeatureAccessCard({
         What this gym is allowed to use. Turning something off stops it immediately, everywhere — the gym
         owner cannot switch it back on. Nothing is deleted.
       </p>
+
+      {/* Typed before the toggle, not after: this text is delivered with the
+          change — shown full-screen in their app and sent by Telegram and
+          email — so it is the difference between an explanation and a feature
+          silently vanishing. */}
+      {isOwner && (
+        <div className="mb-3">
+          <label className="label" htmlFor="feature-note">
+            Reason shown to the gym owner (optional)
+          </label>
+          <textarea
+            id="feature-note"
+            className="input"
+            rows={2}
+            maxLength={1000}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. Camera add-on not included in your current plan — contact us to enable it."
+          />
+        </div>
+      )}
+
       <div className="divide-y divide-slate-100">
         {rows.map((r) => (
           <div key={r.key} className="flex items-start justify-between gap-4 py-3">

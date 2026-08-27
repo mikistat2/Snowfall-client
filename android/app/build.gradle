@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+/**
+ * Release signing credentials, kept OUT of the repo.
+ *
+ * `keystore.properties` is gitignored and names a keystore that lives outside
+ * the project entirely. The file is optional on purpose: without it the debug
+ * build and every other Gradle task still work, and only `assembleRelease`
+ * fails — with a clear message rather than a mysterious signing error. Same
+ * absent-tolerant pattern as the google-services block at the bottom.
+ */
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace "et.gymflow.app"
     compileSdk rootProject.ext.compileSdkVersion
@@ -16,10 +31,37 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // Left off deliberately. R8 strips the reflective entry points
+            // Capacitor uses to register plugins, and the symptom is not a
+            // build failure — it is plugins silently missing at runtime in the
+            // one build type you cannot easily debug. Turning it on is a
+            // separate job that needs per-plugin keep rules and a full
+            // on-device pass; it is not what makes a build releasable.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            // Fail loudly at configuration time rather than emitting an
+            // -unsigned.apk that cannot be installed and gives no clue why.
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.warn(
+                    "\n[release] android/keystore.properties is missing — `assembleRelease` will " +
+                    "produce an UNSIGNED apk that no device will install. See MOBILE.md.\n")
+            }
         }
     }
 }

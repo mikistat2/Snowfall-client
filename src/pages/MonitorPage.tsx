@@ -11,6 +11,7 @@ import { CheckoutModal } from '../components/monitor/CheckoutModal';
 import { AddGuestModal } from '../components/monitor/AddGuestModal';
 import { CameraFeed } from '../components/ui/CameraFeed';
 import { CameraSettingsModal } from '../components/ui/CameraSettingsModal';
+import { FeatureLockBanner } from '../components/ui/FeatureLockBanner';
 import type {
   GuestDescriptor,
   Gym,
@@ -301,6 +302,14 @@ export function MonitorPage() {
 
   // --- render ----------------------------------------------------------
   return (
+    <>
+      {/* The name-board fallback below looks identical whether the owner chose
+          it or the platform imposed it. This is what tells them apart. */}
+      <FeatureLockBanner
+        feature="camera"
+        what="The monitor runs as a name board — check members in from the members list."
+        className="mb-4"
+      />
     <div className="flex flex-col gap-4 lg:h-[calc(100vh-3rem)] lg:flex-row lg:gap-5">
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-black sm:aspect-video lg:aspect-auto lg:h-full lg:min-w-0 lg:flex-1">
         {cameraEnabled === true && (
@@ -395,5 +404,6 @@ export function MonitorPage() {
         <CameraSettingsModal current={source} onSave={setSource} onClose={() => setCameraOpen(false)} />
       )}
     </div>
+    </>
   );
 }

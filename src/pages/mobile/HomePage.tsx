@@ -29,6 +29,7 @@ import {
 } from '../../components/mobile/icons';
 import { daysLeftColor } from '../../lib/expiry';
 import { SexSplit } from '../../components/ui/SexSplit';
+import { SubscriptionBanner } from '../../components/ui/SubscriptionBanner';
 import { t, type StringKey } from '../../i18n/strings';
 import type { DashboardStats, MemberStatus, TodayDigest } from '../../lib/types';
 
@@ -94,6 +95,10 @@ export function HomePage() {
         <Hero gymName={gym?.name ?? t('app.name')} userName={user?.name} />
 
         <div className="space-y-6 px-4 pb-6">
+          {/* Below the hero, not above it — the brand header owns the top edge.
+              Renders nothing outside the last two weeks of the subscription. */}
+          <SubscriptionBanner />
+
           <OccupancyCard
             count={cameraEnabled ? occupancy : (stats.data?.members_total ?? 0)}
             loading={loading}

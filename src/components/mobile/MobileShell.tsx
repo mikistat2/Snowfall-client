@@ -7,6 +7,7 @@ import { exitApp, useAndroidBackButton } from '../../hooks/useAndroidBackButton'
 import { consumeBackPress } from '../../lib/backInterceptor';
 import { useToast } from '../ui/Toast';
 import { FrozenGymAlert } from '../ui/FrozenGymAlert';
+import { FeatureNoticeAlert } from '../ui/FeatureNoticeAlert';
 import { PaymentRequiredRedirect } from '../ui/PaymentRequiredRedirect';
 import { SubscriptionBanner } from '../ui/SubscriptionBanner';
 import { t } from '../../i18n/strings';
@@ -91,12 +92,13 @@ export function MobileShell() {
           what makes a push read as a push rather than a repaint. */}
       <main key={pathname} className="mobile-scroll motion-safe:animate-rise-in">
         {isHome ? (
-          <>
-            <div className="px-4 pt-4">
-              <SubscriptionBanner />
-            </div>
-            <Outlet />
-          </>
+          // No wrapper and no banner here: the hero has to touch the top edge
+          // of the screen and draw under the status bar, the way the stack
+          // header does on every other screen. A padded wrapper reserved 16px
+          // above it even on the normal days when the banner renders nothing,
+          // which left the blue hero floating below a strip of canvas.
+          // HomePage renders the banner itself, below the hero.
+          <Outlet />
         ) : (
           <div className="px-4 pb-8 pt-4">
             <SubscriptionBanner />
@@ -109,6 +111,8 @@ export function MobileShell() {
 
       {/* covers the whole shell the moment the platform admin freezes this gym */}
       <FrozenGymAlert />
+      {/* announces a camera/Telegram entitlement the platform has just changed */}
+      <FeatureNoticeAlert />
       {/* sends the user to /billing the moment any call reports 402 */}
       <PaymentRequiredRedirect />
     </div>

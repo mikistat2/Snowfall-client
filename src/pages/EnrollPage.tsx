@@ -5,12 +5,14 @@ import { t } from '../i18n/strings';
 import { FaceCapture, type Capture } from '../components/members/FaceCapture';
 import { EnrollShell, FormSection } from '../components/members/EnrollShell';
 import { PhoneInput } from '../components/ui/PhoneInput';
+import { FeatureLockBanner } from '../components/ui/FeatureLockBanner';
 import { Select } from '../components/ui/Select';
 import { SexPicker } from '../components/members/SexPicker';
 import { paymentMethodOptions } from '../lib/payments';
 import { useActivePlans } from '../hooks/queries/usePlans';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { useEnrollMember } from '../hooks/queries/useMembers';
+import { useFeatureLocks } from '../hooks/useFeatureState';
 import type { PaymentMethod } from '../lib/types';
 
 export function EnrollPage() {
@@ -19,6 +21,8 @@ export function EnrollPage() {
   const { data: gym } = useGymSettings();
   // no camera at this gym → members are registered without face captures
   const cameraEnabled = gym?.settings.camera_enabled ?? true;
+  // ...and *why*: the owner's own choice reads differently from a platform lock.
+  const { camera: cameraAllowed } = useFeatureLocks();
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -55,6 +59,14 @@ export function EnrollPage() {
 
   return (
     <EnrollShell title={t('enroll.title')} subtitle={t('enroll.subtitle')}>
+      {/* The face-capture step simply disappears when the camera is off. Staff
+          enrolling their first member since the revocation deserve to know it
+          was taken away rather than assume they broke something. */}
+      <FeatureLockBanner
+        feature="camera"
+        what="Members are enrolled without a face scan — everything else works as normal."
+        className="mb-4"
+      />
       {mutation.isError && <p className="alert-error mb-4">{apiErrorMessage(mutation.error)}</p>}
 
       <form onSubmit={onSubmit} className="grid items-start gap-4 lg:grid-cols-2">
@@ -131,9 +143,16 @@ export function EnrollPage() {
           ) : (
             <section className="card flex items-center gap-3">
               <span className="text-2xl" aria-hidden>
-                📷
+                {cameraAllowed ? '📷' : '🔒'}
               </span>
-              <p className="text-sm leading-relaxed text-fg-muted">{t('enroll.noCamera')}</p>
+              {/* The stock copy ends "you can enable the camera later in
+                  Settings", which is a lie once the platform is the one
+                  holding it shut — the owner's toggle is locked. */}
+              <p className="text-sm leading-relaxed text-fg-muted">
+                {cameraAllowed
+                  ? t('enroll.noCamera')
+                  : 'Face recognition is turned off for this gym by the platform administrator, so this member is registered without face captures. Their face can be added later if it is switched back on.'}
+              </p>
             </section>
           )}
 

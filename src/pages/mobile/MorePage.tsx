@@ -18,6 +18,11 @@ const LINKS: readonly { to: string; labelKey: StringKey; ownerOnly?: boolean }[]
   { to: '/notifications', labelKey: 'nav.notifications' },
   { to: '/settings', labelKey: 'nav.settings' },
   { to: '/audit', labelKey: 'nav.audit', ownerOnly: true },
+  // The owner pays the platform subscription from the phone, so this is the
+  // only proactive way in. Without it billing is reachable only by the expiry
+  // banner (last 14 days) or the 402 redirect (already locked out) — i.e. only
+  // ever as a reaction to trouble, never to renew early or check the date.
+  { to: '/billing', labelKey: 'nav.billing', ownerOnly: true },
   { to: '/guide', labelKey: 'nav.guide' },
   { to: '/feedback', labelKey: 'nav.feedback' },
 ];
