@@ -433,6 +433,10 @@ const en = {
 
   'common.delete': 'Delete',
   'common.close': 'Close',
+  // pager (shared by the notification and audit tables)
+  'pager.prev': 'Previous page',
+  'pager.next': 'Next page',
+  'pager.entries': 'entries',
   'common.loading': 'Loading…',
   'common.error': 'Something went wrong',
   'common.days': 'days',
@@ -843,6 +847,9 @@ const am: Partial<Record<StringKey, string>> = {
 
   'common.delete': 'ሰርዝ',
   'common.close': 'ዝጋ',
+  'pager.prev': 'ቀዳሚ ገጽ',
+  'pager.next': 'ቀጣይ ገጽ',
+  'pager.entries': 'ግቤቶች',
   'common.loading': 'በመጫን ላይ…',
   'common.error': 'የሆነ ችግር ተፈጥሯል',
   'common.days': 'ቀናት',
@@ -895,6 +902,9 @@ const om: Partial<Record<StringKey, string>> = {
   'status.frozen': 'Dhaabbate',
 
   // common
+  'pager.prev': 'Fuula duraa',
+  'pager.next': 'Fuula itti aanu',
+  'pager.entries': 'galmeewwan',
   'common.cancel': 'Dhiisi',
   'common.back': 'Duubatti',
   'common.save': 'Olkaaʼi',

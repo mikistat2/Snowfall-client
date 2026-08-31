@@ -7,6 +7,7 @@ import { PageTitle } from '../components/ui/PageTitle';
 import { FeatureLockBanner } from '../components/ui/FeatureLockBanner';
 import { PlatformNoticeHistory } from '../components/ui/PlatformNoticeHistory';
 import { Select } from '../components/ui/Select';
+import { Pagination, type PageMeta } from '../components/ui/Pagination';
 import { useMobileShell } from '../hooks/useIsMobile';
 
 interface Notification {
@@ -39,21 +40,41 @@ function statusLabel(status: Notification['status']): string {
   return t('notifications.skipped');
 }
 
+const PAGE_SIZE = 25;
+
 export function NotificationsPage() {
   const isMobile = useMobileShell();
   const [type, setType] = useState('');
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['notifications', type, status],
+  const { data, isLoading, isPlaceholderData } = useQuery({
+    queryKey: ['notifications', type, status, page],
     queryFn: async () =>
       (
-        await api.get<Notification[]>('/notifications', {
-          params: { type: type || undefined, status: status || undefined },
+        await api.get<{ data: Notification[]; meta: PageMeta }>('/notifications', {
+          params: {
+            type: type || undefined,
+            status: status || undefined,
+            page,
+            pageSize: PAGE_SIZE,
+          },
         })
       ).data,
+    // The 30s poll refreshes whichever page is open. Only page 1 moves as new
+    // messages arrive; deeper pages are historic and effectively stable.
     refetchInterval: 30_000,
+    placeholderData: (previous) => previous,
   });
+
+  const rows = data?.data ?? [];
+
+  /** Any filter change invalidates the page number — page 4 of the old result
+   *  is very unlikely to exist in the new one, and would render empty. */
+  function refilter(apply: () => void) {
+    apply();
+    setPage(1);
+  }
 
   return (
     <div className="space-y-4">
@@ -71,7 +92,7 @@ export function NotificationsPage() {
         <Select
           className="w-full sm:max-w-[220px]"
           value={type}
-          onChange={setType}
+          onChange={(next) => refilter(() => setType(next))}
           label={t('notifications.type')}
           options={[
             { value: '', label: t('notifications.allTypes') },
@@ -81,7 +102,7 @@ export function NotificationsPage() {
         <Select
           className="w-full sm:max-w-[200px]"
           value={status}
-          onChange={setStatus}
+          onChange={(next) => refilter(() => setStatus(next))}
           label={t('notifications.status')}
           options={[
             { value: '', label: t('notifications.allStatuses') },
@@ -157,6 +178,8 @@ export function NotificationsPage() {
         </table>
       </div>
       )}
+
+      <Pagination meta={data?.meta} onChange={setPage} busy={isPlaceholderData} />
     </div>
   );
 }

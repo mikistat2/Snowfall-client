@@ -4,6 +4,7 @@ import { api } from '../lib/api';
 import { t } from '../i18n/strings';
 import { PageTitle } from '../components/ui/PageTitle';
 import { Select } from '../components/ui/Select';
+import { Pagination, type PageMeta } from '../components/ui/Pagination';
 
 interface AuditRow {
   id: number;
@@ -17,19 +18,39 @@ interface AuditRow {
 
 const ENTITIES = ['member', 'plan', 'payment', 'guest', 'user', 'gym'];
 
+const PAGE_SIZE = 25;
+
 export function AuditLogPage() {
   const [entity, setEntity] = useState('');
   const [action, setAction] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['audit-logs', entity, action],
+  const { data, isLoading, isPlaceholderData } = useQuery({
+    queryKey: ['audit-logs', entity, action, page],
     queryFn: async () =>
       (
-        await api.get<AuditRow[]>('/audit-logs', {
-          params: { entity: entity || undefined, action: action || undefined },
+        await api.get<{ data: AuditRow[]; meta: PageMeta }>('/audit-logs', {
+          params: {
+            entity: entity || undefined,
+            action: action || undefined,
+            page,
+            pageSize: PAGE_SIZE,
+          },
         })
       ).data,
+    // Hold the current page on screen while the next one loads, so paging does
+    // not blank the table and jump the scroll position.
+    placeholderData: (previous) => previous,
   });
+
+  const rows = data?.data ?? [];
+
+  /** Any filter change invalidates the page number — page 4 of the old result
+   *  is very unlikely to exist in the new one, and would render empty. */
+  function refilter(apply: () => void) {
+    apply();
+    setPage(1);
+  }
 
   return (
     <div className="space-y-4">
@@ -39,7 +60,7 @@ export function AuditLogPage() {
         <Select
           className="w-full sm:max-w-[200px]"
           value={entity}
-          onChange={setEntity}
+          onChange={(next) => refilter(() => setEntity(next))}
           label={t('audit.allEntities')}
           options={[
             { value: '', label: t('audit.allEntities') },
@@ -50,7 +71,7 @@ export function AuditLogPage() {
           className="input max-w-xs"
           placeholder={t('audit.searchAction')}
           value={action}
-          onChange={(e) => setAction(e.target.value)}
+          onChange={(e) => refilter(() => setAction(e.target.value))}
         />
       </div>
 
@@ -101,6 +122,8 @@ export function AuditLogPage() {
           </tbody>
         </table>
       </div>
+
+      <Pagination meta={data?.meta} onChange={setPage} busy={isPlaceholderData} />
     </div>
   );
 }
