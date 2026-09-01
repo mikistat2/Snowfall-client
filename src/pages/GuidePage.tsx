@@ -300,8 +300,11 @@ export function GuidePage() {
             </li>
           </ul>
           <p>
-            Members link themselves once via the QR on their profile; anyone can send <code>/traffic</code>{' '}
-            to the bot to ask how busy the gym is right now. Every send attempt is recorded on the{' '}
+            Members link themselves once via the QR on their profile. A linked member can send{' '}
+            <code>/days</code> to ask how long their membership has left — the same number the expiry
+            reminder would tell them, so they can check any day instead of waiting to be told. Anyone,
+            linked or not, can send <code>/traffic</code> to ask how busy the gym is right now. Both
+            appear in the bot&rsquo;s &ldquo;/&rdquo; menu. Every send attempt is recorded on the{' '}
             <b>Notifications</b> page — &ldquo;No chat linked&rdquo; rows tell you who still needs the QR.
           </p>
         </Section>

@@ -171,6 +171,10 @@ function PlansCard({ onBanner }: { onBanner: (msg: string) => void }) {
           <div className="text-xs text-slate-500">
             Prices take effect immediately — no redeploy. Gyms see only the active ones.
           </div>
+          <div className="mt-1 text-xs text-amber-700">
+            “Includes” describes the package. It does not switch anything on yet — a gym’s camera
+            and Telegram access still comes from its own row under Gyms.
+          </div>
         </div>
         <button className="btn-secondary" onClick={() => setAdding((v) => !v)}>
           {adding ? 'Cancel' : '+ Add plan'}
@@ -207,10 +211,14 @@ function PlanRow({
 }) {
   const [monthly, setMonthly] = useState(plan.monthly_price);
   const [yearly, setYearly] = useState(plan.yearly_price);
+  const [memberLimit, setMemberLimit] = useState(plan.member_limit?.toString() ?? '');
+  const [setupFee, setSetupFee] = useState(plan.setup_fee);
   useEffect(() => {
     setMonthly(plan.monthly_price);
     setYearly(plan.yearly_price);
-  }, [plan.monthly_price, plan.yearly_price]);
+    setMemberLimit(plan.member_limit?.toString() ?? '');
+    setSetupFee(plan.setup_fee);
+  }, [plan.monthly_price, plan.yearly_price, plan.member_limit, plan.setup_fee]);
 
   const m = Number(monthly);
   const y = Number(yearly);
@@ -261,6 +269,63 @@ function PlanRow({
           Delete
         </button>
       </div>
+
+      {/*
+        What the package includes. These are the plan's own description of
+        itself — they do NOT currently grant anything. A gym's real access
+        still comes from the camera/Telegram switches on its own row.
+      */}
+      <div className="mt-2.5 flex flex-wrap items-end gap-x-4 gap-y-2 border-t border-slate-100 pt-2.5">
+        <span className="pb-1.5 text-xs font-medium text-slate-400">Includes</span>
+        <label className="flex items-center gap-1.5 pb-1.5 text-xs text-slate-600">
+          <input
+            type="checkbox"
+            checked={plan.camera}
+            onChange={(e) => onPatch({ camera: e.target.checked })}
+          />
+          Camera
+        </label>
+        <label className="flex items-center gap-1.5 pb-1.5 text-xs text-slate-600">
+          <input
+            type="checkbox"
+            checked={plan.telegram}
+            onChange={(e) => onPatch({ telegram: e.target.checked })}
+          />
+          Telegram
+        </label>
+        <label className="text-xs text-slate-500">
+          Member limit
+          <input
+            className="input w-24"
+            type="number"
+            min={1}
+            placeholder="Unlimited"
+            value={memberLimit}
+            onChange={(e) => setMemberLimit(e.target.value)}
+            onBlur={() => {
+              // Blank means unlimited, which is null rather than 0 — the column
+              // has a CHECK that refuses anything below 1.
+              const next = memberLimit.trim() === '' ? null : Number(memberLimit);
+              if (next !== plan.member_limit) onPatch({ member_limit: next });
+            }}
+          />
+        </label>
+        <label className="text-xs text-slate-500">
+          Setup fee
+          <input
+            className="input w-24"
+            type="number"
+            min={0}
+            value={setupFee}
+            onChange={(e) => setSetupFee(e.target.value)}
+            onBlur={() =>
+              Number(setupFee) !== Number(plan.setup_fee) &&
+              onPatch({ setup_fee: Number(setupFee) } as never)
+            }
+          />
+        </label>
+      </div>
+
       {savingPct > 0 && (
         <div className="mt-1 text-xs text-emerald-700">Yearly saves {savingPct}% versus paying monthly.</div>
       )}
@@ -273,6 +338,10 @@ function PlanForm({ onDone, onBanner }: { onDone: () => void; onBanner: (msg: st
   const [description, setDescription] = useState('');
   const [monthly, setMonthly] = useState('0');
   const [yearly, setYearly] = useState('0');
+  const [camera, setCamera] = useState(false);
+  const [telegram, setTelegram] = useState(false);
+  const [memberLimit, setMemberLimit] = useState('');
+  const [setupFee, setSetupFee] = useState('0');
   const [busy, setBusy] = useState(false);
 
   async function submit() {
@@ -283,6 +352,10 @@ function PlanForm({ onDone, onBanner }: { onDone: () => void; onBanner: (msg: st
         description: description || null,
         monthly_price: Number(monthly),
         yearly_price: Number(yearly),
+        camera,
+        telegram,
+        member_limit: memberLimit.trim() === '' ? null : Number(memberLimit),
+        setup_fee: Number(setupFee),
       });
       onBanner(`Plan "${name}" added.`);
       onDone();
@@ -301,6 +374,38 @@ function PlanForm({ onDone, onBanner }: { onDone: () => void; onBanner: (msg: st
         <input className="input w-28" type="number" min={0} placeholder="Yearly" value={yearly} onChange={(e) => setYearly(e.target.value)} />
       </div>
       <input className="input" placeholder="Short description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} />
+      <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+        <span className="pb-1.5 text-xs font-medium text-slate-400">Includes</span>
+        <label className="flex items-center gap-1.5 pb-1.5 text-xs text-slate-600">
+          <input type="checkbox" checked={camera} onChange={(e) => setCamera(e.target.checked)} />
+          Camera
+        </label>
+        <label className="flex items-center gap-1.5 pb-1.5 text-xs text-slate-600">
+          <input type="checkbox" checked={telegram} onChange={(e) => setTelegram(e.target.checked)} />
+          Telegram
+        </label>
+        <label className="text-xs text-slate-500">
+          Member limit
+          <input
+            className="input w-24"
+            type="number"
+            min={1}
+            placeholder="Unlimited"
+            value={memberLimit}
+            onChange={(e) => setMemberLimit(e.target.value)}
+          />
+        </label>
+        <label className="text-xs text-slate-500">
+          Setup fee
+          <input
+            className="input w-24"
+            type="number"
+            min={0}
+            value={setupFee}
+            onChange={(e) => setSetupFee(e.target.value)}
+          />
+        </label>
+      </div>
       <button className="btn-primary" disabled={busy || name.trim().length === 0} onClick={() => void submit()}>
         {busy ? 'Adding…' : 'Add plan'}
       </button>

@@ -28,6 +28,11 @@ export interface BillingPlan {
   currency: string;
   is_active: boolean;
   sort_order: number;
+  /** What the package includes. `member_limit` is null when unlimited. */
+  camera: boolean;
+  telegram: boolean;
+  member_limit: number | null;
+  setup_fee: string;
 }
 
 export interface BillingPayment {
