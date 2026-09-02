@@ -35,7 +35,20 @@ export interface Member {
   phone: string | null;
   sex: 'male' | 'female' | null;
   telegram_chat_id: number | null;
-  photo_url: string | null;
+  /**
+   * Legacy inline base64 picture from before photos moved to object storage.
+   * Only ever present on the member detail response — the roster does not send
+   * it, because shipping it per row is what made the list expensive. Read
+   * `photo_thumb_url` / `photo_full_url` instead; the server already folds this
+   * into them as a fallback where it applies.
+   */
+  photo_url?: string | null;
+  /** Roster avatar (96px square). Null when the member has no picture. */
+  photo_thumb_url: string | null;
+  /** Detail-page picture (256px square). Null when the member has no picture. */
+  photo_full_url: string | null;
+  /** 'manual' = a person chose it, 'auto' = grabbed from the door camera. */
+  photo_source?: 'manual' | 'auto' | null;
   status: MemberStatus;
   joined_at: string;
   /** Set = off the active roster, kept only for their payment history. */

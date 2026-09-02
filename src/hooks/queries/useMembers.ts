@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import * as membersApi from '../../api/members';
 import { qk } from './keys';
 import type { MemberFilter, RenewInput, UpdateMemberInput } from '../../api/members';
@@ -15,10 +21,37 @@ function invalidateMember(qc: QueryClient, memberId?: number): void {
   void qc.invalidateQueries({ queryKey: qk.today });
 }
 
-export function useMembers(filter: MemberFilter = {}) {
-  return useQuery({
+/**
+ * How many members arrive per request.
+ *
+ * 30 fills a desktop table and comfortably overfills a phone screen, so the
+ * first page is everything most visits ever look at. The roster was previously
+ * unbounded: a 400-member gym sent all 400 rows on every visit, every filter
+ * change and (before the search box was debounced) every keystroke.
+ */
+export const MEMBERS_PAGE_SIZE = 30;
+
+/**
+ * The roster, a page at a time.
+ *
+ * The API returns a plain array with no total count — deliberately, per
+ * `utils/pagination.ts`: counting rows costs a second query over the same
+ * table, and nothing on this screen displays a total or a page number. A short
+ * page is therefore how the end is detected, which is exact except for the one
+ * harmless case where the roster divides evenly and the last request comes back
+ * empty.
+ *
+ * `filter` must already be debounced by the caller — it is the query key, so an
+ * unsettled search term would start a fresh paginated query per keystroke.
+ */
+export function useInfiniteMembers(filter: MemberFilter = {}) {
+  return useInfiniteQuery({
     queryKey: qk.members(filter),
-    queryFn: () => membersApi.listMembers(filter),
+    queryFn: ({ pageParam }) =>
+      membersApi.listMembers({ ...filter, limit: MEMBERS_PAGE_SIZE, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length < MEMBERS_PAGE_SIZE ? undefined : allPages.length * MEMBERS_PAGE_SIZE,
   });
 }
 
@@ -103,4 +136,29 @@ export function useDeleteMember(memberId: number) {
 
 export function useMemberTelegramLink(memberId: number) {
   return useMutation({ mutationFn: () => membersApi.createTelegramLink(memberId) });
+}
+
+/**
+ * Saves a member's profile picture.
+ *
+ * Invalidates the same three caches as any other member change: the roster
+ * avatar and the detail page both have to pick up the new version number, and
+ * the URL is what carries it — the image itself is cached for a year, so
+ * without a refetch of the row the browser would keep showing the old face.
+ */
+export function useSetMemberPhoto(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (images: { thumb: string; full: string }) =>
+      membersApi.setMemberPhoto(memberId, images),
+    onSuccess: () => invalidateMember(qc, memberId),
+  });
+}
+
+export function useClearMemberPhoto(memberId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => membersApi.clearMemberPhoto(memberId),
+    onSuccess: () => invalidateMember(qc, memberId),
+  });
 }

@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { apiErrorMessage } from '../../lib/api';
 import { Modal } from '../ui/Modal';
 import { t } from '../../i18n/strings';
 import { Select } from '../ui/Select';
+import { WarningIcon } from '../ui/icons';
 import { paymentMethodOptions } from '../../lib/payments';
 import { useActivePlans } from '../../hooks/queries/usePlans';
 import { useRenewMember } from '../../hooks/queries/useMembers';
@@ -21,13 +22,42 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
 
   const mutation = useRenewMember(memberId);
 
+  /**
+   * Picking a plan fills in its price, which the clerk then confirms or edits.
+   *
+   * The amount is required on renewals now. It used to be optional and fall
+   * back to the plan's list price, so a renewal taken at a discount was
+   * recorded at full price whenever the box was left alone — and payments are
+   * immutable, so that number could never be corrected afterwards.
+   */
+  function onPlanChange(id: number | ''): void {
+    setPlanId(id);
+    const plan = plans.find((p) => p.id === id);
+    if (plan) setAmount(String(Number(plan.price)));
+  }
+
+  const amountMissing = amount.trim() === '';
+  const incomplete = planId === '' || amountMissing;
+
+  /** Validation only shows after a blocked submit — see EnrollPage. */
+  const [attempted, setAttempted] = useState(false);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const blockerText = planId === '' ? t('enroll.needPlan') : amountMissing ? t('enroll.needAmount') : '';
+
   function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (planId === '') return;
+    setAttempted(true);
+    if (incomplete) {
+      // Save stays clickable so this message has something to answer. Before
+      // this, an incomplete renewal just greyed the button out and said
+      // nothing at all.
+      if (planId !== '' && amountMissing) amountRef.current?.focus();
+      return;
+    }
     mutation.mutate(
       {
         plan_id: planId,
-        amount: amount === '' ? undefined : Number(amount),
+        amount: Number(amount),
         method,
         note: note || undefined,
       },
@@ -45,7 +75,7 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
           <label className="label">{t('enroll.plan')}</label>
           <Select
             value={planId}
-            onChange={setPlanId}
+            onChange={onPlanChange}
             label={t('enroll.plan')}
             options={plans.map((p) => ({
               value: p.id,
@@ -56,15 +86,31 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
         </div>
         <div className="field-row">
           <div>
-            <label className="label">{t('enroll.amount')}</label>
+            <label className="label">
+              {t('enroll.amount')}
+              <span className="ml-0.5 text-danger" aria-hidden>
+                *
+              </span>
+            </label>
+            {/* No `required`: it would pre-empt the styled message with the
+                browser's own untranslated bubble. See EnrollPage. */}
             <input
-              className="input"
+              ref={amountRef}
+              className={`input ${attempted && amountMissing ? 'input-error' : ''}`}
               type="number"
               min="0"
               placeholder={selected ? String(Number(selected.price)) : ''}
+              aria-required
+              aria-invalid={attempted && amountMissing}
+              aria-describedby={attempted && amountMissing ? 'renew-amount-error' : undefined}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
+            {attempted && amountMissing && (
+              <p id="renew-amount-error" className="mt-1.5 text-xs font-medium text-danger">
+                {t('enroll.needAmount')}
+              </p>
+            )}
           </div>
           <div>
             <label className="label">{t('enroll.method')}</label>
@@ -80,11 +126,17 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
           <label className="label">{t('enroll.note')}</label>
           <input className="input" value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
+        {attempted && incomplete && (
+          <p className="alert-error flex items-start gap-2" role="alert">
+            <WarningIcon className="mt-0.5 h-4 w-4 shrink-0" />
+            <span className="leading-relaxed">{blockerText}</span>
+          </p>
+        )}
         <div className="flex justify-end gap-2">
           <button type="button" className="btn-secondary" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn-primary" disabled={mutation.isPending || planId === ''}>
+          <button className="btn-primary" disabled={mutation.isPending}>
             {t('common.save')}
           </button>
         </div>

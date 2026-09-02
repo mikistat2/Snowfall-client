@@ -65,11 +65,26 @@ export function MemberDetailPage() {
         * pills trailing off the edge told you nothing at a glance.
         */}
       <section className="card">
-        <div className="flex items-center gap-4">
-          {member.photo_url ? (
-            <img src={member.photo_url} alt="" className="h-16 w-16 shrink-0 rounded-full object-cover" />
+        <div className="flex items-center gap-4 sm:gap-5">
+          {/*
+            Always shown here, whatever the status: one member, one image.
+            Deliberately large — this is the screen someone opens to check that
+            the person in front of them is the person on the account, and a
+            40px roster avatar is not enough face to judge that by. The stored
+            rendition is 256px, so at 112px it is still rendering above 1:1 on
+            a retina screen and stays sharp.
+          */}
+          {member.photo_full_url ? (
+            <img
+              src={member.photo_full_url}
+              alt=""
+              width={112}
+              height={112}
+              className="h-24 w-24 shrink-0 rounded-2xl object-cover ring-1 ring-line sm:h-28 sm:w-28"
+              decoding="async"
+            />
           ) : (
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xl font-bold uppercase text-accent">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-3xl font-bold uppercase text-accent ring-1 ring-line sm:h-28 sm:w-28 sm:text-4xl">
               {member.full_name[0]}
             </div>
           )}

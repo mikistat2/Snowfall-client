@@ -5,11 +5,16 @@ import { Modal } from '../ui/Modal';
 import { PhoneInput } from '../ui/PhoneInput';
 import { Select } from '../ui/Select';
 import { SexPicker } from './SexPicker';
+import { MemberPhotoPicker, type PhotoValue } from './MemberPhotoPicker';
 import { StatusBadge } from '../ui/StatusBadge';
 import { CalendarDateInput, type CalendarSystem } from '../ui/CalendarDateInput';
 import { usePlans } from '../../hooks/queries/usePlans';
 import { useGymSettings } from '../../hooks/queries/useSettings';
-import { useUpdateMember } from '../../hooks/queries/useMembers';
+import {
+  useClearMemberPhoto,
+  useSetMemberPhoto,
+  useUpdateMember,
+} from '../../hooks/queries/useMembers';
 import { useAuth } from '../../hooks/useAuth';
 import { addDaysIso, todayIso } from '../../lib/ethiopian';
 import { daysLeft, deriveStatus } from '../../lib/expiry';
@@ -52,7 +57,12 @@ export function EditMemberModal({
 
   const canEditMembership = user?.role === 'owner' && Boolean(subscription);
 
+  const savePhoto = useSetMemberPhoto(member.id);
+  const clearPhoto = useClearMemberPhoto(member.id);
+
   const [paperCalendar, setPaperCalendar] = useState<CalendarSystem>('gregorian');
+  /** null = untouched, 'remove' = delete on save, otherwise the new renditions. */
+  const [photo, setPhoto] = useState<PhotoValue>(null);
   const [fullName, setFullName] = useState(member.full_name);
   const [phone, setPhone] = useState(member.phone ?? '');
   const [sex, setSex] = useState<'male' | 'female' | ''>(member.sex ?? '');
@@ -83,6 +93,13 @@ export function EditMemberModal({
         : null;
   const shiftedBy = originalExpiry && expiresAt ? daysLeft(expiresAt) - daysLeft(originalExpiry) : 0;
 
+  // Three mutations can fail this form (fields, photo upload, photo delete) and
+  // the banner shows whichever did. They run in sequence, so at most one has an
+  // error at a time.
+  const saving = mutation.isPending || savePhoto.isPending || clearPhoto.isPending;
+  const failed = [mutation, savePhoto, clearPhoto].find((m) => m.isError);
+  const saveError = failed ? apiErrorMessage(failed.error) : '';
+
   const error =
     fullName.trim().length < 2
       ? t('edit.errName')
@@ -98,7 +115,7 @@ export function EditMemberModal({
                 ? t('prev.errExpiryBeforeStart')
                 : '';
 
-  function onSubmit(e: FormEvent): void {
+  async function onSubmit(e: FormEvent): Promise<void> {
     e.preventDefault();
     if (error) return;
 
@@ -119,25 +136,53 @@ export function EditMemberModal({
       if (Object.keys(sub).length > 0) patch.subscription = sub;
     }
 
-    if (Object.keys(patch).length === 0) {
+    if (Object.keys(patch).length === 0 && photo === null) {
       onClose();
       return;
     }
-    mutation.mutate(patch, { onSuccess: onClose });
+
+    // The picture is its own endpoint (it carries image bytes, not fields), so
+    // it is saved alongside rather than inside the patch. Fields first: if the
+    // upload fails, the correction the staff member actually came here to make
+    // is already saved, and the dialog stays open showing why the photo did
+    // not stick. The reverse order would lose the typing on a flaky connection.
+    try {
+      if (Object.keys(patch).length > 0) await mutation.mutateAsync(patch);
+      if (photo === 'remove') await clearPhoto.mutateAsync();
+      else if (photo) await savePhoto.mutateAsync({ thumb: photo.thumb, full: photo.full });
+      onClose();
+    } catch {
+      // Surfaced by the error banner above, which reads whichever mutation failed.
+    }
   }
 
   return (
     <Modal title={t('edit.title')} onClose={onClose} wide>
-      <form onSubmit={onSubmit} className="space-y-5">
-        {mutation.isError && (
+      <form onSubmit={(e) => void onSubmit(e)} className="space-y-5">
+        {saveError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300">
-            {apiErrorMessage(mutation.error)}
+            {saveError}
           </p>
         )}
 
         <div className="grid gap-5 sm:grid-cols-2">
           <div className="space-y-4">
             <h3 className="font-semibold">{t('edit.details')}</h3>
+            {/*
+              First in the details column, and offered to every gym — a gym on
+              the Regular package has no face recognition, so a picture beside
+              the name is the only way the front desk can tell two similarly
+              named members apart.
+            */}
+            <div>
+              <label className="label">{t('photo.title')}</label>
+              <MemberPhotoPicker
+                currentUrl={member.photo_full_url}
+                value={photo}
+                onChange={setPhoto}
+                disabled={saving}
+              />
+            </div>
             <div>
               <label className="label">{t('members.fullName')}</label>
               <input
@@ -271,7 +316,7 @@ export function EditMemberModal({
           <button type="button" className="btn-secondary" onClick={onClose}>
             {t('common.cancel')}
           </button>
-          <button className="btn-primary" disabled={mutation.isPending || Boolean(error)}>
+          <button className="btn-primary" disabled={saving || Boolean(error)}>
             {t('common.save')}
           </button>
         </div>

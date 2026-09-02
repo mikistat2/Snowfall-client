@@ -153,3 +153,36 @@ export async function createTelegramLink(id: number): Promise<{ url: string }> {
   const { data } = await api.post<{ url: string }>(`/members/${id}/telegram-link`);
   return data;
 }
+
+/**
+ * The URLs a member's picture is served from, as returned by every member
+ * endpoint. Null on both when they have no photo.
+ */
+export interface MemberPhotoUrls {
+  photo_thumb_url: string | null;
+  photo_full_url: string | null;
+}
+
+/**
+ * Stores a new profile picture. Both renditions are base64 data URLs produced
+ * by `lib/photo.ts` — the server stores bytes and never resizes.
+ *
+ * `source` defaults to 'manual' server-side, which is what a staff member
+ * reaching this through the UI is. Enrollment sends 'auto' for the frame it
+ * grabs off the camera, and 'auto' never overwrites a picture a human chose.
+ */
+export async function setMemberPhoto(
+  memberId: number,
+  images: { thumb: string; full: string },
+  source: 'manual' | 'auto' = 'manual',
+): Promise<MemberPhotoUrls> {
+  const { data } = await api.put<MemberPhotoUrls>(`/members/${memberId}/photo`, {
+    ...images,
+    source,
+  });
+  return data;
+}
+
+export async function clearMemberPhoto(memberId: number): Promise<void> {
+  await api.delete(`/members/${memberId}/photo`);
+}

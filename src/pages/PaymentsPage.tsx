@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { t } from '../i18n/strings';
 import { PageTitle } from '../components/ui/PageTitle';
-import { usePayments } from '../hooks/queries/usePayments';
+import { useInfinitePayments, usePaymentSummary } from '../hooks/queries/usePayments';
+import { LoadMore } from '../components/ui/LoadMore';
 import type { Payment } from '../lib/types';
 import { Select } from '../components/ui/Select';
 import { paymentMethodOptions, paymentMethodLabel } from '../lib/payments';
@@ -13,9 +14,15 @@ export function PaymentsPage() {
   const [to, setTo] = useState('');
   const [method, setMethod] = useState('');
 
-  const { data: payments = [], isLoading } = usePayments({ from, to, method });
+  const filter = { from, to, method };
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
+    useInfinitePayments(filter);
+  const payments = useMemo(() => data?.pages.flat() ?? [], [data]);
 
-  const total = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+  // Counted and summed by the database over every matching payment, not by
+  // adding up the rows on screen — the list is paged, so summing it would
+  // report the most recent page's takings as the period's revenue.
+  const { data: summary } = usePaymentSummary(filter);
 
   return (
     <div className="space-y-4">
@@ -45,10 +52,10 @@ export function PaymentsPage() {
           a result line above the list rather than a note beside the filters. */}
       <div className="flex items-baseline justify-between gap-3 rounded-2xl bg-surface-2 px-4 py-3">
         <span className="text-sm text-fg-muted">
-          {payments.length} {t('home.paymentsSummary')}
+          {summary?.count ?? payments.length} {t('home.paymentsSummary')}
         </span>
         <span className="text-lg font-bold tabular-nums text-fg">
-          {total.toLocaleString()} {t('common.birr')}
+          {(summary?.total ?? 0).toLocaleString()} {t('common.birr')}
         </span>
       </div>
 
@@ -99,6 +106,16 @@ export function PaymentsPage() {
           </tbody>
         </table>
       </div>
+      )}
+
+      {!isLoading && (
+        <LoadMore
+          loaded={payments.length}
+          hasMore={Boolean(hasNextPage)}
+          isFetching={isFetchingNextPage}
+          onLoadMore={() => void fetchNextPage()}
+          noun={t('nav.payments').toLowerCase()}
+        />
       )}
     </div>
   );

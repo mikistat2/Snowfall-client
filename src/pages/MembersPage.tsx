@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
-import { useMembers } from '../hooks/queries/useMembers';
+import { useInfiniteMembers } from '../hooks/queries/useMembers';
+import { useDebounced } from '../hooks/useDebounced';
+import { LoadMore } from '../components/ui/LoadMore';
 import { useAuth } from '../hooks/useAuth';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Select } from '../components/ui/Select';
@@ -43,11 +45,22 @@ export function MembersPage() {
 
   // "Archived" shares the status dropdown but is a different roster, not a status
   const archived = status === 'archived';
-  const { data: members = [], isLoading } = useMembers({
-    search,
+  // The search term is part of the query key, so it is debounced before it gets
+  // there: without this, every keystroke starts a new paginated query and
+  // discards the one before it.
+  const debouncedSearch = useDebounced(search);
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteMembers({
+    search: debouncedSearch,
     status: archived ? '' : (status as MemberStatus | ''),
     archived,
   });
+  const members = useMemo(() => data?.pages.flat() ?? [], [data]);
 
   return (
     <div className="space-y-4">
@@ -153,6 +166,19 @@ export function MembersPage() {
         </table>
       </div>
       )}
+
+      {/* Shared by both layouts — the roster is paged on the desktop table too,
+          not only on the phone. A 400-member gym was previously sending all 400
+          rows on every visit and every filter change. */}
+      {!isLoading && (
+        <LoadMore
+          loaded={members.length}
+          hasMore={Boolean(hasNextPage)}
+          isFetching={isFetchingNextPage}
+          onLoadMore={() => void fetchNextPage()}
+          noun={t('nav.members').toLowerCase()}
+        />
+      )}
     </div>
   );
 }
@@ -245,15 +271,34 @@ function MemberCard({ member }: { member: Member }) {
   );
 }
 
+/**
+ * Statuses whose members get a picture in the roster.
+ *
+ * Not every member: an admin scrolling the list is looking for the people who
+ * need chasing, and loading a hundred faces to find fifteen is most of this
+ * screen's bandwidth spent on rows nobody looks at. Everyone else gets their
+ * initial, which costs nothing and reads just as well at 40px.
+ *
+ * The full picture is always shown on the member's own page, and searching for
+ * one person narrows the roster to them — so no member is ever unreachable by
+ * face, only un-preloaded.
+ */
+const PHOTO_STATUSES = new Set<MemberStatus>(['expiring', 'grace', 'expired']);
+
 /** The member's photo when there is one, their initial when there is not. */
 function Avatar({ member }: { member: Member }) {
-  if (member.photo_url) {
+  if (member.photo_thumb_url && PHOTO_STATUSES.has(member.status)) {
     return (
       <img
-        src={member.photo_url}
+        src={member.photo_thumb_url}
         alt=""
+        // Explicit dimensions as well as classes: the row must not reflow as
+        // thumbnails arrive, and lazy loading means they arrive late.
+        width={40}
+        height={40}
         className="h-10 w-10 shrink-0 rounded-full object-cover"
         loading="lazy"
+        decoding="async"
       />
     );
   }

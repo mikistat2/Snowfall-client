@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
@@ -9,12 +9,15 @@ import { EnrollShell, FormSection } from '../components/members/EnrollShell';
 import { SexPicker } from '../components/members/SexPicker';
 import { paymentMethodOptions } from '../lib/payments';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { WarningIcon } from '../components/ui/icons';
 import { CalendarDateInput, type CalendarSystem } from '../components/ui/CalendarDateInput';
 import { useActivePlans } from '../hooks/queries/usePlans';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { useEnrollPreviousMember } from '../hooks/queries/useMembers';
 import { addDaysIso, todayIso } from '../lib/ethiopian';
 import { daysLeft, deriveStatus } from '../lib/expiry';
+import { renditionsFromDataUrl } from '../lib/photo';
+import { setMemberPhoto } from '../api/members';
 import type { Member, MemberStatus, PaymentMethod } from '../lib/types';
 
 
@@ -51,6 +54,11 @@ export function PreviousMemberPage() {
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [added, setAdded] = useState<{ id: number; name: string; status: MemberStatus }[]>([]);
+  /** Validation shows only after a blocked submit — see EnrollPage. */
+  const [attempted, setAttempted] = useState(false);
+  const amountRef = useRef<HTMLInputElement>(null);
+  /** Only a problem when a payment is actually being recorded. */
+  const amountMissing = recordPayment && amount.trim() === '';
 
   const mutation = useEnrollPreviousMember();
   const today = todayIso();
@@ -89,9 +97,29 @@ export function PreviousMemberPage() {
               ? t('prev.errExpiryBeforeStart')
               : captures.length > 0 && captures.length < 3
                 ? t('prev.errCaptures')
-                : '';
+                : amountMissing
+                  ? t('enroll.needAmount')
+                  : '';
 
+  /**
+   * No photo picker on this page by design.
+   *
+   * This is batch entry from the gym's paper register: the member is not in the
+   * room, so there is nothing to photograph, and a picker between every row
+   * would slow down the one screen whose whole purpose is speed. If face
+   * captures happen to have been taken, the first is stored as the profile
+   * picture; otherwise the member gets one later from their own page.
+   */
   function resetForNext(member: Member): void {
+    const capture = captures[0]?.thumbnail;
+    if (capture) {
+      void renditionsFromDataUrl(capture)
+        .then((auto) => setMemberPhoto(member.id, { thumb: auto.thumb, full: auto.full }, 'auto'))
+        .catch((err: unknown) => {
+          // eslint-disable-next-line no-console
+          console.error('[previous-member] photo upload failed', err);
+        });
+    }
     setAdded((prev) => [{ id: member.id, name: member.full_name, status: member.status }, ...prev].slice(0, 8));
     setFullName('');
     setPhone('');
@@ -102,20 +130,27 @@ export function PreviousMemberPage() {
     setExpiresAt('');
     setAmount('');
     setCaptures([]);
+    // Back to untouched. Without this the next blank row inherits the previous
+    // one's "attempted" state and opens already showing a validation error for
+    // fields nobody has reached yet.
+    setAttempted(false);
     // plan, calendar and payment method stay — the next notebook line usually
     // shares all three
   }
 
   function onSubmit(e: FormEvent): void {
     e.preventDefault();
-    if (error || planId === '') return;
+    setAttempted(true);
+    if (error || planId === '') {
+      if (amountMissing) amountRef.current?.focus();
+      return;
+    }
     mutation.mutate(
       {
         member: {
           full_name: fullName.trim(),
           phone: phone || undefined,
           sex: sex || undefined,
-          photo_url: captures[0]?.thumbnail ?? null,
         },
         descriptors: captures.map((c) => c.descriptor),
         plan_id: planId,
@@ -129,7 +164,11 @@ export function PreviousMemberPage() {
         joined_at: joinedAt,
         starts_at: startsAt,
         expires_at: customExpiry ? expiresAt : undefined,
-        payment: recordPayment ? { amount: amount === '' ? undefined : Number(amount), method } : undefined,
+        // Recording a payment at all stays optional here — most of these were
+        // taken in a notebook before the system existed. But once the box is
+        // ticked, the amount is required like anywhere else; `error` blocks
+        // submit until it is filled, so this is always a number.
+        payment: recordPayment ? { amount: Number(amount), method } : undefined,
       },
       { onSuccess: resetForNext },
     );
@@ -205,12 +244,20 @@ export function PreviousMemberPage() {
           {recordPayment && (
             <div className="field-row">
               <div>
-                <label className="label">{t('enroll.amount')}</label>
+                <label className="label">
+                  {t('enroll.amount')}
+                  <span className="ml-0.5 text-danger" aria-hidden>
+                    *
+                  </span>
+                </label>
                 <input
-                  className="input"
+                  ref={amountRef}
+                  className={`input ${attempted && amountMissing ? 'input-error' : ''}`}
                   type="number"
                   min="0"
                   placeholder={selectedPlan ? String(Number(selectedPlan.price)) : ''}
+                  aria-required
+                  aria-invalid={attempted && amountMissing}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
@@ -318,10 +365,21 @@ export function PreviousMemberPage() {
           )}
 
           <div className="card space-y-3">
-            {error && fullName !== '' && (
-              <p className="text-danger text-xs leading-relaxed">{error}</p>
-            )}
-            <button className="btn-primary w-full" disabled={mutation.isPending || Boolean(error)}>
+            {/*
+              A quiet hint while the row is still being typed, an alert once a
+              submit has been blocked. Same two-state treatment as the enroll
+              form — see EnrollPage for why the button is not disabled.
+            */}
+            {error &&
+              (attempted ? (
+                <p className="alert-error flex items-start gap-2" role="alert">
+                  <WarningIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span className="leading-relaxed">{error}</span>
+                </p>
+              ) : (
+                fullName !== '' && <p className="text-danger text-xs leading-relaxed">{error}</p>
+              ))}
+            <button className="btn-primary w-full" disabled={mutation.isPending}>
               {mutation.isPending ? `${t('prev.submit')}…` : t('prev.submit')}
             </button>
           </div>

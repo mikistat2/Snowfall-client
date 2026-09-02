@@ -92,3 +92,69 @@ export function XIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Camera body with a lens — "take a photo now". */
+export function CameraIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.24-.66l.72-1.08A1.5 1.5 0 0 1 9.9 4.6h4.2a1.5 1.5 0 0 1 1.24.66l.72 1.08A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
+      <circle cx="12" cy="12.5" r="3.2" />
+    </Svg>
+  );
+}
+
+/** Picture frame with a horizon — "choose an existing photo". */
+export function ImageIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4.5" width="18" height="15" rx="2.5" />
+      <circle cx="8.5" cy="10" r="1.6" />
+      <path d="m4 17 4.5-4.5a2 2 0 0 1 2.8 0L16 17" />
+      <path d="m14 15 1.6-1.6a2 2 0 0 1 2.8 0L20 15" />
+    </Svg>
+  );
+}
+
+/** Bin — removing something that is already stored. */
+export function TrashIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 7h16" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" />
+      <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+    </Svg>
+  );
+}
+
+/** Head and shoulders — the placeholder where a member has no picture. */
+export function UserIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="8.5" r="3.8" />
+      <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+    </Svg>
+  );
+}
+
+/** Camera with a pair of turning arrows — swap between front and back lens. */
+export function FlipCameraIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2a1.5 1.5 0 0 0 1.24-.66l.72-1.08A1.5 1.5 0 0 1 9.9 4.6h4.2a1.5 1.5 0 0 1 1.24.66l.72 1.08A1.5 1.5 0 0 0 17.3 7h2.2A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z" />
+      <path d="M9.4 12.8a2.7 2.7 0 0 1 4.5-2M14.6 12.2a2.7 2.7 0 0 1-4.5 2" />
+      <path d="M9.4 10.6v2.2h2.2M14.6 14.4v-2.2h-2.2" />
+    </Svg>
+  );
+}
+
+/** Triangle with an exclamation — a blocked action, not a fatal error. */
+export function WarningIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0z" />
+      <path d="M12 9v4.5" />
+      <path d="M12 17h.01" />
+    </Svg>
+  );
+}

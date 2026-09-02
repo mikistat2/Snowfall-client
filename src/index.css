@@ -138,6 +138,14 @@
   .text-danger {
     @apply text-red-600 dark:text-red-400;
   }
+  /*
+   * A field that failed validation. Applied only after someone has tried to
+   * submit, never while they are still filling the form in — a box that turns
+   * red before it has been visited reads as a telling-off rather than as help.
+   */
+  .input-error {
+    @apply border-red-500 focus:border-red-500 focus:ring-red-500/25;
+  }
   .alert-success {
     @apply rounded-xl border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-800 dark:text-green-300;
   }
@@ -218,6 +226,12 @@
   }
   .theme-premium .text-danger {
     @apply text-red-300;
+  }
+  /* `.theme-premium .input` is more specific than `.input-error`, so without
+     this the red border loses to the theme's own and a failed field looks
+     exactly like a filled one. */
+  .theme-premium .input-error {
+    @apply border-red-400 focus:border-red-400 focus:ring-red-400/30;
   }
   .theme-premium .alert-success {
     @apply border-emerald-400/25 bg-emerald-500/10 text-emerald-300;
