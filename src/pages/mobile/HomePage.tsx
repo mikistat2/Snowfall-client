@@ -407,7 +407,28 @@ function daysLeftText(days: number): string {
 }
 
 /** Monogram stand-in — member photos are not part of the digest payload. */
-function Avatar({ name, tone }: { name: string; tone?: string }) {
+/**
+ * The member's photo where there is one, their initials where there is not.
+ *
+ * `tone` colours the initials fallback by what the list is about (orange for
+ * expiring, sky for new). A real photo replaces that colour rather than being
+ * tinted by it — the point of showing a face is to see the face.
+ */
+function Avatar({ name, tone, photoUrl }: { name: string; tone?: string; photoUrl?: string | null }) {
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt=""
+        width={40}
+        height={40}
+        className="h-10 w-10 shrink-0 rounded-full object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  }
+
   const initials = name
     .trim()
     .split(/\s+/)
@@ -432,6 +453,7 @@ function SheetRow({
   sub,
   trailing,
   tone,
+  photoUrl,
   onNavigate,
 }: {
   to?: string;
@@ -439,11 +461,13 @@ function SheetRow({
   sub?: string;
   trailing?: ReactNode;
   tone?: string;
+  /** Omitted where the row has no member behind it (the payments list). */
+  photoUrl?: string | null;
   onNavigate?: () => void;
 }) {
   const body = (
     <>
-      <Avatar name={name} tone={tone} />
+      <Avatar name={name} tone={tone} photoUrl={photoUrl} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-fg">{name}</span>
         {sub && <span className="block truncate text-xs text-fg-muted">{sub}</span>}
@@ -593,6 +617,7 @@ function StatSheet({
                 onNavigate={onClose}
                 name={member.full_name}
                 sub={member.phone ?? t('home.noPhone')}
+                photoUrl={member.photo_thumb_url}
                 tone="bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400"
                 trailing={
                   <span className={`text-xs font-semibold ${daysLeftColor[member.status]}`}>
@@ -628,6 +653,7 @@ function StatSheet({
               onNavigate={onClose}
               name={member.full_name}
               sub={member.phone ?? t('home.noPhone')}
+              photoUrl={member.photo_thumb_url}
               tone="bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400"
               trailing={
                 <span className="text-right">
