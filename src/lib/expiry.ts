@@ -28,3 +28,17 @@ export const daysLeftColor: Record<MemberStatus, string> = {
   expired: 'text-red-600 dark:text-red-400',
   frozen: 'text-fg-muted',
 };
+
+/**
+ * The same urgency ramp as `daysLeftColor`, as a ring around an avatar.
+ *
+ * Kept beside it so the two cannot drift: where a member's photo replaces a
+ * status icon, the ring is what carries the colour the icon used to.
+ */
+export const ringColor: Record<MemberStatus, string> = {
+  active: 'ring-green-500/60',
+  expiring: 'ring-yellow-500/70',
+  grace: 'ring-orange-500/70',
+  expired: 'ring-red-500/70',
+  frozen: 'ring-line',
+};

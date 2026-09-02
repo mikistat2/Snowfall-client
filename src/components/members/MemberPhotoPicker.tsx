@@ -5,6 +5,7 @@ import { getCameraSource } from '../../lib/camera';
 import type { CameraElement } from '../../lib/camera';
 import { PhotoError, makeRenditions, type Renditions } from '../../lib/photo';
 import { t } from '../../i18n/strings';
+import { NATIVE } from '../../lib/platform';
 
 /**
  * Picking a member's profile picture: take one now, or choose an existing file.
@@ -31,19 +32,30 @@ export type PhotoValue = Renditions | 'remove' | null;
  * True when the device has more than one camera to switch between.
  *
  * A flip button on a desk PC with a single webcam is a control that visibly
- * does nothing, which is worse than not offering it — so the button only
- * appears where it has somewhere to go. `enumerateDevices` counts video inputs
- * before permission is granted (it withholds their labels, not their
- * existence), so this settles before the camera is ever opened.
+ * does nothing, so it only appears where it has somewhere to go. Working out
+ * where that is turns out to need two different answers:
  *
- * Assumes false on anything that cannot answer, including older WebViews:
- * hiding a button that would have worked is a smaller failure than showing one
- * that cannot.
+ * On the Android app it is simply always true. `enumerateDevices` was tried
+ * first, on the assumption that it reports the *existence* of devices before
+ * permission is granted and withholds only their labels. That is how it behaves
+ * in a desktop browser; in the Android WebView it returned nothing useful until
+ * a stream was already open, so the button never appeared on the one platform
+ * that most needs it. A phone has a front and a back camera — there is nothing
+ * to detect.
+ *
+ * In a browser it is a real question, and one whose answer improves once the
+ * camera is running: an unpermissioned `enumerateDevices` can under-report, but
+ * after `getUserMedia` succeeds the list is complete. So it is asked again when
+ * the camera opens, and the button can appear a moment later. That is a better
+ * failure than a button that promises a second camera which is not there.
+ *
+ * `active` should be true while the camera view is open.
  */
-function useHasMultipleCameras(): boolean {
-  const [multiple, setMultiple] = useState(false);
+function useHasMultipleCameras(active: boolean): boolean {
+  const [multiple, setMultiple] = useState(NATIVE);
 
   useEffect(() => {
+    if (NATIVE) return;
     let cancelled = false;
     navigator.mediaDevices
       ?.enumerateDevices?.()
@@ -53,12 +65,14 @@ function useHasMultipleCameras(): boolean {
         }
       })
       .catch(() => {
-        /* no permission to enumerate, or no support — leave the button hidden */
+        /* no support — leave the button hidden */
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+    // Re-asked when the camera opens: the device list is only reliably complete
+    // once a stream has been granted.
+  }, [active]);
 
   return multiple;
 }
@@ -93,7 +107,7 @@ export function MemberPhotoPicker({
   // Read once per mount: it comes from device-local storage, and re-reading it
   // on every render would hand CameraFeed a new object each time.
   const [source] = useState(getCameraSource);
-  const hasMultipleCameras = useHasMultipleCameras();
+  const hasMultipleCameras = useHasMultipleCameras(capturing);
   // An IP camera is a fixed stream on the wall with one point of view —
   // `facingMode` means nothing to it, so the button would be a no-op.
   const canFlip = hasMultipleCameras && source.type === 'webcam';
@@ -313,16 +327,19 @@ export function MemberPhotoPicker({
       </div>
 
       {/*
-        `capture` asks a phone for the camera directly, but is only a hint —
-        a desktop browser ignores it and shows the normal file chooser, which
-        is the right behaviour there. The dedicated "Take photo" button above
-        is what guarantees a camera on every platform.
+        No `capture` attribute.
+
+        It was here on the assumption that it is a hint a desktop ignores. On
+        Android it is not a hint: the WebView honours it and opens the camera
+        directly, so "Choose from gallery" went straight past the gallery to a
+        viewfinder. Without it the input opens the system picker on every
+        platform, which is the only thing this button should ever do — taking a
+        photo has its own button.
       */}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        capture="user"
         className="hidden"
         onChange={onFile}
       />

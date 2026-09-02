@@ -190,6 +190,7 @@ export interface TodayDigest {
     phone: string | null;
     created_at: string;
     plan_name: string | null;
+    photo_thumb_url: string | null;
   }[];
   /** Latest subscription within ±7 days of today; negative days_left = already expired. */
   expiring: {
@@ -199,6 +200,7 @@ export interface TodayDigest {
     status: MemberStatus;
     expires_at: string;
     days_left: number;
+    photo_thumb_url: string | null;
   }[];
   payments_today: {
     count: number;

@@ -57,7 +57,7 @@ export function TodayPage() {
           {expiringSoon.length === 0 && <p className="text-sm text-fg-subtle">{t('today.noExpiring')}</p>}
           <div className="divide-y divide-line">
             {expiringSoon.map((m) => (
-              <MemberRow key={m.id} id={m.id} name={m.full_name} phone={m.phone}>
+              <MemberRow key={m.id} id={m.id} name={m.full_name} phone={m.phone} photoUrl={m.photo_thumb_url}>
                 <DaysChip daysLeft={m.days_left} />
               </MemberRow>
             ))}
@@ -71,7 +71,7 @@ export function TodayPage() {
           {justExpired.length === 0 && <p className="text-sm text-fg-subtle">{t('today.noExpired')}</p>}
           <div className="divide-y divide-line">
             {justExpired.map((m) => (
-              <MemberRow key={m.id} id={m.id} name={m.full_name} phone={m.phone}>
+              <MemberRow key={m.id} id={m.id} name={m.full_name} phone={m.phone} photoUrl={m.photo_thumb_url}>
                 <DaysChip daysLeft={m.days_left} />
               </MemberRow>
             ))}
@@ -86,7 +86,7 @@ export function TodayPage() {
           )}
           <div className="divide-y divide-line">
             {data.new_members.map((m) => (
-              <MemberRow key={m.id} id={m.id} name={m.full_name} phone={m.phone}>
+              <MemberRow key={m.id} id={m.id} name={m.full_name} phone={m.phone} photoUrl={m.photo_thumb_url}>
                 <span className="text-xs text-fg-muted">
                   {m.plan_name ? `${t('today.plan')}: ${m.plan_name} · ` : ''}
                   {t('today.joined')} {time(m.created_at)}
@@ -129,11 +129,13 @@ function MemberRow({
   id,
   name,
   phone,
+  photoUrl,
   children,
 }: {
   id: number;
   name: string;
   phone: string | null;
+  photoUrl?: string | null;
   children: React.ReactNode;
 }) {
   return (
@@ -141,9 +143,31 @@ function MemberRow({
       to={`/members/${id}`}
       className="flex items-center justify-between gap-2 rounded-lg px-1 py-2 text-sm hover:bg-surface-2"
     >
-      <div className="min-w-0">
-        <span className="font-medium">{name}</span>
-        {phone && <span className="text-xs text-fg-subtle"> · {phone}</span>}
+      <div className="flex min-w-0 items-center gap-2.5">
+        {/*
+          A face on the follow-up list. These rows are the ones someone is
+          about to phone or stop at the door, and a name alone does not settle
+          which of four members called Abebe is standing there.
+        */}
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt=""
+            width={32}
+            height={32}
+            className="h-8 w-8 shrink-0 rounded-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-xs font-bold uppercase text-accent">
+            {name.trim().charAt(0) || '?'}
+          </span>
+        )}
+        <span className="min-w-0">
+          <span className="font-medium">{name}</span>
+          {phone && <span className="text-xs text-fg-subtle"> · {phone}</span>}
+        </span>
       </div>
       {children}
     </Link>

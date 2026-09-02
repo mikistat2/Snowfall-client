@@ -16,6 +16,8 @@ import { paymentMethodOptions } from '../lib/payments';
 import { useActivePlans } from '../hooks/queries/usePlans';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { useEnrollMember } from '../hooks/queries/useMembers';
+import { useQueryClient } from '@tanstack/react-query';
+import { qk } from '../hooks/queries/keys';
 import { useFeatureLocks } from '../hooks/useFeatureState';
 import type { PaymentMethod } from '../lib/types';
 
@@ -68,6 +70,18 @@ export function EnrollPage() {
   const [attempted, setAttempted] = useState(false);
   const amountRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Latched on the first accepted submit and only released if the enrollment
+   * itself fails.
+   *
+   * `mutation.isPending` alone is not enough to stop a double enrollment: it
+   * goes false the moment the request resolves, while this page is still
+   * finishing up and navigating. Two clicks in that window would create two
+   * members and take two payments — and payments are immutable, so the second
+   * one cannot be deleted afterwards.
+   */
+  const [submitted, setSubmitted] = useState(false);
+
   /** The first unmet requirement, in the order they appear on the form. */
   const blocker = planId === '' ? 'plan' : amountMissing ? 'amount' : capturesNeeded ? 'captures' : null;
   const blockerText =
@@ -79,6 +93,7 @@ export function EnrollPage() {
           ? t('enroll.needMore')
           : '';
 
+  const queryClient = useQueryClient();
   const mutation = useEnrollMember();
 
   /**
@@ -92,23 +107,38 @@ export function EnrollPage() {
    * A picture a staff member picked is 'manual'; the frame lifted off the face
    * capture is 'auto', which the server will never let overwrite a manual one.
    */
-  async function uploadPhoto(memberId: number): Promise<void> {
+  function uploadPhoto(memberId: number): void {
     const capture = captures[0]?.thumbnail;
-    try {
-      if (photo && typeof photo === 'object') {
-        await setMemberPhoto(memberId, { thumb: photo.thumb, full: photo.full }, 'manual');
-      } else if (capture) {
-        const auto = await renditionsFromDataUrl(capture);
-        await setMemberPhoto(memberId, { thumb: auto.thumb, full: auto.full }, 'auto');
-      }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[enroll] photo upload failed', err);
-    }
+    const pending =
+      photo && typeof photo === 'object'
+        ? setMemberPhoto(memberId, { thumb: photo.thumb, full: photo.full }, 'manual')
+        : capture
+          ? renditionsFromDataUrl(capture).then((auto) =>
+              setMemberPhoto(memberId, { thumb: auto.thumb, full: auto.full }, 'auto'),
+            )
+          : null;
+    if (!pending) return;
+
+    void pending
+      .then(() => {
+        // The member page has already been rendered from a row with no photo,
+        // so tell it to refetch — otherwise the picture only appears on a
+        // manual reload.
+        void queryClient.invalidateQueries({ queryKey: qk.member(memberId) });
+        void queryClient.invalidateQueries({ queryKey: qk.membersAll });
+      })
+      .catch((err: unknown) => {
+        // Best-effort: enrollment and its payment are already committed, and
+        // the photo can be added in one click from the page they just landed
+        // on. Failing loudly here would suggest the enrollment itself failed.
+        // eslint-disable-next-line no-console
+        console.error('[enroll] photo upload failed', err);
+      });
   }
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitted) return;
     setAttempted(true);
     if (incomplete) {
       // The submit button stays enabled precisely so this can happen. A greyed
@@ -121,6 +151,7 @@ export function EnrollPage() {
       }
       return;
     }
+    setSubmitted(true);
     mutation.mutate(
       {
         member: {
@@ -134,9 +165,22 @@ export function EnrollPage() {
         payment: { amount: Number(amount), method },
       },
       {
-        onSuccess: async (member) => {
-          await uploadPhoto(member.id);
+        onSuccess: (member) => {
+          // Navigate FIRST, then let the photo upload finish in the background.
+          //
+          // It used to await the upload before navigating, which left the desk
+          // staring at an unchanged form for as long as the encode and the
+          // round-trip took — long enough on gym wifi to look like a dropped
+          // click and invite a second one. The member and their payment are
+          // already committed by this point; the picture is not worth blocking
+          // on, and it appears a moment later via the invalidation above.
           navigate(`/members/${member.id}`);
+          uploadPhoto(member.id);
+        },
+        onError: () => {
+          // Let them fix the problem and try again. Only a *failed* enrollment
+          // re-opens the button — a successful one has already navigated away.
+          setSubmitted(false);
         },
       },
     );
@@ -299,7 +343,7 @@ export function EnrollPage() {
               button gives no reason, and the click is what triggers the message
               above and moves the cursor to the field at fault.
             */}
-            <button className="btn-primary w-full" disabled={mutation.isPending}>
+            <button className="btn-primary w-full" disabled={mutation.isPending || submitted}>
               {mutation.isPending ? `${t('enroll.submit')}…` : t('enroll.submit')}
             </button>
           </div>

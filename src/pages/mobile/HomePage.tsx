@@ -27,7 +27,7 @@ import {
   SpinnerIcon,
   UserPlusIcon,
 } from '../../components/mobile/icons';
-import { daysLeftColor } from '../../lib/expiry';
+import { daysLeftColor, ringColor } from '../../lib/expiry';
 import { SexSplit } from '../../components/ui/SexSplit';
 import { SubscriptionBanner } from '../../components/ui/SubscriptionBanner';
 import { t, type StringKey } from '../../i18n/strings';
@@ -689,6 +689,7 @@ interface ExpiringRow {
   full_name: string;
   status: MemberStatus;
   days_left: number;
+  photo_thumb_url: string | null;
 }
 
 function Attention({ items, loading }: { items: ExpiringRow[]; loading: boolean }) {
@@ -727,13 +728,37 @@ function Attention({ items, loading }: { items: ExpiringRow[]; loading: boolean 
                     index > 0 ? 'border-t border-line' : ''
                   }`}
                 >
-                  <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 ${
-                      daysLeftColor[member.status]
-                    }`}
-                  >
-                    <AlertIcon className="h-5 w-5" />
-                  </span>
+                  {/*
+                    The member's face where the generic alert icon used to be.
+                    This list is the morning call-round: a photo settles which
+                    of four members with the same first name is being chased,
+                    and the urgency is already carried by the coloured days-left
+                    line underneath. The ring keeps that colour cue on the
+                    avatar, so nothing is lost by dropping the icon.
+
+                    Falls back to the icon when there is no picture, rather than
+                    to initials — the name is right beside it, so a second copy
+                    of the same letter says nothing.
+                  */}
+                  {member.photo_thumb_url ? (
+                    <img
+                      src={member.photo_thumb_url}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className={`h-9 w-9 shrink-0 rounded-full object-cover ring-2 ${ringColor[member.status]}`}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 ${
+                        daysLeftColor[member.status]
+                      }`}
+                    >
+                      <AlertIcon className="h-5 w-5" />
+                    </span>
+                  )}
 
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-fg">{member.full_name}</span>
