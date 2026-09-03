@@ -22,7 +22,11 @@ import { daysUntil, fetchCheckout, formatDate } from '../../lib/billing';
  * Nothing is shown to a comped gym: it has an expiry date that will never be
  * enforced, so counting it down would be a countdown to nothing.
  */
-const WARN_WITHIN_DAYS = 14;
+/**
+ * Was 14. Two weeks of the same banner is two weeks of learning to ignore it,
+ * and the message has not changed by the time it matters.
+ */
+const WARN_WITHIN_DAYS = 7;
 
 /** Red at three days or fewer, but only where the date actually bites. */
 const URGENT_WITHIN_DAYS = 3;
@@ -37,8 +41,10 @@ export function SubscriptionBanner() {
 
   if (!data || data.comped) return null;
   const left = daysUntil(data.expiresAt);
-  // Negative values fall through on purpose — an already-lapsed gym is exactly
-  // who needs to see this, and needs to see it most while payments are off.
+  // Only the upper bound is a window. Negative values fall through on purpose
+  // and the banner stays up indefinitely once the date has passed — an
+  // already-lapsed gym is exactly who needs to see this, and needs to see it
+  // most while payments are off.
   if (left === null || left > WARN_WITHIN_DAYS) return null;
 
   const enforced = data.paymentsRequired;
