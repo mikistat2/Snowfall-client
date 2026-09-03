@@ -8,7 +8,6 @@ import { renditionsFromDataUrl } from '../lib/photo';
 import { setMemberPhoto } from '../api/members';
 import { EnrollShell, FormSection } from '../components/members/EnrollShell';
 import { PhoneInput } from '../components/ui/PhoneInput';
-import { FeatureLockBanner } from '../components/ui/FeatureLockBanner';
 import { WarningIcon } from '../components/ui/icons';
 import { Select } from '../components/ui/Select';
 import { SexPicker } from '../components/members/SexPicker';
@@ -188,14 +187,19 @@ export function EnrollPage() {
 
   return (
     <EnrollShell title={t('enroll.title')} subtitle={t('enroll.subtitle')}>
-      {/* The face-capture step simply disappears when the camera is off. Staff
-          enrolling their first member since the revocation deserve to know it
-          was taken away rather than assume they broke something. */}
-      <FeatureLockBanner
-        feature="camera"
-        what="Members are enrolled without a face scan — everything else works as normal."
-        className="mb-4"
-      />
+      {/*
+        No FeatureLockBanner here on purpose.
+
+        Enrolment is the busiest screen in the product and most gyms run without
+        a camera permanently — for them the lock is not news, it is the normal
+        state of their account, and a banner about it sat above every single
+        enrolment forever. The camera's absence is still explained where it is
+        actually relevant, in the photo step below, which says what to do
+        instead rather than what is missing.
+
+        MonitorPage and NotificationsPage keep theirs: there the feature IS the
+        screen, so its absence is the whole explanation for an empty page.
+      */}
       {mutation.isError && <p className="alert-error mb-4">{apiErrorMessage(mutation.error)}</p>}
 
       <form onSubmit={onSubmit} className="grid items-start gap-4 lg:grid-cols-2">
