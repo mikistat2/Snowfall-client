@@ -57,6 +57,16 @@ interface GymRow {
   /** Platform feature entitlements — owner-only switches. */
   camera_allowed?: boolean;
   telegram_allowed?: boolean;
+  /** The package last paid for. Null until the gym's first verified payment. */
+  plan_name: string | null;
+  billing_cycle: 'MONTHLY' | 'YEARLY' | null;
+  /**
+   * What that package includes. Paying GRANTS these automatically; nothing
+   * ever revokes them, so a gym can legitimately hold a feature its current
+   * package does not include — the card below says so rather than hiding it.
+   */
+  plan_camera: boolean | null;
+  plan_telegram: boolean | null;
   created_at: string;
   owner_name: string | null;
   owner_email: string | null;
@@ -906,6 +916,16 @@ function ManageGymModal({
                   : '—'
               }
             />
+            <Info
+              label="Package"
+              value={
+                gym.plan_name
+                  ? `${gym.plan_name}${gym.billing_cycle ? ` · ${gym.billing_cycle.toLowerCase()}` : ''}`
+                  : gym.is_trial
+                    ? 'Free trial'
+                    : 'Never paid'
+              }
+            />
             <Info label="Joined" value={new Date(gym.created_at).toLocaleDateString()} />
             <Info label="Members (active / all)" value={`${gym.active_member_count} / ${gym.member_count}`} />
             <Info label="Staff accounts" value={String(gym.staff_count)} />
@@ -947,6 +967,9 @@ function ManageGymModal({
             gymId={gym.id}
             cameraAllowed={d?.camera_allowed ?? gym.camera_allowed ?? true}
             telegramAllowed={d?.telegram_allowed ?? gym.telegram_allowed ?? true}
+            planName={d?.plan_name ?? gym.plan_name}
+            planCamera={d?.plan_camera ?? gym.plan_camera}
+            planTelegram={d?.plan_telegram ?? gym.plan_telegram}
             isOwner={isOwner}
             onChanged={() => {
               onChanged();
@@ -1206,6 +1229,9 @@ function FeatureAccessCard({
   gymName,
   cameraAllowed,
   telegramAllowed,
+  planName,
+  planCamera,
+  planTelegram,
   isOwner,
   onChanged,
   onBanner,
@@ -1214,6 +1240,9 @@ function FeatureAccessCard({
   gymName: string;
   cameraAllowed: boolean;
   telegramAllowed: boolean;
+  planName: string | null;
+  planCamera: boolean | null;
+  planTelegram: boolean | null;
   isOwner: boolean;
   onChanged: () => void;
   onBanner: (msg: string) => void;
@@ -1257,6 +1286,7 @@ function FeatureAccessCard({
       key: 'camera' as const,
       label: 'Face recognition',
       on: cameraAllowed,
+      inPlan: planCamera,
       hint: cameraAllowed
         ? 'The gym can use the door camera, enrol faces and auto check-in.'
         : 'Locked — the gym runs in name-board mode. Enrolled faces are kept and come back if you re-enable.',
@@ -1265,6 +1295,7 @@ function FeatureAccessCard({
       key: 'telegram' as const,
       label: 'Telegram notifications',
       on: telegramAllowed,
+      inPlan: planTelegram,
       hint: telegramAllowed
         ? 'The gym can connect a bot and send reminders, nudges and summaries.'
         : 'Locked — the bot is stopped and no messages are sent. The saved token is kept.',
@@ -1275,8 +1306,10 @@ function FeatureAccessCard({
     <div className="rounded-lg border border-slate-200 p-4">
       <div className="label">Feature access</div>
       <p className="mb-3 text-xs text-slate-500">
-        What this gym is allowed to use. Turning something off stops it immediately, everywhere — the gym
-        owner cannot switch it back on. Nothing is deleted.
+        What this gym is allowed to use. Paying for a package switches its features ON automatically; nothing
+        is ever switched off automatically, so a gym can hold a feature its current package does not include —
+        that is flagged below. Turning something off here stops it immediately, everywhere, and the gym owner
+        cannot switch it back on. Nothing is deleted.
       </p>
 
       {/* Typed before the toggle, not after: this text is delivered with the
@@ -1304,7 +1337,21 @@ function FeatureAccessCard({
         {rows.map((r) => (
           <div key={r.key} className="flex items-start justify-between gap-4 py-3">
             <div className="min-w-0">
-              <div className="text-sm font-medium">{r.label}</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium">{r.label}</span>
+                {/* Only worth a chip where the plan and the switch disagree —
+                    a match is the expected case and needs no decoration. */}
+                {planName && r.inPlan && !r.on && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
+                    paid for, still off
+                  </span>
+                )}
+                {planName && r.inPlan === false && r.on && (
+                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+                    not in {planName}
+                  </span>
+                )}
+              </div>
               <div className="text-xs text-slate-500">{r.hint}</div>
             </div>
             <button
