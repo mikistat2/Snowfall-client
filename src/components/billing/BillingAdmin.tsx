@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformApi } from '../../lib/platformApi';
 import { apiErrorMessage } from '../../lib/api';
 import { ProviderMark } from './ProviderMark';
+import { Pager } from './Pager';
 import { Select } from '../ui/Select';
+import { useDebounced } from '../../hooks/useDebounced';
 import { money, type BillingPayment, type BillingPlan, type BillingStatus } from '../../lib/billing';
 
 /**
@@ -607,18 +609,25 @@ function AttemptsTable() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<BillingStatus | ''>('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  // The query key is the debounced value, not the raw one: typing "telebirr"
+  // otherwise fires eight searches against a table that only gets longer.
+  const debouncedSearch = useDebounced(search);
 
   const q = useQuery({
-    queryKey: ['billing-attempts', search, status, page],
+    queryKey: ['billing-attempts', debouncedSearch, status, page, pageSize],
     queryFn: async () =>
       (
         await platformApi.get<{
           data: AttemptRow[];
           meta: { page: number; pageSize: number; total: number; totalPages: number };
         }>('/billing/payments', {
-          params: { search: search || undefined, status: status || undefined, page, pageSize: 25 },
+          params: { search: debouncedSearch || undefined, status: status || undefined, page, pageSize },
         })
       ).data,
+    // Keeps the current page on screen while the next one loads, instead of
+    // collapsing the table to "Loading…" and bouncing the page height.
+    placeholderData: (previous) => previous,
     retry: false,
   });
 
@@ -654,7 +663,13 @@ function AttemptsTable() {
         />
       </div>
 
-      <div className="-mx-5 overflow-x-auto px-5">
+      {/* Keeping the previous page on screen means nothing visibly happens on a
+          slow request, so the table dims while the next one is in flight. */}
+      <div
+        className={`-mx-5 overflow-x-auto px-5 transition-opacity ${
+          q.isFetching && !q.isLoading ? 'opacity-50' : ''
+        }`}
+      >
         <table className="w-full min-w-[52rem] text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -730,22 +745,21 @@ function AttemptsTable() {
         </table>
       </div>
 
-      {meta && meta.totalPages > 1 && (
-        <div className="mt-3 flex items-center justify-center gap-3 text-sm">
-          <button className="btn-secondary px-3 py-1" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-            ←
-          </button>
-          <span className="text-slate-500">
-            Page {meta.page} of {meta.totalPages} · {meta.total} attempts
-          </span>
-          <button
-            className="btn-secondary px-3 py-1"
-            disabled={page >= meta.totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            →
-          </button>
-        </div>
+      {meta && (
+        <Pager
+          page={meta.page}
+          pageSize={meta.pageSize}
+          total={meta.total}
+          totalPages={meta.totalPages}
+          onPage={setPage}
+          onPageSize={(size) => {
+            setPageSize(size);
+            // Row 400 is on page 16 at 25/page and page 4 at 100 — keeping the
+            // page number would land somewhere unrelated, or past the end.
+            setPage(1);
+          }}
+          noun="attempts"
+        />
       )}
     </div>
   );
