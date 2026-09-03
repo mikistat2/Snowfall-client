@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../lib/api';
+import { useRegistrationMode } from '../../hooks/queries/useRegistrationMode';
 
 /**
  * Free-trial promo banner. Renders nothing unless the platform admin has
@@ -7,13 +6,7 @@ import { api } from '../../lib/api';
  * landing + registration pages advertise the offer automatically.
  */
 export function TrialBanner({ variant }: { variant: 'landing' | 'register' }) {
-  const { data } = useQuery({
-    queryKey: ['registration-mode'],
-    queryFn: async () =>
-      (await api.get<{ trial_mode: boolean; trial_days: number }>('/auth/registration-mode')).data,
-    staleTime: 60_000,
-    retry: false,
-  });
+  const { data } = useRegistrationMode();
 
   if (!data?.trial_mode) return null;
   const days = data.trial_days;

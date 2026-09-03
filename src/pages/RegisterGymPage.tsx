@@ -1,15 +1,20 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiErrorMessage } from '../lib/api';
 import { t } from '../i18n/strings';
 import loginLogo from '../assets/images/login-logo.png';
+import { AuthShell } from '../components/ui/AuthShell';
+import { PasswordInput } from '../components/ui/PasswordInput';
+import { PlanPicker } from '../components/ui/PlanPicker';
 import { TrialBanner } from '../components/ui/TrialBanner';
 import { TermsModal } from '../components/ui/TermsModal';
 import { PhoneInput } from '../components/ui/PhoneInput';
+import { useRegistrationMode } from '../hooks/queries/useRegistrationMode';
 
 export function RegisterGymPage() {
   const { registerGym } = useAuth();
+  const { data: mode } = useRegistrationMode();
   const [form, setForm] = useState({
     gymName: '',
     address: '',
@@ -19,11 +24,18 @@ export function RegisterGymPage() {
     password: '',
     confirmPassword: '',
   });
+  const [planId, setPlanId] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+
+  // Preselected once the list arrives, but only if the gym has not already
+  // picked — a late refetch must not move the choice out from under them.
+  useEffect(() => {
+    setPlanId((current) => current ?? mode?.plans[0]?.id ?? null);
+  }, [mode]);
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -42,6 +54,10 @@ export function RegisterGymPage() {
       const result = await registerGym({
         gym: { name: form.gymName, address: form.address || undefined, phone: form.gymPhone || undefined },
         owner: { name: form.ownerName, email: form.email, password: form.password },
+        // Omitted rather than sent as null when the plan list could not be
+        // loaded: the field is optional server-side, and a gym should not be
+        // blocked from signing up because the pricing endpoint was down.
+        ...(planId ? { planId } : {}),
       });
       if (result.pending) setPendingApproval(true);
       // not pending (free-trial mode): useAuth stored the session and the
@@ -49,7 +65,6 @@ export function RegisterGymPage() {
     } catch (err) {
       setError(apiErrorMessage(err));
     } finally {
-      
       setBusy(false);
     }
   }
@@ -57,90 +72,120 @@ export function RegisterGymPage() {
   if (pendingApproval) return <PendingApprovalScreen gymName={form.gymName} email={form.email} />;
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={onSubmit} className="card w-full max-w-lg space-y-4">
-        <div className="flex flex-col items-center gap-2 pb-1 text-center">
-          <img
-            src={loginLogo}
-            alt="Snowfall Gym Management System"
-            className="w-40 rounded-xl"
-          />
-          <h1
-  className="
-    mt-4
-    text-[22px]
-    font-display
-    font-black
-    uppercase
-    leading-none
-    tracking-wider
-    bg-gradient-to-br
-    from-sky-900
-    via-sky-400
-    to-sky-700
-    bg-clip-text
-    text-transparent
-    drop-shadow-[0_0_8px_rgba(96,165,250,0.45)]
-    [text-shadow:0_0_8px_rgba(255,255,255,0.35)]
-  "
->
-  {t('auth.registerGym')}
-</h1>
-        </div>
+    <AuthShell
+      wide
+      title={t('auth.registerGym')}
+      subtitle={t('auth.registerSubtitle')}
+      footer={
+        <Link to="/login" className="font-medium text-accent hover:underline">
+          {t('auth.haveAccount')}
+        </Link>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-6">
         <TrialBanner variant="register" />
-        {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
-        <div>
-          <label className="label">{t('auth.gymName')}</label>
-          <input className="input" value={form.gymName} onChange={set('gymName')} required minLength={2} />
-        </div>
-        <div className="grid grid-cols-5 gap-3">
-          <div className="col-span-2">
-            <label className="label">{t('auth.address')}</label>
-            <input className="input" value={form.address} onChange={set('address')} />
-          </div>
-          <div className="col-span-3">
-            <label className="label">{t('auth.phone')}</label>
-            <PhoneInput value={form.gymPhone} onChange={(v) => setForm((f) => ({ ...f, gymPhone: v }))} />
-          </div>
-        </div>
-        <hr className="border-slate-200" />
-        <div>
-          <label className="label">{t('auth.ownerName')}</label>
-          <input className="input" value={form.ownerName} onChange={set('ownerName')} required minLength={2} />
-        </div>
-        <div>
-          <label className="label">{t('auth.email')}</label>
-          <input className="input" type="email" value={form.email} onChange={set('email')} required />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
+        {error && <p className="alert-error">{error}</p>}
+
+        <Section title={t('auth.sectionGym')}>
           <div>
-            <label className="label">{t('auth.password')}</label>
+            <label className="label" htmlFor="reg-gym">
+              {t('auth.gymName')}
+            </label>
             <input
+              id="reg-gym"
               className="input"
-              type="password"
-              value={form.password}
-              onChange={set('password')}
+              value={form.gymName}
+              onChange={set('gymName')}
               required
-              minLength={8}
+              minLength={2}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-5">
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor="reg-address">
+                {t('auth.address')}
+              </label>
+              <input id="reg-address" className="input" value={form.address} onChange={set('address')} />
+            </div>
+            <div className="sm:col-span-3">
+              <label className="label">{t('auth.phone')}</label>
+              <PhoneInput value={form.gymPhone} onChange={(v) => setForm((f) => ({ ...f, gymPhone: v }))} />
+            </div>
+          </div>
+        </Section>
+
+        <Section title={t('auth.sectionOwner')}>
+          <div>
+            <label className="label" htmlFor="reg-name">
+              {t('auth.ownerName')}
+            </label>
+            <input
+              id="reg-name"
+              className="input"
+              value={form.ownerName}
+              onChange={set('ownerName')}
+              required
+              minLength={2}
             />
           </div>
           <div>
-            <label className="label">{t('auth.confirmPassword')}</label>
+            <label className="label" htmlFor="reg-email">
+              {t('auth.email')}
+            </label>
             <input
-              className={`input ${passwordsMismatch ? '!border-red-400 !ring-red-300' : ''}`}
-              type="password"
-              value={form.confirmPassword}
-              onChange={set('confirmPassword')}
+              id="reg-email"
+              className="input"
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={set('email')}
               required
-              minLength={8}
             />
-            {passwordsMismatch && <p className="mt-1 text-xs text-red-600">{t('auth.passwordMismatch')}</p>}
           </div>
-        </div>
-        <label className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-600">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="reg-pw">
+                {t('auth.password')}
+              </label>
+              <PasswordInput
+                id="reg-pw"
+                value={form.password}
+                onChange={(v) => setForm((f) => ({ ...f, password: v }))}
+                autoComplete="new-password"
+                minLength={8}
+              />
+            </div>
+            <div>
+              <label className="label" htmlFor="reg-pw2">
+                {t('auth.confirmPassword')}
+              </label>
+              <PasswordInput
+                id="reg-pw2"
+                value={form.confirmPassword}
+                onChange={(v) => setForm((f) => ({ ...f, confirmPassword: v }))}
+                autoComplete="new-password"
+                minLength={8}
+                invalid={passwordsMismatch}
+              />
+              {passwordsMismatch && (
+                <p className="mt-1 text-xs text-danger">{t('auth.passwordMismatch')}</p>
+              )}
+            </div>
+          </div>
+        </Section>
+
+        {/* Hidden entirely when the list is empty or unreachable, rather than
+            shown as an empty box: registration works without a plan. */}
+        {mode?.plans.length ? (
+          <Section title={t('auth.sectionPlan')}>
+            <PlanPicker plans={mode.plans} value={planId} onChange={setPlanId} />
+          </Section>
+        ) : null}
+
+        <label className="flex items-start gap-2.5 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-fg-muted">
           <input
             type="checkbox"
-            className="mt-0.5 h-4 w-4 shrink-0 accent-slate-900"
+            className="mt-0.5 h-4 w-4 shrink-0 accent-sky-600"
             checked={agreedToTerms}
             onChange={(e) => setAgreedToTerms(e.target.checked)}
             required
@@ -149,22 +194,44 @@ export function RegisterGymPage() {
             {t('auth.agreeTerms')}{' '}
             <button
               type="button"
-              className="font-semibold text-sky-700 underline underline-offset-2 hover:text-sky-900"
+              className="font-semibold text-accent underline underline-offset-2"
               onClick={() => setTermsOpen(true)}
             >
               {t('auth.termsLink')}
             </button>
           </span>
         </label>
+
         <button className="btn-primary w-full" disabled={busy || passwordsMismatch || !agreedToTerms}>
-          {t('auth.createAccount')}
+          {busy ? `${t('auth.createAccount')}…` : t('auth.createAccount')}
         </button>
         {termsOpen && <TermsModal onClose={() => setTermsOpen(false)} />}
-        <Link to="/login" className="block text-center text-sm text-slate-500 hover:text-slate-800">
-          {t('auth.haveAccount')}
-        </Link>
       </form>
-    </div>
+    </AuthShell>
+  );
+}
+
+/**
+ * A labelled group of fields, with a rule that names what it is asking for.
+ *
+ * The visible heading is a div, not the `legend` — a legend is laid out into
+ * the fieldset's border gap and does not reliably take flex sizing, which is
+ * what the divider rule needs. The legend stays, screen-reader only, so the
+ * grouping is still announced.
+ */
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <fieldset className="space-y-4">
+      <legend className="sr-only">{title}</legend>
+      <div
+        aria-hidden
+        className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-fg-muted"
+      >
+        {title}
+        <span className="h-px flex-1 bg-line" />
+      </div>
+      {children}
+    </fieldset>
   );
 }
 
@@ -173,9 +240,7 @@ function PendingApprovalScreen({ gymName, email }: { gymName: string; email: str
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-950 via-sky-950 to-slate-950 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-        <div className="mx-auto mb-5 flex h-20 w-20 animate-pulse items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-sky-200 text-5xl shadow-inner">
-          ⏳
-        </div>
+        <img src={loginLogo} alt="" className="mx-auto mb-5 h-16 w-16 rounded-2xl object-cover" />
         <h1 className="text-2xl font-bold text-slate-900">{t('auth.pendingTitle')}</h1>
         <p className="mt-1 text-lg font-semibold text-sky-700">{gymName}</p>
         <p className="mt-4 text-sm leading-relaxed text-slate-600">{t('auth.pendingBody')}</p>

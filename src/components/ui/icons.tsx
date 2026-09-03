@@ -196,6 +196,28 @@ export function DoorInIcon(props: IconProps) {
   );
 }
 
+/** Reveal a masked password. */
+export function EyeIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M2.4 12S5.9 5.6 12 5.6 21.6 12 21.6 12 18.1 18.4 12 18.4 2.4 12 2.4 12z" />
+      <circle cx="12" cy="12" r="3.1" />
+    </Svg>
+  );
+}
+
+/** Mask it again — the same eye, struck through. */
+export function EyeOffIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9.9 5.9A9.3 9.3 0 0 1 12 5.6c6.1 0 9.6 6.4 9.6 6.4a17 17 0 0 1-3 3.9" />
+      <path d="M6.4 7.7A17 17 0 0 0 2.4 12s3.5 6.4 9.6 6.4a9 9 0 0 0 3.7-.8" />
+      <path d="M9.9 9.9a3.1 3.1 0 0 0 4.3 4.3" />
+      <path d="m3.5 3.5 17 17" />
+    </Svg>
+  );
+}
+
 /** Four arrows pushing outward — open this at full size. */
 export function ExpandIcon(props: IconProps) {
   return (

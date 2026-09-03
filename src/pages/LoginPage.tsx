@@ -4,7 +4,8 @@ import { useAuth } from '../hooks/useAuth';
 import { apiErrorMessage } from '../lib/api';
 import { NATIVE } from '../lib/platform';
 import { t } from '../i18n/strings';
-import loginLogo from '../assets/images/login-logo.png';
+import { AuthShell } from '../components/ui/AuthShell';
+import { PasswordInput } from '../components/ui/PasswordInput';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -27,68 +28,52 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <form onSubmit={onSubmit} className="card w-full max-w-sm space-y-4">
-        <img
-          src={loginLogo}
-          alt="Snowfall Gym Management System"
-          className="mx-auto mb-2 w-40 rounded-xl"
-        />
+    <AuthShell
+      title={t('auth.welcomeBack')}
+      subtitle={t('auth.loginSubtitle')}
+      footer={
+        /* Sign-up is web-only — App.tsx registers /register behind !NATIVE
+           because the app is installed by staff of an already-registered gym.
+           Rendering the link on the phone gave a dead tap that fell through
+           the catch-all route straight back to this screen. */
+        !NATIVE && (
+          <Link to="/register" className="font-medium text-accent hover:underline">
+            {t('auth.noAccount')}
+          </Link>
+        )
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
         {/* whitespace-pre-line: a frozen account's message carries the platform
             admin's reason on its own line. Every other error here is one line. */}
-        {error && (
-          <p className="whitespace-pre-line rounded-lg bg-red-50 px-3 py-2 text-left text-sm leading-relaxed text-red-700 dark:bg-red-950/50 dark:text-red-300">
-            {error}
-          </p>
-        )}
-        <h1
-  className="
-    mt-4
-    text-[22px]
-    font-display
-    font-black
-    uppercase
-    leading-none
-    tracking-wider
-    bg-gradient-to-br
-    from-sky-900
-    via-sky-400
-    to-sky-700
-    bg-clip-text
-    text-transparent
-    drop-shadow-[0_0_8px_rgba(96,165,250,0.45)]
-    [text-shadow:0_0_8px_rgba(255,255,255,0.35)] align-center justify-center flex
-  "
->
-  Welcome Back
-</h1>
+        {error && <p className="alert-error whitespace-pre-line leading-relaxed">{error}</p>}
+
         <div>
-          <label className="label">{t('auth.email')}</label>
-          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </div>
-        <div>
-          <label className="label">{t('auth.password')}</label>
+          <label className="label" htmlFor="login-email">
+            {t('auth.email')}
+          </label>
           <input
+            id="login-email"
             className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
           />
         </div>
-        <button className="btn-primary w-full" disabled={busy}>
-          {t('auth.login')}
+
+        <div>
+          <label className="label" htmlFor="login-password">
+            {t('auth.password')}
+          </label>
+          <PasswordInput id="login-password" value={password} onChange={setPassword} />
+        </div>
+
+        <button className="btn-primary mt-2 w-full" disabled={busy}>
+          {busy ? `${t('auth.login')}…` : t('auth.login')}
         </button>
-        {/* Sign-up is web-only — App.tsx registers /register behind !NATIVE
-            because the app is installed by staff of an already-registered gym.
-            Rendering the link on the phone gave a dead tap that fell through
-            the catch-all route straight back to this screen. */}
-        {!NATIVE && (
-          <Link to="/register" className="block text-center text-sm text-fg-muted hover:text-fg">
-            {t('auth.noAccount')}
-          </Link>
-        )}
       </form>
-    </div>
+    </AuthShell>
   );
 }
