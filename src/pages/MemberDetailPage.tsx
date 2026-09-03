@@ -7,6 +7,8 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { daysLeft, daysLeftColor } from '../lib/expiry';
 import { paymentMethodLabel } from '../lib/payments';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
+import { PhotoLightbox } from '../components/ui/PhotoLightbox';
+import { ExpandIcon } from '../components/ui/icons';
 import { RenewModal } from '../components/members/RenewModal';
 import { RemoveMemberModal } from '../components/members/RemoveMemberModal';
 import { EditMemberModal } from '../components/members/EditMemberModal';
@@ -38,6 +40,7 @@ export function MemberDetailPage() {
   const [renewOpen, setRenewOpen] = useState(false);
   const [removeOpen, setRemoveOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   const { data, isLoading } = useMember(memberId);
 
@@ -75,14 +78,32 @@ export function MemberDetailPage() {
             a retina screen and stays sharp.
           */}
           {member.photo_full_url ? (
-            <img
-              src={member.photo_full_url}
-              alt=""
-              width={112}
-              height={112}
-              className="h-24 w-24 shrink-0 rounded-2xl object-cover ring-1 ring-line sm:h-28 sm:w-28"
-              decoding="async"
-            />
+            /*
+              A button, not a plain image: tapping it opens the picture at the
+              size of the screen. That is the one thing the small square cannot
+              do — settle whether the person at the desk is the person on the
+              account — and it is worth a tap rather than a trip to Edit.
+            */
+            <button
+              type="button"
+              onClick={() => setPhotoOpen(true)}
+              title={t('photo.view')}
+              aria-label={t('photo.view')}
+              className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl ring-1 ring-line transition-transform active:scale-[0.97] sm:h-28 sm:w-28"
+            >
+              <img
+                src={member.photo_full_url}
+                alt=""
+                width={112}
+                height={112}
+                className="h-full w-full object-cover"
+                decoding="async"
+              />
+              {/* Hint on hover for a mouse; a thumb finds this by trying it. */}
+              <span className="pointer-events-none absolute inset-0 flex items-end justify-end bg-black/0 p-1.5 opacity-0 transition-opacity group-hover:bg-black/25 group-hover:opacity-100 group-focus-visible:bg-black/25 group-focus-visible:opacity-100">
+                <ExpandIcon className="h-5 w-5 text-white drop-shadow" />
+              </span>
+            </button>
           ) : (
             <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-accent-soft text-3xl font-bold uppercase text-accent ring-1 ring-line sm:h-28 sm:w-28 sm:text-4xl">
               {member.full_name[0]}
@@ -234,6 +255,13 @@ export function MemberDetailPage() {
         <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{apiErrorMessage(linkMutation.error)}</p>
       )}
 
+      {photoOpen && member.photo_full_url && (
+        <PhotoLightbox
+          src={member.photo_full_url}
+          caption={member.full_name}
+          onClose={() => setPhotoOpen(false)}
+        />
+      )}
       {editOpen && (
         <EditMemberModal member={member} subscription={current} onClose={() => setEditOpen(false)} />
       )}

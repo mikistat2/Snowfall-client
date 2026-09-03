@@ -115,6 +115,7 @@ const en = {
   'photo.willRemove': 'Photo will be removed when you save.',
   'photo.none': 'No photo yet.',
   'photo.hint': 'Helps staff match a name to a face at the front desk.',
+  'photo.view': 'View full size',
 
   'members.title': 'Members',
   'members.search': 'Search name or phone…',

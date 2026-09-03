@@ -20,6 +20,8 @@ interface Tile {
   value: ReactNode;
   tone: StatTone;
   Icon: ComponentType<{ className?: string }>;
+  /** Deepens the wash. For the one number the page is really about. */
+  strong?: boolean;
 }
 
 export function DashboardPage() {
@@ -72,7 +74,15 @@ export function DashboardPage() {
         expiringTile,
       ]
     : [
-        { label: t('dashboard.membersTotal'), value: data.members_total, tone: 'sky', Icon: UsersIcon },
+        {
+          label: t('dashboard.membersTotal'),
+          value: data.members_total,
+          tone: 'sky',
+          Icon: UsersIcon,
+          // The roster size is the headline for a gym running without a camera
+          // — every other tile on this row is a detail off the back of it.
+          strong: true,
+        },
         {
           label: t('dashboard.bySex'),
           value: <SexSplit male={data.members_by_sex.male} female={data.members_by_sex.female} />,
@@ -94,7 +104,10 @@ export function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (
-          <div key={tile.label} className={`stat-card ${statTone[tile.tone]}`}>
+          <div
+            key={tile.label}
+            className={`stat-card ${statTone[tile.tone]} ${tile.strong ? 'stat-strong' : ''}`}
+          >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="stat-label">{tile.label}</p>

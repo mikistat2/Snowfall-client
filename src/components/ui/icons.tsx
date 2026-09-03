@@ -196,6 +196,18 @@ export function DoorInIcon(props: IconProps) {
   );
 }
 
+/** Four arrows pushing outward — open this at full size. */
+export function ExpandIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M9.2 3.6H3.6v5.6" />
+      <path d="M14.8 3.6h5.6v5.6" />
+      <path d="M20.4 14.8v5.6h-5.6" />
+      <path d="M3.6 14.8v5.6h5.6" />
+    </Svg>
+  );
+}
+
 /** Triangle with an exclamation — a blocked action, not a fatal error. */
 export function WarningIcon(props: IconProps) {
   return (

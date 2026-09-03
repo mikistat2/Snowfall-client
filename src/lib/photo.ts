@@ -16,13 +16,21 @@
  */
 
 /** Square edge lengths. `thumb` is the roster avatar, `full` the detail page. */
-export const PHOTO_SIZES = { thumb: 96, full: 256 } as const;
+export const PHOTO_SIZES = { thumb: 96, full: 512 } as const;
 
 /**
- * 256 rather than the 400 an ID-photo pipeline would reach for by default.
- * These are looked at in a 40px circle on a list and a modest square on a
- * detail page — never full-bleed, never zoomed. 400 would roughly double the
- * bytes to serve detail that is never visible.
+ * `full` was 256, chosen when the picture was "never full-bleed, never zoomed".
+ * Tapping it on the detail page now opens it full-screen, so that premise is
+ * gone: a phone at DPR 3 asks for roughly 900 device pixels down the long edge
+ * of a lightbox, and 256 upscaled that far is a smear — which defeats the one
+ * thing the enlargement is for, telling two members apart.
+ *
+ * 512 costs about 40-70 KB against 256's 15-25 KB, and only on the screens that
+ * actually ask for it: the roster, the dashboard and every list read `thumb`,
+ * so none of this touches the payload that egress was tuned around.
+ *
+ * `thumb` stays at 96 for the same reason it always was — it is the one that
+ * ships per row.
  */
 const QUALITY = { thumb: 0.7, full: 0.8 } as const;
 

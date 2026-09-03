@@ -249,7 +249,11 @@ function OccupancyCard({
     // floating-card look. `relative z-10` is what makes it survive: the hero is
     // position:relative, so without a position of its own this static card is
     // painted underneath it and its top 48px vanish behind the gradient.
-    <section className="card relative z-10 -mt-12 flex items-center justify-between gap-4 p-5">
+    //
+    // `stat-strong` rather than the plain tint the tiles below use: this is the
+    // roster count (or the live occupancy), the number the screen exists for,
+    // and at the same wash as the 2x2 grid it read as one more tile.
+    <section className="stat-card stat-tone-sky stat-strong relative z-10 -mt-12 flex items-center justify-between gap-4 p-5">
       <div className="min-w-0">
         <div className="flex items-center gap-1.5">
           {/* the dot only pulses once a socket update has actually arrived */}
@@ -261,7 +265,9 @@ function OccupancyCard({
               className={`relative inline-flex h-2 w-2 rounded-full ${live ? 'bg-green-500' : 'bg-fg-subtle'}`}
             />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-fg-muted">
+          {/* text-fg/70, not text-fg-muted — muted is tuned against the plain
+              surface and drops to about 3.9:1 on this wash. */}
+          <span className="text-[10px] font-bold uppercase tracking-widest text-fg/70">
             {cameraEnabled ? t('home.liveLabel') : t('home.membersTotal')}
           </span>
         </div>
@@ -272,19 +278,25 @@ function OccupancyCard({
           <p className="mt-1 text-5xl font-extrabold leading-none tabular-nums text-fg">{count}</p>
         )}
 
-        <p className="mt-1.5 text-sm text-fg-muted">
+        <p className="mt-1.5 text-sm text-fg/70">
           {cameraEnabled
             ? `${t('home.insideNow')} · ${count === 1 ? t('home.person') : t('home.people')}`
             : `${count === 1 ? t('home.person') : t('home.people')} ${t('home.onTheRoster')}`}
         </p>
       </div>
 
-      {/* The card's action follows its subject: the live feed when there is a
-          camera, the roster when there is not. */}
+      {/*
+        The card's action follows its subject: the live feed when there is a
+        camera, the roster when there is not.
+
+        `stat-icon` at 64px — a fixed sky-50 disc all but vanished once the card
+        behind it became sky-tinted. This reads off the same tint variables, so
+        the button stays visible whatever the card is doing.
+      */}
       <Link
         to={cameraEnabled ? '/live' : '/members'}
         aria-label={cameraEnabled ? t('live.title') : t('nav.members')}
-        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 active:bg-sky-100 dark:bg-sky-500/10 dark:text-sky-400 dark:active:bg-sky-500/20"
+        className="stat-icon h-16 w-16 rounded-2xl active:brightness-95 dark:active:brightness-125"
       >
         {cameraEnabled ? <LiveIcon className="h-7 w-7" /> : <MembersIcon className="h-7 w-7" />}
       </Link>
@@ -780,23 +792,31 @@ function Attention({ items, loading }: { items: ExpiringRow[]; loading: boolean 
                     to initials — the name is right beside it, so a second copy
                     of the same letter says nothing.
                   */}
+                  {/*
+                    48px, not 36. This is the list a face has to be recognised
+                    from, and it is also the ceiling worth going to: the stored
+                    thumbnail is 96px, which is exactly 1:1 here at DPR 2 and
+                    only mildly stretched at DPR 3. Anything larger would need
+                    a bigger thumbnail, and that one ships per row — it is the
+                    rendition the whole roster payload was tuned around.
+                  */}
                   {member.photo_thumb_url ? (
                     <img
                       src={member.photo_thumb_url}
                       alt=""
-                      width={36}
-                      height={36}
-                      className={`h-9 w-9 shrink-0 rounded-full object-cover ring-2 ${ringColor[member.status]}`}
+                      width={48}
+                      height={48}
+                      className={`h-12 w-12 shrink-0 rounded-full object-cover ring-2 ${ringColor[member.status]}`}
                       loading="lazy"
                       decoding="async"
                     />
                   ) : (
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 ${
+                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-2 ${
                         daysLeftColor[member.status]
                       }`}
                     >
-                      <AlertIcon className="h-5 w-5" />
+                      <AlertIcon className="h-6 w-6" />
                     </span>
                   )}
 

@@ -207,6 +207,30 @@
   }
 
   /*
+   * One tile pulled forward. The roster count is the number an owner opens the
+   * app to see; at the same wash as its neighbours it was just another tile.
+   *
+   * Must sit after `.dark .stat-card`, which carries the same two-class weight
+   * — source order is the only thing separating them, and losing that race
+   * would silently drop the emphasis in dark mode only.
+   */
+  .stat-strong {
+    --stat-wash: 0.26;
+    --stat-fade: 0.1;
+    --stat-glow: 0.44;
+    --stat-edge: 0.45;
+  }
+  .dark .stat-strong {
+    --stat-wash: 0.32;
+    --stat-fade: 0.14;
+    /* Not higher: the icon disc is an alpha step of this same tint, so pushing
+       the glow past ~0.4 closes the gap between them and every tone's 400 falls
+       under the 3:1 a graphical element needs (sky measures 2.84 at 0.48). */
+    --stat-glow: 0.4;
+    --stat-edge: 0.55;
+  }
+
+  /*
    * `text-fg/70`, not `text-fg-muted`. Muted is tuned against the plain white
    * and slate-900 surfaces; on a tinted one it measures about 4.1:1, under AA
    * for 11px text. Dimming the primary colour instead tracks whichever theme
