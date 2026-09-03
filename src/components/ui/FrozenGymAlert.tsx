@@ -30,7 +30,10 @@ export function FrozenGymAlert() {
           ⚠️
         </div>
         <h2 className="text-xl font-bold text-fg">Account frozen</h2>
-        <p className="mt-3 text-sm leading-relaxed text-fg-muted">{message}</p>
+        {/* The platform admin's reason arrives as its own paragraph inside the
+            message, so line breaks have to survive — without pre-line it
+            collapses into one run-on sentence. */}
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-fg-muted">{message}</p>
         <p className="mt-2 text-xs text-fg-subtle">
           Your data is safe — members, payments and history are untouched. Access is restored as soon as the
           issue is resolved.

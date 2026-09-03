@@ -34,7 +34,13 @@ export function LoginPage() {
           alt="Snowfall Gym Management System"
           className="mx-auto mb-2 w-40 rounded-xl"
         />
-        {error && <p className="rounded-lg bg-red-50 dark:bg-red-950/50 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
+        {/* whitespace-pre-line: a frozen account's message carries the platform
+            admin's reason on its own line. Every other error here is one line. */}
+        {error && (
+          <p className="whitespace-pre-line rounded-lg bg-red-50 px-3 py-2 text-left text-sm leading-relaxed text-red-700 dark:bg-red-950/50 dark:text-red-300">
+            {error}
+          </p>
+        )}
         <h1
   className="
     mt-4

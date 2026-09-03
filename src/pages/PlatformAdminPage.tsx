@@ -45,7 +45,10 @@ interface GymRow {
   phone: string | null;
   status: 'pending' | 'active' | 'frozen';
   frozen_at: string | null;
+  /** Private to this panel. */
   admin_note: string | null;
+  /** The reason the gym's own staff see on every screen while frozen. */
+  freeze_note: string | null;
   approved_at: string | null;
   subscription_ends_at: string | null;
   is_trial: boolean;
@@ -755,10 +758,16 @@ function ManageGymModal({
   onBanner: (msg: string) => void;
 }) {
   const [note, setNote] = useState(gym.admin_note ?? '');
-  const [freezeNote, setFreezeNote] = useState('');
+  /**
+   * Prefilled so "Edit reason" on a frozen gym opens on the text the staff are
+   * currently reading, rather than a blank box that would wipe it on save.
+   */
+  const [freezeNote, setFreezeNote] = useState(gym.freeze_note ?? '');
   const [deleteNote, setDeleteNote] = useState('');
   const [confirmName, setConfirmName] = useState('');
   const [view, setView] = useState<'detail' | 'freeze' | 'delete'>('detail');
+  /** The freeze screen doubles as "edit the reason" once the gym is frozen. */
+  const alreadyFrozen = gym.status === 'frozen';
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
   // Free extension length (no payment recorded) — a trial usually converts onto a month.
@@ -798,9 +807,15 @@ function ManageGymModal({
     onBanner(`${action} ${notifiedSummary(data)}`.trim());
     onClose();
   };
+  // The same endpoint serves both, because re-freezing a frozen gym is exactly
+  // "keep it frozen, change the reason" — it leaves status and frozen_at alone.
   const freeze = useMutationHelper(
     () => platformApi.post(`/gyms/${gym.id}/freeze`, { note: freezeNote || undefined }),
-    doneAndClose(`"${gym.name}" is now frozen.`),
+    doneAndClose(
+      alreadyFrozen
+        ? `Reason updated — "${gym.name}" staff will see it on their next attempt.`
+        : `"${gym.name}" is now frozen.`,
+    ),
     setError,
   );
   const unfreeze = useMutationHelper(
@@ -853,6 +868,21 @@ function ManageGymModal({
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               ⏳ This gym is <b>waiting for approval</b> — its owner cannot log in yet. Approve to start their
               1-year subscription{isOwner ? ', or delete below to reject the registration' : ''}.
+            </div>
+          )}
+          {gym.status === 'frozen' && (
+            /* Mirrors what the gym's staff read on their login screen and in
+               the app, so the reason can be checked — and corrected, via "Edit
+               reason" below — without guessing at what they were told. */
+            <div className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">
+              <b>Reason shown to the gym:</b>{' '}
+              {gym.freeze_note?.trim() ? (
+                <span className="whitespace-pre-line">{gym.freeze_note}</span>
+              ) : (
+                <span className="italic">
+                  none given — they see only “contact support”. Use “Add a reason” below to give them one.
+                </span>
+              )}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
@@ -1039,6 +1069,14 @@ function ManageGymModal({
               </button>
             )}
             {gym.status === 'frozen' && perms.freeze && (
+              /* Editing the reason must not go via unfreeze-then-freeze: that
+                 would let staff back in for a moment and fire a spurious
+                 "reactivated" alert at the owner. */
+              <button className="btn-secondary" onClick={() => setView('freeze')}>
+                {gym.freeze_note?.trim() ? '✏️ Edit reason' : '✏️ Add a reason'}
+              </button>
+            )}
+            {gym.status === 'frozen' && perms.freeze && (
               <button className="btn-primary" onClick={() => unfreeze.run()} disabled={unfreeze.busy}>
                 {unfreeze.busy ? 'Unfreezing…' : 'Unfreeze account'}
               </button>
@@ -1055,15 +1093,26 @@ function ManageGymModal({
       {view === 'freeze' && (
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
-            Freezing <b>{gym.name}</b> immediately locks out all of its staff (active sessions are revoked) and
-            blocks logins until you unfreeze it. No data is deleted.
+            {alreadyFrozen ? (
+              <>
+                <b>{gym.name}</b> is already frozen — this only rewrites the reason its staff are shown. The
+                account stays locked and the freeze date is unchanged.
+              </>
+            ) : (
+              <>
+                Freezing <b>{gym.name}</b> immediately locks out all of its staff (active sessions are revoked)
+                and blocks logins until you unfreeze it. No data is deleted.
+              </>
+            )}
           </p>
           <p className="rounded-lg bg-sky-50 px-3 py-2 text-sm text-sky-800">
-            The owner is alerted automatically (Telegram + email) — the reason below is included in that
-            message, so they know why and how to fix it.
+            The reason below is what the owner and their staff read on the login screen and inside the app, on
+            every attempt, for as long as the account is frozen. It also goes out by Telegram and email — but
+            those are best effort, so the in-app text is the one they are certain to see. Leave it blank and
+            they get only “contact support”.
           </p>
           <div>
-            <label className="label">Reason (sent to the owner)</label>
+            <label className="label">Reason (shown to the gym)</label>
             <textarea
               className="input min-h-[70px]"
               value={freezeNote}
@@ -1077,7 +1126,13 @@ function ManageGymModal({
               Back
             </button>
             <button className="btn-primary" onClick={() => freeze.run()} disabled={freeze.busy}>
-              {freeze.busy ? 'Freezing…' : 'Freeze account'}
+              {freeze.busy
+                ? alreadyFrozen
+                  ? 'Saving…'
+                  : 'Freezing…'
+                : alreadyFrozen
+                  ? 'Save reason'
+                  : 'Freeze account'}
             </button>
           </div>
         </div>
