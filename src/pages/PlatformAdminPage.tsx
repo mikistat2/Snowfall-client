@@ -843,9 +843,14 @@ function ManageGymModal({
     onChanged,
     setError,
   );
+  // Preselected from what the gym asked for at registration, so the common
+  // case is one click and the admin only intervenes to override it.
+  const [approveCycle, setApproveCycle] = useState<BillingCycle>(gym.billing_cycle ?? 'YEARLY');
   const approve = useMutationHelper(
-    () => platformApi.post(`/gyms/${gym.id}/approve`),
-    doneAndClose(`"${gym.name}" approved — subscription runs for 1 year.`),
+    () => platformApi.post(`/gyms/${gym.id}/approve`, { cycle: approveCycle }),
+    doneAndClose(
+      `"${gym.name}" approved — subscription runs for ${approveCycle === 'MONTHLY' ? '1 month' : '1 year'}.`,
+    ),
     setError,
   );
   // Free/goodwill extension: no payment row is written. Converting a trial
@@ -1017,9 +1022,26 @@ function ManageGymModal({
               </button>
             )}
             {gym.status === 'pending' && perms.approve && (
-              <button className="btn-primary" onClick={() => approve.run()} disabled={approve.busy}>
-                {approve.busy ? 'Approving…' : '✓ Approve — start 1-year subscription'}
-              </button>
+              /* The length sits beside the button rather than inside it: a
+                 single button that silently granted a year was the reason a
+                 month was not grantable at all. */
+              <div className="flex items-center gap-1">
+                <Select
+                  className="w-28"
+                  value={approveCycle}
+                  aria-label="Subscription length"
+                  onChange={(next) => setApproveCycle(next as BillingCycle)}
+                  options={[
+                    { value: 'MONTHLY', label: '1 month' },
+                    { value: 'YEARLY', label: '1 year' },
+                  ]}
+                />
+                <button className="btn-primary" onClick={() => approve.run()} disabled={approve.busy}>
+                  {approve.busy
+                    ? 'Approving…'
+                    : `✓ Approve — start ${approveCycle === 'MONTHLY' ? '1-month' : '1-year'} subscription`}
+                </button>
+              </div>
             )}
             {gym.status !== 'pending' && perms.renew && gym.is_trial && (
               <button

@@ -6,7 +6,7 @@ import { t } from '../i18n/strings';
 import loginLogo from '../assets/images/login-logo.png';
 import { AuthShell } from '../components/ui/AuthShell';
 import { PasswordInput } from '../components/ui/PasswordInput';
-import { PlanPicker } from '../components/ui/PlanPicker';
+import { PlanPicker, type BillingCycle } from '../components/ui/PlanPicker';
 import { TrialBanner } from '../components/ui/TrialBanner';
 import { TermsModal } from '../components/ui/TermsModal';
 import { PhoneInput } from '../components/ui/PhoneInput';
@@ -25,6 +25,9 @@ export function RegisterGymPage() {
     confirmPassword: '',
   });
   const [planId, setPlanId] = useState<number | null>(null);
+  // Monthly by default: it is the smaller commitment, and the yearly tab
+  // carries its own discount badge to argue for itself.
+  const [cycle, setCycle] = useState<BillingCycle>('MONTHLY');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
@@ -57,7 +60,7 @@ export function RegisterGymPage() {
         // Omitted rather than sent as null when the plan list could not be
         // loaded: the field is optional server-side, and a gym should not be
         // blocked from signing up because the pricing endpoint was down.
-        ...(planId ? { planId } : {}),
+        ...(planId ? { planId, cycle } : {}),
       });
       if (result.pending) setPendingApproval(true);
       // not pending (free-trial mode): useAuth stored the session and the
@@ -178,7 +181,13 @@ export function RegisterGymPage() {
             shown as an empty box: registration works without a plan. */}
         {mode?.plans.length ? (
           <Section title={t('auth.sectionPlan')}>
-            <PlanPicker plans={mode.plans} value={planId} onChange={setPlanId} />
+            <PlanPicker
+              plans={mode.plans}
+              value={planId}
+              onChange={setPlanId}
+              cycle={cycle}
+              onCycle={setCycle}
+            />
           </Section>
         ) : null}
 

@@ -16,21 +16,65 @@ import { CameraIcon, CheckIcon } from './icons';
  * grants Telegram only, whatever is chosen here (authService's
  * UNPAID_ENTITLEMENTS); this is the record of what they came for.
  */
+export type BillingCycle = 'MONTHLY' | 'YEARLY';
+
+/**
+ * Best yearly discount on offer, as a whole percent. Drives the badge on the
+ * Yearly tab, so it tracks the price list instead of being a number typed into
+ * the markup that goes stale the first time a plan is repriced.
+ */
+function bestYearlySaving(plans: SignupPlan[]): number {
+  const savings = plans.map((p) => {
+    const full = Number(p.monthly_price) * 12;
+    const yearly = Number(p.yearly_price);
+    return full > 0 && yearly > 0 ? Math.round(((full - yearly) / full) * 100) : 0;
+  });
+  return Math.max(0, ...savings);
+}
+
 export function PlanPicker({
   plans,
   value,
   onChange,
+  cycle,
+  onCycle,
 }: {
   plans: SignupPlan[];
   value: number | null;
   onChange: (planId: number) => void;
+  cycle: BillingCycle;
+  onCycle: (cycle: BillingCycle) => void;
 }) {
   if (plans.length === 0) return null;
 
   const chosen = plans.find((p) => p.id === value);
+  const yearly = cycle === 'YEARLY';
+  const saving = bestYearlySaving(plans);
 
   return (
     <div className="space-y-2.5">
+      {/* Above the cards, because it reprices all of them — a control that
+          changes every number below it belongs before them, not after. */}
+      <div className="segmented grid-cols-2" role="radiogroup" aria-label={t('auth.sectionPlan')}>
+        {(['MONTHLY', 'YEARLY'] as const).map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={cycle === option}
+            className="segmented-item"
+            onClick={() => onCycle(option)}
+          >
+            {t(option === 'MONTHLY' ? 'auth.billMonthly' : 'auth.billYearly')}
+            {option === 'YEARLY' && saving > 0 && (
+              <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                {t('auth.yearlySave').replace('{n}', String(saving))}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {plans.map((plan) => {
         const selected = plan.id === value;
         return (
@@ -53,8 +97,11 @@ export function PlanPicker({
               <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                 <span className="font-semibold text-fg">{plan.name}</span>
                 <span className="text-sm font-semibold tabular-nums text-fg">
-                  {Number(plan.monthly_price).toLocaleString()} {plan.currency}
-                  <span className="font-normal text-fg-muted">{t('auth.perMonth')}</span>
+                  {Number(yearly ? plan.yearly_price : plan.monthly_price).toLocaleString()}{' '}
+                  {plan.currency}
+                  <span className="font-normal text-fg-muted">
+                    {t(yearly ? 'auth.perYear' : 'auth.perMonth')}
+                  </span>
                 </span>
               </span>
 
