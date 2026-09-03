@@ -148,6 +148,54 @@ export function FlipCameraIcon(props: IconProps) {
   );
 }
 
+/** Two figures — the roster as a whole, rather than one member. */
+export function UsersIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="9.5" cy="8" r="3.4" />
+      <path d="M3.2 19.5a6.5 6.5 0 0 1 12.6 0" />
+      <path d="M16.4 5.1a3.4 3.4 0 0 1 0 6.4" />
+      <path d="M18.1 14.2a6.5 6.5 0 0 1 2.7 4.4" />
+    </Svg>
+  );
+}
+
+/** Banknote — money taken, on the dashboard's revenue tiles. */
+export function CashIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="2.6" y="6" width="18.8" height="12" rx="2.2" />
+      <circle cx="12" cy="12" r="2.6" />
+      <path d="M6.2 10v4M17.8 10v4" />
+    </Svg>
+  );
+}
+
+/** Clock — time running out on a membership. */
+export function ClockIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="8.6" />
+      <path d="M12 7.4V12l3 1.8" />
+    </Svg>
+  );
+}
+
+/* No UserPlusIcon here on purpose — the mobile set already has one, and two
+   icons of the same name in two files is how a screen ends up importing the
+   wrong one. Screens that need it take it from components/mobile/icons. */
+
+/** A door with an arrow going in — someone checking in. */
+export function DoorInIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M13.5 3.4H18a1.8 1.8 0 0 1 1.8 1.8v13.6A1.8 1.8 0 0 1 18 20.6h-4.5" />
+      <path d="M9.6 8.4 13.2 12l-3.6 3.6" />
+      <path d="M13.2 12H4.2" />
+    </Svg>
+  );
+}
+
 /** Triangle with an exclamation — a blocked action, not a fatal error. */
 export function WarningIcon(props: IconProps) {
   return (

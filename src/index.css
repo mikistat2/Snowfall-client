@@ -123,6 +123,123 @@
     @apply font-display font-extrabold uppercase tracking-wider bg-gradient-to-br from-sky-400 via-sky-500 to-sky-700 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(56,189,248,0.4)];
   }
 
+  /* --- dashboard stat tiles -------------------------------------------- */
+
+  /*
+   * The headline numbers on both dashboards — the web grid and the phone's
+   * 2-up grid.
+   *
+   * Four identical white cards make four different questions look like one
+   * question asked four times. A hue per tile is what lets the eye jump
+   * straight to the one it came for: money reads green, expiry reads amber.
+   * The colour is doing work, not decoration.
+   *
+   * A tone is one RGB triple in `--stat-tint`; the wash, the border and the
+   * corner glow are all alpha steps of it, so adding a tone is two lines and
+   * no tile can drift out of the family. Alpha over the theme surface rather
+   * than a solid pastel, for the same reason .alert-error is: a fixed 50/100
+   * shade only works on the one background it was picked against, and these
+   * sit on the light canvas and the dark one both.
+   *
+   * The glow is a second background layer rather than a blurred pseudo-element
+   * — no extra box, no filter, and nothing for a low-end WebView to composite.
+   */
+  .stat-card {
+    --stat-tint: 14 165 233; /* sky-500 */
+    --stat-ink: 2 132 199; /* sky-600 — icon glyph */
+    --stat-wash: 0.14;
+    --stat-fade: 0.04;
+    --stat-glow: 0.26;
+    --stat-edge: 0.22;
+    @apply overflow-hidden rounded-2xl border p-5 shadow-sm transition-all;
+    border-color: rgb(var(--stat-tint) / var(--stat-edge));
+    background-color: rgb(var(--c-surface));
+    background-image:
+      radial-gradient(115% 95% at 100% 0%, rgb(var(--stat-tint) / var(--stat-glow)), transparent 62%),
+      linear-gradient(
+        135deg,
+        rgb(var(--stat-tint) / var(--stat-wash)),
+        rgb(var(--stat-tint) / var(--stat-fade)) 65%,
+        transparent
+      );
+  }
+  /* The same alphas over slate-900 land far weaker than over white. */
+  .dark .stat-card {
+    --stat-wash: 0.2;
+    --stat-fade: 0.06;
+    --stat-glow: 0.3;
+    --stat-edge: 0.3;
+  }
+
+  /*
+   * `--stat-ink` is the 700 of each hue, not the 600. On its own pale wash the
+   * 600 measures 2.8:1 for amber and 3.2:1 for emerald — under the 3:1 a
+   * graphical element needs — while every 700 clears 4.3:1.
+   */
+  .stat-tone-sky {
+    --stat-tint: 14 165 233;
+    --stat-ink: 3 105 161;
+  }
+  .stat-tone-emerald {
+    --stat-tint: 16 185 129;
+    --stat-ink: 4 120 87;
+  }
+  .stat-tone-amber {
+    --stat-tint: 245 158 11;
+    --stat-ink: 180 83 9;
+  }
+  .stat-tone-violet {
+    --stat-tint: 139 92 246;
+    --stat-ink: 109 40 217;
+  }
+  /* On the dark wash those 700s go muddy, so each lifts to its 400. */
+  .dark .stat-tone-sky {
+    --stat-ink: 56 189 248;
+  }
+  .dark .stat-tone-emerald {
+    --stat-ink: 52 211 153;
+  }
+  .dark .stat-tone-amber {
+    --stat-ink: 251 191 36;
+  }
+  .dark .stat-tone-violet {
+    --stat-ink: 167 139 250;
+  }
+
+  /*
+   * `text-fg/70`, not `text-fg-muted`. Muted is tuned against the plain white
+   * and slate-900 surfaces; on a tinted one it measures about 4.1:1, under AA
+   * for 11px text. Dimming the primary colour instead tracks whichever theme
+   * is live and lands at 6.1:1 or better on every tone.
+   */
+  .stat-label {
+    @apply block text-[11px] font-medium uppercase tracking-wide text-fg/70;
+  }
+  /*
+   * Figures stay in `text-fg`. A saturated number on a tinted card of its own
+   * hue is harder to read and says nothing the card is not already saying.
+   */
+  .stat-value {
+    @apply mt-1 block text-2xl font-bold tabular-nums text-fg;
+  }
+  .stat-icon {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl;
+    background-color: rgb(var(--stat-tint) / 0.18);
+    color: rgb(var(--stat-ink));
+  }
+
+  /* A tile that opens something. Deepening the wash on press reads as the tile
+     itself responding — `active:bg-surface-2` would flatten the tint away. */
+  a.stat-card,
+  button.stat-card {
+    @apply w-full text-left hover:shadow-md active:scale-[0.98];
+  }
+  a.stat-card:active,
+  button.stat-card:active {
+    --stat-wash: 0.24;
+    --stat-fade: 0.1;
+  }
+
   /* --- alerts ---------------------------------------------------------- */
 
   /*
@@ -300,6 +417,9 @@
   }
   .card {
     @apply rounded-2xl p-4;
+  }
+  .stat-card {
+    @apply p-4;
   }
   .label {
     @apply mb-2 normal-case tracking-normal text-fg-muted;

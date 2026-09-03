@@ -38,3 +38,20 @@ export const statusBadge: Record<MemberStatus, string> = {
   expired: 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300',
   frozen: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
 };
+
+/**
+ * Dashboard stat-tile tones. The palettes themselves live in `index.css` as
+ * `.stat-tone-*`; this maps a tone name to its class.
+ *
+ * Spelled out rather than built as `stat-tone-${tone}` because Tailwind only
+ * emits a component class it can find as a literal in the source — an
+ * interpolated name is stripped from the bundle and the tile renders untinted.
+ */
+export const statTone = {
+  sky: 'stat-tone-sky',
+  violet: 'stat-tone-violet',
+  emerald: 'stat-tone-emerald',
+  amber: 'stat-tone-amber',
+} as const;
+
+export type StatTone = keyof typeof statTone;

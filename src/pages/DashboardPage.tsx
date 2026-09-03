@@ -4,7 +4,23 @@ import { useSocket } from '../hooks/useSocket';
 import { useDashboardStats } from '../hooks/queries/useDashboard';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { SexSplit } from '../components/ui/SexSplit';
-import { useState, type ReactNode } from 'react';
+import {
+  CashIcon,
+  ClockIcon,
+  DoorInIcon,
+  UserIcon,
+  UsersIcon,
+} from '../components/ui/icons';
+import { statTone, type StatTone } from '../lib/colors';
+import { useState, type ComponentType, type ReactNode } from 'react';
+
+/** One headline number. `tone` selects a palette defined in index.css. */
+interface Tile {
+  label: string;
+  value: ReactNode;
+  tone: StatTone;
+  Icon: ComponentType<{ className?: string }>;
+}
 
 export function DashboardPage() {
   const { gym } = useAuth();
@@ -22,24 +38,46 @@ export function DashboardPage() {
 
   if (isLoading || !data) return <p className="text-fg-subtle">{t('common.loading')}</p>;
 
-  const revenueTile = {
+  const revenueTile: Tile = {
     label: t('dashboard.revenue'),
-    value: `${data.revenue_this_month.toLocaleString()} ${t('common.birr')}` as ReactNode,
+    value: `${data.revenue_this_month.toLocaleString()} ${t('common.birr')}`,
+    tone: 'emerald',
+    Icon: CashIcon,
   };
-  const expiringTile = { label: t('dashboard.expiringSoon'), value: data.expiring_in_7_days as ReactNode };
+  const expiringTile: Tile = {
+    label: t('dashboard.expiringSoon'),
+    value: data.expiring_in_7_days,
+    tone: 'amber',
+    Icon: ClockIcon,
+  };
 
-  const tiles: { label: string; value: ReactNode }[] = cameraEnabled
+  // Tone is per slot, not per metric: whichever pair the gym's camera setting
+  // puts in the first two positions, the grid reads sky → violet → emerald →
+  // amber left to right, so the two layouts feel like the same dashboard.
+  const tiles: Tile[] = cameraEnabled
     ? [
-        { label: t('dashboard.checkInsToday'), value: data.check_ins_today },
-        { label: t('dashboard.occupancy'), value: liveOccupancy ?? data.occupancy },
+        {
+          label: t('dashboard.checkInsToday'),
+          value: data.check_ins_today,
+          tone: 'sky',
+          Icon: DoorInIcon,
+        },
+        {
+          label: t('dashboard.occupancy'),
+          value: liveOccupancy ?? data.occupancy,
+          tone: 'violet',
+          Icon: UsersIcon,
+        },
         revenueTile,
         expiringTile,
       ]
     : [
-        { label: t('dashboard.membersTotal'), value: data.members_total },
+        { label: t('dashboard.membersTotal'), value: data.members_total, tone: 'sky', Icon: UsersIcon },
         {
           label: t('dashboard.bySex'),
           value: <SexSplit male={data.members_by_sex.male} female={data.members_by_sex.female} />,
+          tone: 'violet',
+          Icon: UserIcon,
         },
         revenueTile,
         expiringTile,
@@ -56,9 +94,16 @@ export function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {tiles.map((tile) => (
-          <div key={tile.label} className="card">
-            <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">{tile.label}</p>
-            <p className="mt-1 text-3xl font-bold tabular-nums">{tile.value}</p>
+          <div key={tile.label} className={`stat-card ${statTone[tile.tone]}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="stat-label">{tile.label}</p>
+                <p className="stat-value sm:text-3xl">{tile.value}</p>
+              </div>
+              <span className="stat-icon" aria-hidden>
+                <tile.Icon className="h-[18px] w-[18px]" />
+              </span>
+            </div>
           </div>
         ))}
       </div>

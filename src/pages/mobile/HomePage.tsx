@@ -27,6 +27,8 @@ import {
   SpinnerIcon,
   UserPlusIcon,
 } from '../../components/mobile/icons';
+import { CashIcon, ClockIcon, DoorInIcon, UsersIcon } from '../../components/ui/icons';
+import { statTone, type StatTone } from '../../lib/colors';
 import { daysLeftColor, ringColor } from '../../lib/expiry';
 import { SexSplit } from '../../components/ui/SexSplit';
 import { SubscriptionBanner } from '../../components/ui/SubscriptionBanner';
@@ -314,13 +316,21 @@ function StatGrid({
   // Each tile opens a sheet with the rows behind the number instead of jumping
   // to a full page — the question a glance raises is "who?", and answering it
   // in place keeps the user on the home screen.
-  const tiles: { key: StringKey; value: ReactNode; id: SheetId; accent: string; to?: string }[] = [
+  const tiles: {
+    key: StringKey;
+    value: ReactNode;
+    id: SheetId;
+    tone: StatTone;
+    Icon: ComponentType<{ className?: string }>;
+    to?: string;
+  }[] = [
     cameraEnabled
       ? {
           key: 'home.checkInsToday',
           value: String(checkIns),
           id: 'checkins',
-          accent: 'text-sky-600 dark:text-sky-400',
+          tone: 'sky',
+          Icon: DoorInIcon,
         }
       : {
           // No camera, no check-ins — the roster's split takes the slot, and
@@ -330,62 +340,66 @@ function StatGrid({
           key: 'home.bySex',
           value: <SexSplit male={bySex?.male ?? 0} female={bySex?.female ?? 0} stack />,
           id: 'checkins',
-          accent: 'text-fg',
+          tone: 'sky',
+          Icon: UsersIcon,
           to: '/members',
         },
     {
       key: 'home.collectedToday',
       value: `${collected.toLocaleString()} ${t('common.birr')}`,
       id: 'collected',
-      accent: 'text-green-600 dark:text-green-400',
+      tone: 'emerald',
+      Icon: CashIcon,
     },
     {
       key: 'home.expiringSoon',
       value: String(expiring),
       id: 'expiring',
-      accent: expiring > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-fg',
+      tone: 'amber',
+      Icon: ClockIcon,
     },
     {
       key: 'home.newToday',
       value: String(newToday),
       id: 'new',
-      accent: 'text-fg',
+      tone: 'violet',
+      Icon: UserPlusIcon,
     },
   ];
 
   const body = (tile: (typeof tiles)[number]) => (
     <>
       <span className="min-w-0">
-        <span className="block text-[11px] font-medium uppercase tracking-wide text-fg-muted">
-          {t(tile.key)}
-        </span>
+        <span className="stat-label">{t(tile.key)}</span>
         {loading ? (
           <span className="mt-2 block h-7 w-16 animate-pulse rounded bg-surface-2" />
         ) : (
-          <span className={`mt-1 block text-2xl font-bold tabular-nums ${tile.accent}`}>
-            {tile.value}
-          </span>
+          <span className="stat-value">{tile.value}</span>
         )}
       </span>
-      <ChevronRightIcon className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" />
+      {/* The chevron sat where the eye looks for a tile's subject. The icon
+          takes that corner and says what the number is; the affordance is
+          carried by the press state, which a thumb gets either way. */}
+      <span className="stat-icon" aria-hidden>
+        <tile.Icon className="h-[18px] w-[18px]" />
+      </span>
     </>
   );
-  const tileClass =
-    'card flex items-start justify-between gap-2 p-4 text-left transition-transform active:scale-[0.98] active:bg-surface-2';
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {tiles.map((tile) =>
-        tile.to ? (
-          <Link key={tile.key} to={tile.to} className={tileClass}>
+      {tiles.map((tile) => {
+        const cls = `stat-card ${statTone[tile.tone]} flex items-start justify-between gap-2`;
+        return tile.to ? (
+          <Link key={tile.key} to={tile.to} className={cls}>
             {body(tile)}
           </Link>
         ) : (
-          <button key={tile.key} type="button" onClick={() => onOpen(tile.id)} className={tileClass}>
+          <button key={tile.key} type="button" onClick={() => onOpen(tile.id)} className={cls}>
             {body(tile)}
           </button>
-        ),
-      )}
+        );
+      })}
     </div>
   );
 }
