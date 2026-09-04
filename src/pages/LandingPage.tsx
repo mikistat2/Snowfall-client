@@ -27,7 +27,7 @@ import { useCountUp } from '../hooks/useCountUp';
  */
 const APK_URL = '/Snowfall-GYM-Solution.apk';
 const APK_VERSION = '1.0';
-const APK_SIZE = '18.4 MB';
+const APK_SIZE = '18.9 MB';
 const APK_MIN_ANDROID = '6.0';
 
 export function LandingPage() {
@@ -162,6 +162,19 @@ export function LandingPage() {
                   <span className="absolute -inset-px -z-10 rounded-lg bg-gradient-to-r from-sky-400 to-emerald-400 opacity-0 blur transition-opacity group-hover:opacity-70" />
                   Register your gym — free
                 </Link>
+                {/* A visitor on a phone is already holding the device the app
+                    installs on, so the download is offered here and not only in
+                    the Android section further down the page. Filled dark rather
+                    than outlined, so it does not read as a twin of the ghost
+                    button beside it. */}
+                <a
+                  href={APK_URL}
+                  download
+                  className="btn group inline-flex w-full items-center justify-center gap-2 !border !border-white/30 !bg-slate-900/60 !px-4 !py-2.5 !text-sm !text-white backdrop-blur transition-transform hover:!bg-slate-900/80 hover:-translate-y-0.5 sm:w-auto sm:!px-6 sm:!py-3 sm:!text-base"
+                >
+                  <PlayStoreIcon className="h-5 w-5 shrink-0 transition-transform group-hover:-translate-y-0.5" />
+                  Download the Android app
+                </a>
                 <a
                   href="#how"
                   className="btn w-full !border !border-white/40 !px-4 !py-2.5 !text-sm !text-white transition-transform hover:!bg-white/10 hover:-translate-y-0.5 sm:w-auto sm:!px-6 sm:!py-3 sm:!text-base"
@@ -330,7 +343,7 @@ export function LandingPage() {
                     className="btn group relative inline-flex w-full items-center justify-center gap-2.5 !bg-slate-900 !px-6 !py-3.5 !text-base !text-white shadow-lg shadow-slate-900/20 transition-transform hover:!bg-slate-800 hover:-translate-y-0.5 sm:w-auto"
                   >
                     <span className="absolute -inset-px -z-10 rounded-lg bg-gradient-to-r from-sky-400 to-emerald-400 opacity-0 blur transition-opacity group-hover:opacity-70" />
-                    <AndroidIcon className="h-5 w-5 shrink-0 text-emerald-400" />
+                    <PlayStoreIcon className="h-5 w-5 shrink-0" />
                     Download for Android
                     <DownloadIcon className="h-4 w-4 shrink-0 opacity-70 transition-transform group-hover:translate-y-0.5" />
                   </a>
@@ -406,7 +419,7 @@ export function LandingPage() {
                 download
                 className="btn inline-flex items-center gap-2 !border !border-slate-600 !px-6 !py-3 !text-base !text-white transition-transform hover:!bg-slate-800 hover:-translate-y-0.5"
               >
-                <AndroidIcon className="h-5 w-5 text-emerald-400" />
+                <PlayStoreIcon className="h-5 w-5" />
                 Get the Android app
               </a>
             </div>
@@ -593,6 +606,30 @@ function AppPoint({ text }: { text: string }) {
       </span>
       <span className="text-slate-700">{text}</span>
     </li>
+  );
+}
+
+/**
+ * The Google Play "play" mark, on the buttons that hand over the APK — the
+ * four-colour triangle is what people read as "this is a phone app".
+ *
+ * Note the app is not actually distributed through Google Play; this is a
+ * direct download, and the install steps further down say so.
+ *
+ * Flat fills rather than the brand gradients, so the icon carries no <defs>
+ * ids: it renders three times on this page and duplicated gradient ids across
+ * instances are a rendering hazard. The four wedges all meet at the same
+ * interior point, so any change to one coordinate has to be made in each path
+ * that shares it.
+ */
+function PlayStoreIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+      <path fill="#00A0FF" d="M3.2 1.8 13.4 12 3.2 22.2Z" />
+      <path fill="#00C853" d="M3.2 1.8 17.6 9.55 13.4 12Z" />
+      <path fill="#FFCE00" d="M17.6 9.55 20.8 12 17.6 14.45 13.4 12Z" />
+      <path fill="#EE4A3F" d="M13.4 12 17.6 14.45 3.2 22.2Z" />
+    </svg>
   );
 }
 
