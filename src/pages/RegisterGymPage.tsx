@@ -28,6 +28,14 @@ export function RegisterGymPage() {
   // Monthly by default: it is the smaller commitment, and the yearly tab
   // carries its own discount badge to argue for itself.
   const [cycle, setCycle] = useState<BillingCycle>('MONTHLY');
+  /**
+   * 'MONTHLY' is the initial state and the platform may no longer sell it, so
+   * the value actually submitted is clamped to what is on offer rather than
+   * the raw state — the picker hides the button, and this stops the hidden
+   * choice riding along in the request anyway.
+   */
+  const offeredCycles = mode?.cycles?.length ? mode.cycles : (['MONTHLY', 'YEARLY'] as BillingCycle[]);
+  const chosenCycle: BillingCycle = offeredCycles.includes(cycle) ? cycle : offeredCycles[0]!;
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
@@ -60,7 +68,7 @@ export function RegisterGymPage() {
         // Omitted rather than sent as null when the plan list could not be
         // loaded: the field is optional server-side, and a gym should not be
         // blocked from signing up because the pricing endpoint was down.
-        ...(planId ? { planId, cycle } : {}),
+        ...(planId ? { planId, cycle: chosenCycle } : {}),
       });
       if (result.pending) setPendingApproval(true);
       // not pending (free-trial mode): useAuth stored the session and the
@@ -185,7 +193,8 @@ export function RegisterGymPage() {
               plans={mode.plans}
               value={planId}
               onChange={setPlanId}
-              cycle={cycle}
+              cycle={chosenCycle}
+              cycles={offeredCycles}
               onCycle={setCycle}
             />
           </Section>

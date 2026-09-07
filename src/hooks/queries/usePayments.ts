@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as paymentsApi from '../../api/payments';
 import { qk } from './keys';
 import type { PaymentFilter } from '../../api/payments';
@@ -40,5 +40,31 @@ export function usePaymentSummary(filter: PaymentFilter = {}) {
   return useQuery({
     queryKey: [...qk.payments(filter), 'summary'] as const,
     queryFn: () => paymentsApi.paymentSummary(filter),
+  });
+}
+
+/**
+ * Correcting a payment (owner only).
+ *
+ * A correction moves more than the ledger it was launched from: the day's
+ * takings tile on the dashboard, the Today digest, the member's own history
+ * and their lifetime total all read the same rows. Invalidating only
+ * `payments` would leave a corrected figure sitting on the home screen until
+ * something else happened to refetch it — which is exactly the kind of
+ * disagreement between two numbers that sends an owner looking for a bug.
+ */
+export function useAmendPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: paymentsApi.AmendPaymentInput }) =>
+      paymentsApi.amendPayment(id, input),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: qk.paymentsAll });
+      void qc.invalidateQueries({ queryKey: qk.dashboard });
+      void qc.invalidateQueries({ queryKey: qk.today });
+      void qc.invalidateQueries({ queryKey: qk.membersAll });
+      // qk.member(id) is ['member', id]; the prefix catches every open member.
+      void qc.invalidateQueries({ queryKey: ['member'] });
+    },
   });
 }

@@ -79,6 +79,11 @@ export interface BillingCheckout {
   currency: string;
   instructions: string | null;
   providers: BillingProviderOption[];
+  /**
+   * Cycles the platform is currently selling. Optional because a server that
+   * predates the setting does not send it — see `offeredCycles`.
+   */
+  cycles?: BillingCycle[];
   /** false → no provider is set up, or the verification key is missing. */
   configured: boolean;
   graceDays: number;
@@ -164,4 +169,33 @@ export function yearlySavingMonths(plan: BillingPlan): number {
 
 export function priceFor(plan: BillingPlan, cycle: BillingCycle): number {
   return Number(cycle === 'YEARLY' ? plan.yearly_price : plan.monthly_price);
+}
+
+/** Display order for billing cycles — the one place that order is decided. */
+export const ALL_CYCLES: readonly BillingCycle[] = ['MONTHLY', 'YEARLY'];
+
+/**
+ * Which billing cycles a screen may offer.
+ *
+ * A missing or empty list means "show both". That is the safe direction in
+ * every case it can happen: an older server that has no such field, a request
+ * that failed, or a settings row somehow saying nothing is for sale. Hiding
+ * both would leave a gym unable to pay us at all, which is a far worse failure
+ * than briefly offering a cycle we would rather retire.
+ */
+export function offeredCycles(cycles?: BillingCycle[] | null): BillingCycle[] {
+  if (!cycles || cycles.length === 0) return [...ALL_CYCLES];
+  return ALL_CYCLES.filter((c) => cycles.includes(c));
+}
+
+/**
+ * Keep a chosen cycle inside what is on offer.
+ *
+ * Needed because the default is often a remembered value — the gym's current
+ * cycle, or a trial's usual monthly — which may be exactly the one that has
+ * since been withdrawn. Without this the form would sit on an option that is
+ * no longer rendered, and submit it.
+ */
+export function clampCycle(cycle: BillingCycle, available: BillingCycle[]): BillingCycle {
+  return available.includes(cycle) ? cycle : (available[0] ?? 'YEARLY');
 }

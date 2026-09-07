@@ -19,6 +19,8 @@ import { money, type BillingPayment, type BillingPlan, type BillingStatus } from
 
 interface AdminSettings {
   payments_required: boolean;
+  monthly_enabled: boolean;
+  yearly_enabled: boolean;
   cbe_enabled: boolean;
   cbe_account_number: string | null;
   cbe_account_name: string | null;
@@ -475,6 +477,37 @@ function SettingsForm({
         </p>
       </div>
 
+      <div className="card">
+        <div className="mb-1 text-sm font-semibold">Billing cycles on sale</div>
+        <p className="mb-3 text-xs text-slate-500">
+          Which periods a gym can buy. Turning one off hides it from the pricing step and the signup
+          page; it never refuses a payment, so nobody who has already transferred money is left stranded.
+          At least one must stay on.
+        </p>
+        <div className="space-y-2">
+          <CycleToggle
+            label="Monthly"
+            enabled={form.monthly_enabled}
+            disabled={!form.yearly_enabled}
+            onToggle={(v) => set('monthly_enabled', v)}
+          />
+          <CycleToggle
+            label="Yearly"
+            enabled={form.yearly_enabled}
+            disabled={!form.monthly_enabled}
+            onToggle={(v) => set('yearly_enabled', v)}
+          />
+        </div>
+        {/* The one consequence that is not visible from this screen. Android is
+            sideloaded here, so an install can lag the server indefinitely. */}
+        {(!form.monthly_enabled || !form.yearly_enabled) && (
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Gyms running an older Android build will keep seeing both periods until they install an
+            updated APK. Their payments still go through — this hides the option, it does not block it.
+          </p>
+        )}
+      </div>
+
       <ProviderCard
         provider="CBE"
         heading="Commercial Bank of Ethiopia"
@@ -531,6 +564,8 @@ function SettingsForm({
           onClick={() =>
             onSave(
               {
+                monthly_enabled: form.monthly_enabled,
+                yearly_enabled: form.yearly_enabled,
                 cbe_enabled: form.cbe_enabled,
                 cbe_account_number: form.cbe_account_number,
                 cbe_account_name: form.cbe_account_name,
@@ -550,6 +585,41 @@ function SettingsForm({
         </button>
       </div>
     </>
+  );
+}
+
+/**
+ * One cycle's on/off row.
+ *
+ * `disabled` is passed when this is the last one standing: the server and a
+ * CHECK constraint both refuse leaving nothing for sale, and a control that
+ * cannot succeed should not invite the click.
+ */
+function CycleToggle({
+  label,
+  enabled,
+  disabled,
+  onToggle,
+}: {
+  label: string;
+  enabled: boolean;
+  disabled: boolean;
+  onToggle: (v: boolean) => void;
+}) {
+  return (
+    <label
+      className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-60' : ''}`}
+      title={disabled ? 'At least one billing cycle must stay on sale' : undefined}
+    >
+      <input
+        type="checkbox"
+        checked={enabled}
+        disabled={disabled}
+        onChange={(e) => onToggle(e.target.checked)}
+      />
+      <span className="font-medium">{label}</span>
+      {!enabled && <span className="text-xs text-slate-400">— not offered</span>}
+    </label>
   );
 }
 

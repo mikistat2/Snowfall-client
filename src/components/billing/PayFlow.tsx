@@ -5,8 +5,10 @@ import { hapticError, hapticTap } from '../../lib/haptics';
 import { ProviderMark } from './ProviderMark';
 import { VerifyingOverlay } from './VerifyingOverlay';
 import {
+  clampCycle,
   fetchHistory,
   formatDate,
+  offeredCycles,
   money,
   priceFor,
   verifyReference,
@@ -50,7 +52,12 @@ export function PayFlow({
   const [planId, setPlanId] = useState<number>(
     () => checkout.currentPlanId ?? checkout.plans[0]?.id ?? 0,
   );
-  const [cycle, setCycle] = useState<BillingCycle>(checkout.currentCycle ?? 'YEARLY');
+  // The gym's own current cycle is the natural default — but it may be the
+  // one the platform has since stopped selling, so it is clamped to the offer.
+  const cycles = offeredCycles(checkout.cycles);
+  const [cycle, setCycle] = useState<BillingCycle>(() =>
+    clampCycle(checkout.currentCycle ?? 'YEARLY', cycles),
+  );
   const [provider, setProvider] = useState<Exclude<BillingProvider, 'CASH'>>(
     () => checkout.providers[0]?.provider ?? 'CBE',
   );
@@ -135,6 +142,7 @@ export function PayFlow({
             currency={checkout.currency}
             planId={planId}
             cycle={cycle}
+            cycles={cycles}
             onPlan={setPlanId}
             onCycle={setCycle}
           />
@@ -225,6 +233,7 @@ function PlanStep({
   currency,
   planId,
   cycle,
+  cycles,
   onPlan,
   onCycle,
 }: {
@@ -232,18 +241,25 @@ function PlanStep({
   currency: string;
   planId: number;
   cycle: BillingCycle;
+  cycles: BillingCycle[];
   onPlan: (id: number) => void;
   onCycle: (cycle: BillingCycle) => void;
 }) {
   const selected = plans.find((p) => p.id === planId) ?? null;
-  const saving = selected ? yearlySavingMonths(selected) : 0;
+  // The badge compares yearly against twelve months of the monthly price. With
+  // monthly withdrawn there is nothing to have saved, and the claim would be
+  // measured against a price nobody can pay.
+  const saving = selected && cycles.length > 1 ? yearlySavingMonths(selected) : 0;
 
   return (
     <>
       {/* Billing period first: it reprices every card below it, so choosing it
-          afterwards would mean reading the same prices twice. */}
+          afterwards would mean reading the same prices twice. Hidden entirely
+          when only one cycle is sold: a segmented control with a single option
+          is a decision the reader does not have. */}
+      {cycles.length > 1 && (
       <div className="segmented grid-cols-2" role="radiogroup" aria-label="Billing period">
-        {(['MONTHLY', 'YEARLY'] as const).map((option) => (
+        {cycles.map((option) => (
           <button
             key={option}
             type="button"
@@ -261,6 +277,7 @@ function PlanStep({
           </button>
         ))}
       </div>
+      )}
 
       {plans.length === 0 && (
         <p className="card text-center text-sm text-fg-muted">

@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import type { Payment } from '../lib/types';
+import type { Payment, PaymentMethod } from '../lib/types';
 
 export interface PaymentFilter {
   from?: string;
@@ -44,4 +44,20 @@ export async function paymentSummary(filter: PaymentFilter = {}): Promise<Paymen
     },
   });
   return data;
+}
+
+/**
+ * Correct a payment (owner only).
+ *
+ * `replacement` omitted means the payment should not exist at all: the row is
+ * voided with nothing put in its place. Nothing is ever updated or deleted
+ * server-side — hence POST rather than PUT or DELETE.
+ */
+export interface AmendPaymentInput {
+  reason: string;
+  replacement?: { amount: number; method: PaymentMethod; note?: string | null };
+}
+
+export async function amendPayment(id: number, input: AmendPaymentInput): Promise<void> {
+  await api.post(`/payments/${id}/amend`, input);
 }

@@ -210,10 +210,21 @@ export function MemberDetailPage() {
         <section className="card">
           <h2 className="mb-1 font-semibold">{t('members.paymentHistory')}</h2>
           <div>
-            {data.payments.map((p) => (
-              <div key={p.id} className="border-t border-line py-3 first:border-t-0">
+            {/* Voided rows stay, struck through: this is the member's receipt
+                history, and a payment quietly disappearing from it is what
+                sends somebody to the desk to argue. Corrections are made on
+                the Payments page, by the owner. */}
+            {data.payments.map((p) => {
+              const voided = Boolean(p.voided_at);
+              return (
+              <div
+                key={p.id}
+                className={`border-t border-line py-3 first:border-t-0 ${voided ? 'opacity-60' : ''}`}
+              >
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-sm font-bold tabular-nums text-fg">
+                  <span
+                    className={`text-sm font-bold tabular-nums text-fg ${voided ? 'line-through' : ''}`}
+                  >
                     {Number(p.amount).toLocaleString()} {t('common.birr')}
                   </span>
                   <span className="shrink-0 text-xs tabular-nums text-fg-muted">
@@ -222,10 +233,18 @@ export function MemberDetailPage() {
                 </div>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="chip">{paymentMethodLabel(p.method)}</span>
-                  {p.note && <span className="min-w-0 truncate text-xs text-fg-subtle">{p.note}</span>}
+                  {voided ? (
+                    <span className="min-w-0 truncate text-xs text-fg-subtle">
+                      {t('payments.voided')}
+                      {p.void_reason ? ` — ${p.void_reason}` : ''}
+                    </span>
+                  ) : (
+                    p.note && <span className="min-w-0 truncate text-xs text-fg-subtle">{p.note}</span>
+                  )}
                 </div>
               </div>
-            ))}
+              );
+            })}
             {data.payments.length === 0 && <p className="py-6 text-center text-sm text-fg-muted">—</p>}
           </div>
         </section>

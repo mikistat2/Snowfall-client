@@ -3,6 +3,7 @@ import { AxiosError } from 'axios';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { platformApi, platformToken, platformProfile, type PlatformPerms, type PlatformProfile } from '../lib/platformApi';
 import { apiErrorMessage } from '../lib/api';
+import { Spinner } from '../components/ui/Spinner';
 import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
 import { Select } from '../components/ui/Select';
@@ -1496,13 +1497,14 @@ function StaffAccountsCard({
                   </span>
                   {isOwner && removed && (
                     <button
-                      className="btn-secondary !px-2 !py-1 !text-xs"
+                      className="btn-secondary inline-flex items-center gap-1.5 !px-2 !py-1 !text-xs"
                       disabled={busy}
                       onClick={() => {
                         setPending(s.id);
                         restore.mutate(s);
                       }}
                     >
+                      {busy && <Spinner className="h-3 w-3" label="Restoring" />}
                       {busy ? 'Restoring…' : 'Restore'}
                     </button>
                   )}
@@ -1550,13 +1552,17 @@ function StaffAccountsCard({
                       Cancel
                     </button>
                     <button
-                      className="btn-danger !px-3 !py-1 !text-xs"
+                      className="btn-danger inline-flex items-center gap-1.5 !px-3 !py-1 !text-xs"
                       disabled={busy}
                       onClick={() => {
                         setPending(s.id);
                         remove.mutate(s);
                       }}
                     >
+                      {/* Removal revokes their sessions and writes an audit
+                          entry before it answers — long enough that a silent
+                          button invites a second click. */}
+                      {busy && <Spinner className="h-3 w-3" label="Removing" />}
                       {busy ? 'Removing…' : 'Remove account'}
                     </button>
                   </div>

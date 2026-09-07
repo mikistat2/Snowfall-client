@@ -198,6 +198,12 @@ export function RecordPaymentSection({
                 setCycle(c);
                 if (plan) setAmount(String(priceFor(plan, c)));
               }}
+              /* Both cycles stay available here even when one has been
+                 withdrawn from sale. This is the platform owner recording a
+                 payment by hand — honouring a legacy monthly subscriber, or a
+                 transfer that arrived from an old app — and the sale toggle
+                 governs what gyms are offered, not what we are allowed to
+                 record as having happened. */
               options={[
                 { value: 'MONTHLY', label: '1 month' },
                 { value: 'YEARLY', label: '1 year' },

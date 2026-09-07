@@ -20,6 +20,9 @@ import {
   useUpdateGym,
 } from '../hooks/queries/useSettings';
 import { useDeletePlan, usePlans, useSavePlan } from '../hooks/queries/usePlans';
+import { getDefaultRange, setDefaultRange, type PaymentsRange } from '../lib/paymentsRange';
+import { Spinner } from '../components/ui/Spinner';
+import { Skeleton, SkeletonRows } from '../components/ui/Skeleton';
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -34,6 +37,10 @@ export function SettingsPage() {
       <PageTitle>{t('settings.title')}</PageTitle>
       {!mobile && <AppearanceSection />}
       <LanguageSection />
+      {/* Above GymSection, with Appearance and Language: those three are
+          per-device preferences anyone signed in may change, and everything
+          below is gym configuration the owner alone can write. */}
+      <PaymentsDefaultSection />
       <GymSection readOnly={!isOwner} />
       <PlansSection />
       {isOwner && <StaffSection />}
@@ -176,9 +183,61 @@ function LanguageSection() {
   );
 }
 
+// ------------------------------------------------------------ payments view
+/**
+ * Which window the Payments page opens on.
+ *
+ * Owner and staff both, unlike everything below this point. It changes what
+ * this device shows, not what the gym is — so gating it behind the owner would
+ * leave the front desk unable to set up their own screen, and making it
+ * gym-wide would mean one person's preference silently changing everyone
+ * else's totals.
+ */
+const RANGE_OPTIONS: readonly { value: PaymentsRange; labelKey: StringKey }[] = [
+  { value: '30d', labelKey: 'payments.last30' },
+  { value: 'all', labelKey: 'payments.allTime' },
+];
+
+function PaymentsDefaultSection() {
+  // Local state mirrors the store so the button fills in on click; the store
+  // itself is what the Payments page reads on its next open.
+  const [range, setRange] = useState<PaymentsRange>(getDefaultRange);
+
+  function choose(value: PaymentsRange) {
+    setRange(value);
+    setDefaultRange(value);
+  }
+
+  return (
+    <div className="card flex flex-wrap items-center gap-4">
+      <div className="min-w-0 flex-1 sm:basis-auto">
+        <h2 className="font-semibold">{t('settings.paymentsView')}</h2>
+        <p className="text-xs text-fg-muted">{t('settings.paymentsViewHint')}</p>
+      </div>
+      <div className="grid w-full grid-cols-2 divide-x divide-line overflow-hidden rounded-lg border border-line sm:flex sm:w-auto">
+        {RANGE_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={range === o.value}
+            onClick={() => choose(o.value)}
+            className={`flex min-h-touch items-center justify-center px-2 py-2 text-center text-[13px] font-medium leading-tight sm:px-4 sm:text-sm ${
+              range === o.value
+                ? 'bg-slate-900 text-white dark:bg-sky-600'
+                : 'bg-surface text-fg-muted hover:bg-surface-2'
+            }`}
+          >
+            {t(o.labelKey)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- gym + rules
 function GymSection({ readOnly }: { readOnly: boolean }) {
-  const { data: gym } = useGymSettings();
+  const { data: gym, isLoading } = useGymSettings();
 
   const [form, setForm] = useState({
     name: '',
@@ -245,6 +304,30 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
           setTimeout(() => setSaved(false), 2000);
         },
       },
+    );
+  }
+
+  // Before the gym arrives every field here is an empty string, which reads
+  // as a gym with no name and no phone number rather than as a form still
+  // loading — and worse, is editable and savable in that state.
+  if (isLoading) {
+    return (
+      <section className="card space-y-4" aria-busy="true">
+        <h2 className="font-semibold">{t('settings.gym')}</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="space-y-1.5">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          <Skeleton className="h-3 w-28" />
+          <Skeleton className="h-10 w-full rounded-lg" />
+        </div>
+        <SkeletonRows rows={4} className="h-9" />
+      </section>
     );
   }
 
@@ -408,8 +491,12 @@ function GymSection({ readOnly }: { readOnly: boolean }) {
 
       {!readOnly && (
         <div className="flex items-center gap-3">
-          <button className="btn-primary w-full sm:w-auto" disabled={mutation.isPending}>
-            {t('settings.save')}
+          <button
+            className="btn-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending && <Spinner className="h-4 w-4" label={t('common.saving')} />}
+            {mutation.isPending ? t('common.saving') : t('settings.save')}
           </button>
           {saved && <span className="text-sm font-medium text-green-600">✓</span>}
         </div>
@@ -541,7 +628,7 @@ function editValues(plan: Plan): typeof emptyPlan & { id: number } {
 
 function PlansSection() {
   // the plan builder edits inactive plans too, so this is the unfiltered list
-  const { data: plans = [] } = usePlans();
+  const { data: plans = [], isLoading } = usePlans();
   const mobile = useMobileShell();
   const [editing, setEditing] = useState<(typeof emptyPlan & { id?: number }) | null>(null);
 
@@ -583,7 +670,12 @@ function PlansSection() {
         </button>
       </div>
 
-      {mobile ? (
+      {/* Until the packages arrive this card used to render an empty table,
+          which is indistinguishable from a gym that has not created any — and
+          the "+ Add package" button beside it makes that reading tempting. */}
+      {isLoading ? (
+        <SkeletonRows rows={3} className={mobile ? 'h-20 rounded-2xl' : 'h-9'} />
+      ) : mobile ? (
         <ul className="list-stack">
           {plans.map((p) => (
             <li key={p.id} className={`list-card ${p.active ? '' : 'opacity-60'}`}>
@@ -612,9 +704,18 @@ function PlansSection() {
                 <button
                   type="button"
                   className="btn-secondary flex-1 !py-1.5 text-xs text-red-600 dark:text-red-400"
+                  disabled={remove.isPending}
                   onClick={() => remove.mutate(p.id)}
                 >
-                  {t('common.delete')}
+                  {/* Only the row being deleted spins. `isPending` alone would
+                      light up every delete button in the list at once. */}
+                  {remove.isPending && remove.variables === p.id ? (
+                    <span className="inline-flex justify-center">
+                      <Spinner className="h-4 w-4" label={t('common.delete')} />
+                    </span>
+                  ) : (
+                    t('common.delete')
+                  )}
                 </button>
               </div>
             </li>
@@ -643,8 +744,16 @@ function PlansSection() {
                 <button className="text-xs text-fg-muted hover:text-fg" onClick={() => setEditing(editValues(p))}>
                   Edit
                 </button>
-                <button className="ml-3 text-xs text-red-500 hover:text-red-700" onClick={() => remove.mutate(p.id)}>
-                  {t('common.delete')}
+                <button
+                  className="ml-3 inline-flex align-middle text-xs text-red-500 hover:text-red-700 disabled:opacity-60"
+                  disabled={remove.isPending}
+                  onClick={() => remove.mutate(p.id)}
+                >
+                  {remove.isPending && remove.variables === p.id ? (
+                    <Spinner className="h-3.5 w-3.5" label={t('common.delete')} />
+                  ) : (
+                    t('common.delete')
+                  )}
                 </button>
               </td>
             </tr>
@@ -716,8 +825,12 @@ function PlansSection() {
               <button type="button" className="btn-secondary" onClick={() => setEditing(null)}>
                 {t('common.cancel')}
               </button>
-              <button className="btn-primary" disabled={save.isPending}>
-                {t('common.save')}
+              <button
+                className="btn-primary inline-flex items-center justify-center gap-2"
+                disabled={save.isPending}
+              >
+                {save.isPending && <Spinner className="h-4 w-4" label={t('common.saving')} />}
+                {save.isPending ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>
@@ -731,7 +844,7 @@ function PlansSection() {
 
 function StaffSection() {
   const mobile = useMobileShell();
-  const { data: staff = [] } = useStaff();
+  const { data: staff = [], isLoading } = useStaff();
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ name: '', email: '', password: '' });
 
@@ -756,7 +869,9 @@ function StaffSection() {
         </button>
       </div>
 
-      {mobile ? (
+      {isLoading ? (
+        <SkeletonRows rows={3} className={mobile ? 'h-16 rounded-2xl' : 'h-9'} />
+      ) : mobile ? (
         <ul className="list-stack">
           {staff.map((s) => (
             <li key={s.id} className="list-card flex items-center gap-3">
@@ -769,10 +884,18 @@ function StaffSection() {
                 <button
                   type="button"
                   aria-label={t('common.delete')}
-                  className="shrink-0 text-xs font-medium text-red-500"
+                  className="inline-flex shrink-0 text-xs font-medium text-red-500 disabled:opacity-60"
+                  disabled={remove.isPending}
                   onClick={() => remove.mutate(s.id)}
                 >
-                  {t('common.delete')}
+                  {/* Removing an account is a round trip that revokes their
+                      sessions and writes an audit entry — long enough that a
+                      button doing nothing invites a second click. */}
+                  {remove.isPending && remove.variables === s.id ? (
+                    <Spinner className="h-4 w-4" label={t('common.delete')} />
+                  ) : (
+                    t('common.delete')
+                  )}
                 </button>
               )}
             </li>
@@ -790,8 +913,16 @@ function StaffSection() {
               <td className="py-2 text-xs uppercase text-fg-subtle">{s.role}</td>
               <td className="py-2 text-right">
                 {s.role !== 'owner' && (
-                  <button className="text-xs text-red-500 hover:text-red-700" onClick={() => remove.mutate(s.id)}>
-                    {t('common.delete')}
+                  <button
+                    className="inline-flex align-middle text-xs text-red-500 hover:text-red-700 disabled:opacity-60"
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate(s.id)}
+                  >
+                    {remove.isPending && remove.variables === s.id ? (
+                      <Spinner className="h-3.5 w-3.5" label={t('common.delete')} />
+                    ) : (
+                      t('common.delete')
+                    )}
                   </button>
                 )}
               </td>
@@ -830,8 +961,12 @@ function StaffSection() {
               <button type="button" className="btn-secondary" onClick={() => setAdding(false)}>
                 {t('common.cancel')}
               </button>
-              <button className="btn-primary" disabled={create.isPending}>
-                {t('common.save')}
+              <button
+                className="btn-primary inline-flex items-center justify-center gap-2"
+                disabled={create.isPending}
+              >
+                {create.isPending && <Spinner className="h-4 w-4" label={t('common.saving')} />}
+                {create.isPending ? t('common.saving') : t('common.save')}
               </button>
             </div>
           </form>

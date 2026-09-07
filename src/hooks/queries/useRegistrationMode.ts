@@ -31,6 +31,11 @@ export interface RegistrationMode {
   trial_mode: boolean;
   trial_days: number;
   plans: SignupPlan[];
+  /**
+   * Billing cycles currently on sale. Optional: a server older than the
+   * setting does not send it, and `offeredCycles` then falls back to both.
+   */
+  cycles?: ('MONTHLY' | 'YEARLY')[];
 }
 
 export function useRegistrationMode() {

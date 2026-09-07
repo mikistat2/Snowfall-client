@@ -4,7 +4,8 @@ import { Modal } from '../ui/Modal';
 import { t } from '../../i18n/strings';
 import { Select } from '../ui/Select';
 import { WarningIcon } from '../ui/icons';
-import { paymentMethodOptions } from '../../lib/payments';
+import { paymentMethodOptions, overpayNeedsConfirming } from '../../lib/payments';
+import { AmountCheck } from '../payments/AmountCheck';
 import { useActivePlans } from '../../hooks/queries/usePlans';
 import { useRenewMember } from '../../hooks/queries/useMembers';
 import type { PaymentMethod } from '../../lib/types';
@@ -17,6 +18,8 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [note, setNote] = useState('');
+  /** Cleared on any change to the amount or plan — see EnrollPage. */
+  const [amountConfirmed, setAmountConfirmed] = useState(false);
 
   const selected = plans.find((p) => p.id === planId);
 
@@ -33,11 +36,14 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
   function onPlanChange(id: number | ''): void {
     setPlanId(id);
     const plan = plans.find((p) => p.id === id);
+    setAmountConfirmed(false);
     if (plan) setAmount(String(Number(plan.price)));
   }
 
   const amountMissing = amount.trim() === '';
   const incomplete = planId === '' || amountMissing;
+  const needsAmountConfirm =
+    !amountConfirmed && overpayNeedsConfirming(Number(amount), selected ? Number(selected.price) : undefined);
 
   /** Validation only shows after a blocked submit — see EnrollPage. */
   const [attempted, setAttempted] = useState(false);
@@ -52,6 +58,11 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
       // this, an incomplete renewal just greyed the button out and said
       // nothing at all.
       if (planId !== '' && amountMissing) amountRef.current?.focus();
+      return;
+    }
+    // The typo guard, same rule and same panel as enrolment.
+    if (needsAmountConfirm) {
+      amountRef.current?.focus();
       return;
     }
     mutation.mutate(
@@ -104,13 +115,22 @@ export function RenewModal({ memberId, onClose }: { memberId: number; onClose: (
               aria-invalid={attempted && amountMissing}
               aria-describedby={attempted && amountMissing ? 'renew-amount-error' : undefined}
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setAmountConfirmed(false);
+              }}
             />
             {attempted && amountMissing && (
               <p id="renew-amount-error" className="mt-1.5 text-xs font-medium text-danger">
                 {t('enroll.needAmount')}
               </p>
             )}
+            <AmountCheck
+              amount={Number(amount)}
+              planPrice={selected ? Number(selected.price) : undefined}
+              confirmed={amountConfirmed}
+              onConfirm={() => setAmountConfirmed(true)}
+            />
           </div>
           <div>
             <label className="label">{t('enroll.method')}</label>

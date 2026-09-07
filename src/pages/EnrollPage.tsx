@@ -11,7 +11,8 @@ import { PhoneInput } from '../components/ui/PhoneInput';
 import { WarningIcon } from '../components/ui/icons';
 import { Select } from '../components/ui/Select';
 import { SexPicker } from '../components/members/SexPicker';
-import { paymentMethodOptions } from '../lib/payments';
+import { paymentMethodOptions, overpayNeedsConfirming } from '../lib/payments';
+import { AmountCheck } from '../components/payments/AmountCheck';
 import { useActivePlans } from '../hooks/queries/usePlans';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { useEnrollMember } from '../hooks/queries/useMembers';
@@ -34,6 +35,11 @@ export function EnrollPage() {
   const [sex, setSex] = useState<'male' | 'female' | ''>('');
   const [planId, setPlanId] = useState<number | ''>('');
   const [amount, setAmount] = useState('');
+  /**
+   * Cleared whenever the amount or the plan moves, so a confirmation given for
+   * one figure cannot be inherited by the next one typed over it.
+   */
+  const [amountConfirmed, setAmountConfirmed] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>('cash');
   const [captures, setCaptures] = useState<Capture[]>([]);
   const [photo, setPhoto] = useState<PhotoValue>(null);
@@ -53,10 +59,14 @@ export function EnrollPage() {
   function onPlanChange(id: number | ''): void {
     setPlanId(id);
     const plan = plans.find((p) => p.id === id);
+    setAmountConfirmed(false);
     if (plan) setAmount(String(Number(plan.price)));
   }
 
   const amountMissing = amount.trim() === '';
+  const needsAmountConfirm =
+    !amountConfirmed &&
+    overpayNeedsConfirming(Number(amount), selectedPlan ? Number(selectedPlan.price) : undefined);
   const incomplete = planId === '' || amountMissing || capturesNeeded;
 
   /**
@@ -148,6 +158,14 @@ export function EnrollPage() {
         amountRef.current?.focus();
         amountRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       }
+      return;
+    }
+    // The typo guard. Blocks submit rather than warning beside it, because an
+    // amount that cannot be right is worth one deliberate keystroke to
+    // confirm — and the panel with the button is already on screen.
+    if (needsAmountConfirm) {
+      amountRef.current?.focus();
+      amountRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
       return;
     }
     setSubmitted(true);
@@ -271,13 +289,22 @@ export function EnrollPage() {
                   aria-invalid={attempted && amountMissing}
                   aria-describedby={attempted && amountMissing ? 'enroll-amount-error' : undefined}
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setAmountConfirmed(false);
+                  }}
                 />
                 {attempted && amountMissing && (
                   <p id="enroll-amount-error" className="mt-1.5 text-xs font-medium text-danger">
                     {t('enroll.needAmount')}
                   </p>
                 )}
+                <AmountCheck
+                  amount={Number(amount)}
+                  planPrice={selectedPlan ? Number(selectedPlan.price) : undefined}
+                  confirmed={amountConfirmed}
+                  onConfirm={() => setAmountConfirmed(true)}
+                />
               </div>
               <div>
                 <label className="label">{t('enroll.method')}</label>

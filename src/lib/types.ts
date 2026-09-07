@@ -76,6 +76,16 @@ export interface Payment {
   method: PaymentMethod;
   note: string | null;
   created_at: string;
+  /**
+   * Set once the owner struck this row through. Voided rows are still listed —
+   * a payment that silently vanished would be hunted for — but they are out of
+   * every total the server reports.
+   */
+  voided_at?: string | null;
+  voided_by_name?: string | null;
+  void_reason?: string | null;
+  /** On a replacement row: the id of the voided payment it corrects. */
+  corrects_id?: number | null;
 }
 
 export interface CheckIn {

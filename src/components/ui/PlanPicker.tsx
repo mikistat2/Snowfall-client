@@ -37,26 +37,34 @@ export function PlanPicker({
   value,
   onChange,
   cycle,
+  cycles,
   onCycle,
 }: {
   plans: SignupPlan[];
   value: number | null;
   onChange: (planId: number) => void;
   cycle: BillingCycle;
+  /** Cycles on sale. Defaults to both, which is what this always showed. */
+  cycles?: BillingCycle[];
   onCycle: (cycle: BillingCycle) => void;
 }) {
   if (plans.length === 0) return null;
 
+  const offered = cycles && cycles.length > 0 ? cycles : (['MONTHLY', 'YEARLY'] as BillingCycle[]);
   const chosen = plans.find((p) => p.id === value);
   const yearly = cycle === 'YEARLY';
-  const saving = bestYearlySaving(plans);
+  // Nothing to have saved against once monthly is withdrawn — the comparison
+  // would be to a price the gym cannot choose.
+  const saving = offered.length > 1 ? bestYearlySaving(plans) : 0;
 
   return (
     <div className="space-y-2.5">
       {/* Above the cards, because it reprices all of them — a control that
-          changes every number below it belongs before them, not after. */}
+          changes every number below it belongs before them, not after. Gone
+          entirely when only one cycle is sold: there is no choice to present. */}
+      {offered.length > 1 && (
       <div className="segmented grid-cols-2" role="radiogroup" aria-label={t('auth.sectionPlan')}>
-        {(['MONTHLY', 'YEARLY'] as const).map((option) => (
+        {offered.map((option) => (
           <button
             key={option}
             type="button"
@@ -74,6 +82,7 @@ export function PlanPicker({
           </button>
         ))}
       </div>
+      )}
 
       {plans.map((plan) => {
         const selected = plan.id === value;

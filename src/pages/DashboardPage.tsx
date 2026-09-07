@@ -4,6 +4,7 @@ import { useSocket } from '../hooks/useSocket';
 import { useDashboardStats } from '../hooks/queries/useDashboard';
 import { useGymSettings } from '../hooks/queries/useSettings';
 import { SexSplit } from '../components/ui/SexSplit';
+import { Skeleton } from '../components/ui/Skeleton';
 import {
   CashIcon,
   ClockIcon,
@@ -38,7 +39,10 @@ export function DashboardPage() {
     'occupancy:update': (payload: { count: number }) => setLiveOccupancy(payload.count),
   });
 
-  if (isLoading || !data) return <p className="text-fg-subtle">{t('common.loading')}</p>;
+  // The first screen after signing in used to collapse to a single line of
+  // grey text and then snap into a full dashboard. A skeleton of the real
+  // layout holds the page still and shows what is arriving.
+  if (isLoading || !data) return <DashboardSkeleton gymName={gym?.name} cameraEnabled={cameraEnabled} />;
 
   const revenueTile: Tile = {
     label: t('dashboard.revenue'),
@@ -127,6 +131,54 @@ export function DashboardPage() {
         <PeakHoursChart data={data.peak_hours} />
       ) : (
         <p className="text-center text-xs text-fg-muted">{t('dashboard.noCameraHint')}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The dashboard's own shape, drawn empty.
+ *
+ * The gym name and the four tile frames are real — only the numbers are
+ * missing, and those are the only things actually being waited on. Keeping the
+ * chrome means nothing moves when the data lands, which is the difference
+ * between a page that loads and a page that flickers.
+ */
+function DashboardSkeleton({ gymName, cameraEnabled }: { gymName?: string; cameraEnabled: boolean }) {
+  return (
+    <div className="space-y-5" aria-busy="true">
+      <div className="text-center">
+        <h1 className="gym-name text-3xl leading-tight sm:text-5xl">{gymName ?? t('app.name')}</h1>
+        <p className="mt-1 text-sm font-semibold uppercase tracking-wide text-fg-muted">
+          {t('dashboard.title')}
+        </p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="stat-card">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-7 w-20" />
+              </div>
+              <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {cameraEnabled && (
+        <section className="card">
+          <Skeleton className="mb-4 h-3.5 w-28" />
+          {/* Bars of differing heights rather than one flat block: the
+              placeholder should look like the histogram it stands in for. */}
+          <div className="flex h-44 items-end gap-1.5">
+            {[38, 62, 45, 80, 55, 92, 70, 48, 66, 84, 52, 74, 40, 60, 88, 50, 44].map((h, i) => (
+              <Skeleton key={i} className="flex-1 rounded-t" style={{ height: `${h}%` }} />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

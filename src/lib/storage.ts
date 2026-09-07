@@ -23,6 +23,7 @@ const KEYS = [
   'locale',
   'cameraSource',
   'theme',
+  'paymentsRange',
 ] as const;
 
 export type StorageKey = (typeof KEYS)[number];
