@@ -86,6 +86,9 @@ interface StaffRow {
   phone: string | null;
   role: 'owner' | 'staff';
   created_at: string;
+  /** Set once the account is removed. The row survives; see StaffAccountsCard. */
+  deleted_at: string | null;
+  deleted_by: string | null;
 }
 
 function money(v: string | number): string {
@@ -952,21 +955,18 @@ function ManageGymModal({
             </div>
           </div>
 
-          <div>
-            <div className="label">Staff</div>
-            <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
-              {(d?.staff ?? []).map((s) => (
-                <div key={s.id} className="flex items-center justify-between px-3 py-2">
-                  <div>
-                    <span className="font-medium">{s.name}</span>
-                    <span className="text-slate-400"> · {s.email}</span>
-                  </div>
-                  <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">{s.role}</span>
-                </div>
-              ))}
-              {detailQ.isLoading && <div className="px-3 py-2 text-slate-400">Loading…</div>}
-            </div>
-          </div>
+          <StaffAccountsCard
+            gymId={gym.id}
+            gymName={gym.name}
+            staff={d?.staff ?? []}
+            loading={detailQ.isLoading}
+            isOwner={isOwner}
+            onChanged={() => {
+              onChanged();
+              void detailQ.refetch();
+            }}
+            onBanner={onBanner}
+          />
 
           <FeatureAccessCard
             gymId={gym.id}
@@ -1391,6 +1391,185 @@ function FeatureAccessCard({
       {!isOwner && (
         <p className="mt-2 text-xs text-slate-400">Only the platform owner can change these.</p>
       )}
+      {error && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+    </div>
+  );
+}
+
+/**
+ * A gym's staff accounts, and — for the platform owner — the ability to close
+ * one.
+ *
+ * "Remove" is reversible on purpose. The server tombstones the row instead of
+ * deleting it, because payments and guests reference the account and a real
+ * DELETE would either be refused by the database or force us to rewrite whose
+ * name is on a payment. So removed accounts keep their history, keep appearing
+ * here greyed out, and can be put back — this is the only screen that can do
+ * that, which is why it lists them at all.
+ */
+function StaffAccountsCard({
+  gymId,
+  gymName,
+  staff,
+  loading,
+  isOwner,
+  onChanged,
+  onBanner,
+}: {
+  gymId: number;
+  gymName: string;
+  staff: StaffRow[];
+  loading: boolean;
+  isOwner: boolean;
+  onChanged: () => void;
+  onBanner: (msg: string) => void;
+}) {
+  const [error, setError] = useState('');
+  /** Which row has its confirmation step open — at most one at a time. */
+  const [confirming, setConfirming] = useState<number | null>(null);
+  const [note, setNote] = useState('');
+  const [pending, setPending] = useState<number | null>(null);
+
+  /**
+   * The server refuses to remove a gym's last owner (it would leave the tenant
+   * with nobody who can sign in). Mirrored here so the button is absent rather
+   * than present-and-doomed.
+   */
+  const liveOwners = staff.filter((s) => s.role === 'owner' && !s.deleted_at).length;
+
+  const remove = useMutation({
+    mutationFn: (s: StaffRow) =>
+      platformApi.delete(`/gyms/${gymId}/staff/${s.id}`, { data: { note: note.trim() || undefined } }),
+    onSuccess: (res, s) => {
+      setError('');
+      setNote('');
+      setConfirming(null);
+      onBanner(
+        `${s.name}'s account was removed from "${gymName}" — their payments and check-ins are kept. ` +
+          notifiedSummary(res.data),
+      );
+      onChanged();
+    },
+    onError: (err) => setError(apiErrorMessage(err)),
+    onSettled: () => setPending(null),
+  });
+
+  const restore = useMutation({
+    mutationFn: (s: StaffRow) => platformApi.post(`/gyms/${gymId}/staff/${s.id}/restore`),
+    onSuccess: (_res, s) => {
+      setError('');
+      onBanner(`${s.name} can sign in again with their old password.`);
+      onChanged();
+    },
+    onError: (err) => setError(apiErrorMessage(err)),
+    onSettled: () => setPending(null),
+  });
+
+  return (
+    <div>
+      <div className="label">Staff</div>
+      <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
+        {staff.map((s) => {
+          const removed = Boolean(s.deleted_at);
+          const lastOwner = s.role === 'owner' && liveOwners <= 1;
+          const busy = pending === s.id;
+          return (
+            <div key={s.id} className={removed ? 'bg-slate-50/70' : undefined}>
+              <div className="flex items-center justify-between gap-3 px-3 py-2">
+                <div className={removed ? 'min-w-0 text-slate-400' : 'min-w-0'}>
+                  <span className={removed ? 'font-medium line-through' : 'font-medium'}>{s.name}</span>
+                  <span className="text-slate-400"> · {s.email}</span>
+                  {removed && (
+                    <div className="text-xs text-slate-400">
+                      Removed {ago(s.deleted_at)}
+                      {s.deleted_by ? ` by ${s.deleted_by}` : ''}
+                    </div>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span
+                    className={`rounded px-2 py-0.5 text-xs ${
+                      removed ? 'bg-red-50 text-red-600' : 'bg-slate-100'
+                    }`}
+                  >
+                    {removed ? 'removed' : s.role}
+                  </span>
+                  {isOwner && removed && (
+                    <button
+                      className="btn-secondary !px-2 !py-1 !text-xs"
+                      disabled={busy}
+                      onClick={() => {
+                        setPending(s.id);
+                        restore.mutate(s);
+                      }}
+                    >
+                      {busy ? 'Restoring…' : 'Restore'}
+                    </button>
+                  )}
+                  {isOwner && !removed && !lastOwner && confirming !== s.id && (
+                    <button
+                      className="btn-secondary !px-2 !py-1 !text-xs !text-red-600"
+                      onClick={() => {
+                        setError('');
+                        setNote('');
+                        setConfirming(s.id);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                  {isOwner && !removed && lastOwner && (
+                    <span className="text-xs text-slate-400" title="Delete the gym instead">
+                      only owner
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {confirming === s.id && (
+                <div className="space-y-2 border-t border-slate-100 bg-slate-50 px-3 py-3">
+                  <p className="text-xs text-slate-600">
+                    <b>{s.name}</b> is signed out immediately and cannot log in again. Their payments,
+                    guests and check-ins stay in this gym&apos;s records under their name, and you can
+                    restore the account from here.
+                  </p>
+                  <textarea
+                    className="input min-h-[52px] text-sm"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Reason (optional) — sent to the gym's owner, e.g. left the company"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      className="btn-secondary !px-3 !py-1 !text-xs"
+                      onClick={() => {
+                        setConfirming(null);
+                        setNote('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn-danger !px-3 !py-1 !text-xs"
+                      disabled={busy}
+                      onClick={() => {
+                        setPending(s.id);
+                        remove.mutate(s);
+                      }}
+                    >
+                      {busy ? 'Removing…' : 'Remove account'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {loading && <div className="px-3 py-2 text-slate-400">Loading…</div>}
+        {!loading && staff.length === 0 && (
+          <div className="px-3 py-2 text-slate-400">No staff accounts.</div>
+        )}
+      </div>
       {error && <div className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
     </div>
   );
