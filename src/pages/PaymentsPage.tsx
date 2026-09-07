@@ -10,6 +10,7 @@ import { useMobileShell } from '../hooks/useIsMobile';
 import { useAuth } from '../hooks/useAuth';
 import { AmendPaymentModal } from '../components/payments/AmendPaymentModal';
 import { getDefaultRange, isoDaysAgo, PAYMENTS_RANGE_DAYS } from '../lib/paymentsRange';
+import { EditIcon } from '../components/ui/icons';
 
 export function PaymentsPage() {
   const isMobile = useMobileShell();
@@ -175,10 +176,20 @@ export function PaymentsPage() {
                   )}
                 </td>
                 {canAmend && (
-                  <td className="px-4 py-3 text-right">
+                  <td className="py-3 pr-4 text-right">
                     {!voided && (
-                      <button className="btn-secondary !px-2 !py-1 !text-xs" onClick={() => setAmending(p)}>
-                        {t('payments.fix')}
+                      <button
+                        type="button"
+                        // Icon only. A labelled button in every row competed
+                        // with the amounts for attention, on a screen whose job
+                        // is reading numbers — and correcting a payment is a
+                        // rare act that does not deserve that weight.
+                        title={t('payments.correct')}
+                        aria-label={t('payments.correct')}
+                        className="rounded-md p-1.5 text-fg-subtle transition-colors hover:bg-surface-2 hover:text-fg"
+                        onClick={() => setAmending(p)}
+                      >
+                        <EditIcon className="h-4 w-4" />
                       </button>
                     )}
                   </td>
@@ -273,10 +284,25 @@ function PaymentCards({
             <span className="min-w-0 break-words text-[15px] font-bold leading-snug text-fg">
               {p.member_name}
             </span>
-            <span
-              className={`shrink-0 text-[15px] font-bold tabular-nums text-fg ${voided ? 'line-through' : ''}`}
-            >
-              {Number(p.amount).toLocaleString()} {t('common.birr')}
+            <span className="flex shrink-0 items-baseline gap-1.5">
+              <span
+                className={`text-[15px] font-bold tabular-nums text-fg ${voided ? 'line-through' : ''}`}
+              >
+                {Number(p.amount).toLocaleString()} {t('common.birr')}
+              </span>
+              {/* Beside the amount rather than a full-width button below it:
+                  the old one doubled the height of every card in the ledger to
+                  offer something almost nobody taps. */}
+              {canAmend && !voided && (
+                <button
+                  type="button"
+                  aria-label={t('payments.correct')}
+                  className="-my-1 self-center rounded-md p-1.5 text-fg-subtle active:bg-surface-2"
+                  onClick={() => onAmend(p)}
+                >
+                  <EditIcon className="h-4 w-4" />
+                </button>
+              )}
             </span>
           </div>
           <div className="mt-1.5 flex items-center justify-between gap-3 text-xs text-fg-muted">
@@ -293,14 +319,6 @@ function PaymentCards({
               {p.voided_by_name ? ` · ${p.voided_by_name}` : ''}
               {p.void_reason ? ` — ${p.void_reason}` : ''}
             </p>
-          )}
-          {canAmend && !voided && (
-            <button
-              className="btn-secondary mt-2 w-full !py-1.5 !text-xs"
-              onClick={() => onAmend(p)}
-            >
-              {t('payments.fix')}
-            </button>
           )}
         </div>
         );

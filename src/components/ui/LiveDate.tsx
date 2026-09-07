@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatEthiopianAm } from '../../lib/ethiopian';
 
 /** Current date + time, ticking every 30s. Shown at the top of every page. */
 export function LiveDate() {
@@ -16,6 +17,9 @@ export function LiveDate() {
     day: 'numeric',
   });
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Recomputed from `now`, so it rolls over with the rest of the line rather
+  // than being pinned to whenever the app was opened.
+  const ethiopian = formatEthiopianAm(now);
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-1.5 text-sm text-fg-muted">
@@ -24,6 +28,10 @@ export function LiveDate() {
         <path d="M3 8.5h14M7 2.5v3.5M13 2.5v3.5" />
       </svg>
       <span className="font-medium text-fg">{date}</span>
+      {/* A step down in size: the Ethiopian date is the one most people here
+          read first, but it is an addition to this line, not a replacement,
+          and two equal-weight dates side by side read as a mistake. */}
+      <span className="text-xs text-fg-subtle">{ethiopian}</span>
       <span aria-hidden>·</span>
       <span>{time}</span>
     </div>

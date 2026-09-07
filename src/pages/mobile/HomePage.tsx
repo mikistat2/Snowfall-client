@@ -15,6 +15,7 @@ import { useGymSettings } from '../../hooks/queries/useSettings';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { qk } from '../../hooks/queries/keys';
 import { Logo } from '../../components/ui/Logo';
+import { formatEthiopianAm } from '../../lib/ethiopian';
 import { DetailSheet, SheetEmpty, SheetLoading } from '../../components/mobile/DetailSheet';
 import {
   AlertIcon,
@@ -167,6 +168,10 @@ function Hero({ gymName, userName }: { gymName: string; userName?: string }) {
 
   const date = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Derived from the same ticking `now`, so it rolls over at midnight with the
+  // rest of the line instead of being pinned to when the app was opened — this
+  // screen is left running on a counter all day.
+  const ethiopian = formatEthiopianAm(now);
 
   return (
     <header className="relative overflow-hidden rounded-b-3xl bg-gradient-to-br from-sky-500 via-sky-600 to-slate-900 px-4 pb-16 pt-safe-t">
@@ -197,6 +202,11 @@ function Hero({ gymName, userName }: { gymName: string; userName?: string }) {
       <p className="relative mt-3 text-[11px] font-medium uppercase tracking-wide text-white/60">
         {date} · {time}
       </p>
+      {/* The Ethiopian date on its own line rather than appended: it is the one
+          most people here read first, and tucked behind the clock at the end of
+          a uppercase run it would be the last thing found. Not uppercased —
+          Ge'ez has no case, and the transform only widens the tracking. */}
+      <p className="relative mt-0.5 text-xs font-semibold text-white/80">{ethiopian}</p>
     </header>
   );
 }

@@ -12,6 +12,8 @@ import { WarningIcon } from '../components/ui/icons';
 import { Select } from '../components/ui/Select';
 import { SexPicker } from '../components/members/SexPicker';
 import { paymentMethodOptions, overpayNeedsConfirming } from '../lib/payments';
+import { formatEthiopianAm, todayIso } from '../lib/ethiopian';
+import { useToast } from '../components/ui/Toast';
 import { AmountCheck } from '../components/payments/AmountCheck';
 import { useActivePlans } from '../hooks/queries/usePlans';
 import { useGymSettings } from '../hooks/queries/useSettings';
@@ -23,6 +25,7 @@ import type { PaymentMethod } from '../lib/types';
 
 export function EnrollPage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { data: plans = [] } = useActivePlans();
   const { data: gym } = useGymSettings();
   // no camera at this gym → members are registered without face captures
@@ -191,6 +194,14 @@ export function EnrollPage() {
           // click and invite a second one. The member and their payment are
           // already committed by this point; the picture is not worth blocking
           // on, and it appears a moment later via the invalidation above.
+          // The one fact the desk reads back to the member as they walk away,
+          // in the calendar they will be counting the days in. `joined_at`
+          // rather than today's date, so a back-dated enrolment announces the
+          // day the membership actually starts.
+          toast.show(
+            `${member.full_name} · ${t('members.startsOn')} ${formatEthiopianAm(member.joined_at)}`,
+            'success',
+          );
           navigate(`/members/${member.id}`);
           uploadPhoto(member.id);
         },
@@ -315,6 +326,21 @@ export function EnrollPage() {
                   options={paymentMethodOptions()}
                 />
               </div>
+            </div>
+
+            {/*
+              The day the membership starts, stated before the clerk commits
+              rather than discovered on the member's page afterwards — it is
+              the one thing the member asks at the desk.
+
+              Read-only on purpose: a new enrolment always starts today, and an
+              editable field here would invite back-dating that belongs in
+              "Add a previous member", where the whole form is built for it.
+            */}
+            <div className="mt-3 rounded-xl bg-surface-2 px-3 py-2.5">
+              <div className="text-xs font-medium text-fg-muted">{t('enroll.startDate')}</div>
+              <div className="mt-0.5 text-sm font-bold text-fg">{formatEthiopianAm(new Date())}</div>
+              <div className="text-[11px] tabular-nums text-fg-subtle">{todayIso()}</div>
             </div>
           </FormSection>
         </div>

@@ -6,6 +6,7 @@ import { t } from '../i18n/strings';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { daysLeft, daysLeftColor } from '../lib/expiry';
 import { paymentMethodLabel } from '../lib/payments';
+import { formatEthiopianAm } from '../lib/ethiopian';
 import { TelegramLinkModal } from '../components/ui/TelegramLinkModal';
 import { PhotoLightbox } from '../components/ui/PhotoLightbox';
 import { ExpandIcon } from '../components/ui/icons';
@@ -191,13 +192,21 @@ export function MemberDetailPage() {
                     {s.status}
                   </span>
                 </div>
-                <p className="mt-0.5 text-xs tabular-nums text-fg-muted">
-                  {String(s.starts_at).slice(0, 10)} → {String(s.expires_at).slice(0, 10)}
+                {/* Ethiopian first, because that is the calendar the gym and
+                    its members actually count in. The Gregorian line stays
+                    underneath: it is what a bank receipt, an export and the API
+                    all speak, and dropping it would make those impossible to
+                    reconcile against this screen. */}
+                <p className="mt-0.5 text-xs font-medium text-fg">
+                  {formatEthiopianAm(s.starts_at)} → {formatEthiopianAm(s.expires_at)}
                   {s.status === 'frozen' && s.frozen_days_remaining != null && (
-                    <span className="ml-2 font-medium text-fg-subtle">
+                    <span className="ml-2 text-fg-subtle">
                       {s.frozen_days_remaining} {t('members.daysLeft')}
                     </span>
                   )}
+                </p>
+                <p className="text-[11px] tabular-nums text-fg-subtle">
+                  {String(s.starts_at).slice(0, 10)} → {String(s.expires_at).slice(0, 10)}
                 </p>
               </div>
             ))}

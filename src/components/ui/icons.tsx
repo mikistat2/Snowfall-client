@@ -127,6 +127,16 @@ export function TrashIcon(props: IconProps) {
   );
 }
 
+/** Pencil over a line — "change this record", not "write a new one". */
+export function EditIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3Z" />
+      <path d="M13.5 6.5l4 4" />
+    </Svg>
+  );
+}
+
 /** Head and shoulders — the placeholder where a member has no picture. */
 export function UserIcon(props: IconProps) {
   return (

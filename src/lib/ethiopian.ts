@@ -79,7 +79,7 @@ export const ETHIOPIAN_MONTHS: readonly { am: string; en: string }[] = [
   { am: 'ሰኔ', en: 'Sene' },
   { am: 'ሐምሌ', en: 'Hamle' },
   { am: 'ነሐሴ', en: 'Nehase' },
-  { am: 'ጳጉሜ', en: 'Pagume' },
+  { am: 'ጳጉሜን', en: 'Pagume' },
 ];
 
 /** Pagume gains a sixth day in the Ethiopian year before each Gregorian leap year. */
@@ -126,6 +126,26 @@ export function formatEthiopian(value: string | Date | EthiopianDate, locale: 'e
   const month = ETHIOPIAN_MONTHS[date.month - 1];
   const name = month ? month[locale] : String(date.month);
   return `${date.day} ${name} ${date.year}`;
+}
+
+/**
+ * "ጳጉሜን 2 2018" — the Ethiopian date in Amharic, month first.
+ *
+ * Separate from `formatEthiopian` rather than another locale on it, because
+ * the word order differs: the hint under a date field reads "12 ነሐሴ 2018",
+ * matching the digits the user just typed, while a date being *presented*
+ * reads the way it is spoken, month first.
+ *
+ * Always Amharic script, whatever the interface language. The Ethiopian
+ * calendar's month names are Amharic words; transliterating them for an
+ * English or Oromo interface would show a gym in Addis a spelling nobody
+ * writes on a receipt.
+ */
+export function formatEthiopianAm(value: string | Date | EthiopianDate): string {
+  const date =
+    typeof value === 'string' || value instanceof Date ? gregorianToEthiopian(value) : value;
+  const month = ETHIOPIAN_MONTHS[date.month - 1];
+  return `${month ? month.am : date.month} ${date.day} ${date.year}`;
 }
 
 /** "18 August 2026" — the Gregorian side of the same hint line. */

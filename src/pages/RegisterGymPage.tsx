@@ -27,7 +27,10 @@ export function RegisterGymPage() {
   const [planId, setPlanId] = useState<number | null>(null);
   // Monthly by default: it is the smaller commitment, and the yearly tab
   // carries its own discount badge to argue for itself.
-  const [cycle, setCycle] = useState<BillingCycle>('MONTHLY');
+  // Yearly by default: it is the period we want gyms on, and the one the
+  // pricing cards are built to sell. `chosenCycle` below still clamps this to
+  // whatever is actually on sale.
+  const [cycle, setCycle] = useState<BillingCycle>('YEARLY');
   /**
    * 'MONTHLY' is the initial state and the platform may no longer sell it, so
    * the value actually submitted is clamped to what is on offer rather than
