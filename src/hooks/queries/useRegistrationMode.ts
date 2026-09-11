@@ -30,6 +30,13 @@ export interface SignupPlan {
 export interface RegistrationMode {
   trial_mode: boolean;
   trial_days: number;
+  /**
+   * False → the platform is not charging anyone, and `plans` comes back empty
+   * so the signup form shows no packages and no billing period. Enforced
+   * server-side rather than here, so installed Android builds get the same
+   * behaviour without an update.
+   */
+  payments_required?: boolean;
   plans: SignupPlan[];
   /**
    * Billing cycles currently on sale. Optional: a server older than the
