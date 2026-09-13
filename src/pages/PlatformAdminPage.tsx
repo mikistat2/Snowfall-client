@@ -78,6 +78,47 @@ interface GymRow {
   revenue_total: string;
   revenue_30d: string;
   last_checkin_at: string | null;
+  /**
+   * Today's usage (Addis day), counted on the server from the requests every
+   * client already makes. Optional so the panel still renders against a
+   * server that has not been deployed with them yet.
+   */
+  visits_today?: number;
+  app_visits_today?: number;
+  web_visits_today?: number;
+  active_staff_today?: number;
+  members_added_today?: number;
+  last_active_at?: string | null;
+  /** Who that last activity belonged to. */
+  last_active_by_name?: string | null;
+  last_active_by_role?: 'owner' | 'staff' | null;
+}
+
+interface ActivityDay {
+  /** "YYYY-MM-DD", Addis calendar day. */
+  day: string;
+  visits: number;
+  app_visits: number;
+  web_visits: number;
+  active_staff: number;
+  members_added: number;
+}
+
+interface StaffActivity {
+  user_id: number;
+  name: string;
+  role: 'owner' | 'staff';
+  visits: number;
+  app_visits: number;
+  web_visits: number;
+  last_seen_at: string | null;
+}
+
+interface GymActivity {
+  /** Last 7 days, oldest first, zero days included. */
+  days: ActivityDay[];
+  /** Every live account, including those with no visits today. */
+  staff_today: StaffActivity[];
 }
 
 interface StaffRow {
@@ -104,30 +145,49 @@ function ago(date: string | null): string {
   return `${days} days ago`;
 }
 
+/**
+ * "just now" / "1m ago" / "12h ago" / "22d ago". Compact on purpose: it sits in
+ * a narrow table column, and the unit letter is enough once every row uses the
+ * same three. Whole units only, rounded down — "59m ago" is still minutes, so
+ * the number never claims more recency than there was.
+ *
+ * The day-granular `ago` above stays for member check-ins and freezes, where
+ * "today" is the useful answer; this is for the gym's own people, where
+ * "today" cannot tell a desk open right now from one that closed at 8 am.
+ */
+function timeAgo(date: string | null | undefined): string {
+  if (!date) return 'never';
+  const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 function daysLeft(date: string | null): number | null {
   if (!date) return null;
   return Math.floor((new Date(date).getTime() - Date.now()) / 86_400_000);
 }
 
+/**
+ * `whitespace-nowrap` on every pill: in a crowded table the column shrinks
+ * first, and "Free trial" broke into "Free" over "trial" inside a single
+ * rounded badge. A status is one word-group; it never wraps.
+ */
 function StatusBadge({ gym }: { gym: GymRow }) {
-  if (gym.status === 'pending')
-    return (
-      <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">Pending</span>
-    );
-  if (gym.status === 'frozen')
-    return <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700">Frozen</span>;
-  if (gym.is_trial)
-    return (
-      <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-semibold text-violet-700">
-        Free trial
-      </span>
-    );
-  return (
-    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
-  );
+  const pill = 'inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold';
+  if (gym.status === 'pending') return <span className={`${pill} bg-amber-100 text-amber-700`}>Pending</span>;
+  if (gym.status === 'frozen') return <span className={`${pill} bg-sky-100 text-sky-700`}>Frozen</span>;
+  if (gym.is_trial) return <span className={`${pill} bg-violet-100 text-violet-700`}>Free trial</span>;
+  return <span className={`${pill} bg-emerald-100 text-emerald-700`}>Active</span>;
 }
 
-/** Subscription cell: end date + a colored days-left chip. */
+/**
+ * Subscription cell: days left only, as a colored chip. The exact end date
+ * lives in the Manage dialog — in the table it was a second number beside the
+ * first, and the days-left count is the one that is acted on.
+ */
 function SubscriptionCell({ gym }: { gym: GymRow }) {
   if (gym.status === 'pending') return <span className="text-slate-400">—</span>;
   const left = daysLeft(gym.subscription_ends_at);
@@ -141,10 +201,44 @@ function SubscriptionCell({ gym }: { gym: GymRow }) {
           ? { text: `${left}d left`, cls: 'bg-amber-100 text-amber-700' }
           : { text: `${left}d left`, cls: 'bg-slate-100 text-slate-500' };
   return (
-    <span className="whitespace-nowrap">
-      {String(gym.subscription_ends_at).slice(0, 10)}{' '}
-      <span className={`ml-1 rounded-full px-2 py-0.5 text-xs font-semibold ${chip.cls}`}>{chip.text}</span>
+    <span className={`inline-block whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${chip.cls}`}>
+      {chip.text}
     </span>
+  );
+}
+
+/**
+ * When the gym's own people — owner or staff — last opened or used the app or
+ * website, and who. Colour carries the urgency so a scan down the column finds
+ * the gyms that have gone quiet: green within the hour, plain within the day,
+ * amber within the week, red beyond it.
+ *
+ * The exact time is on hover. The relative form is what gets read; the
+ * absolute one is there for the moment someone asks "when exactly".
+ */
+function LastCheckInCell({ gym }: { gym: GymRow }) {
+  if (!gym.last_active_at) return <span className="whitespace-nowrap text-slate-400">never</span>;
+
+  const mins = (Date.now() - new Date(gym.last_active_at).getTime()) / 60_000;
+  const tone =
+    mins < 60
+      ? 'text-emerald-700'
+      : mins < 24 * 60
+        ? 'text-slate-700'
+        : mins < 7 * 24 * 60
+          ? 'text-amber-700'
+          : 'text-red-600';
+
+  return (
+    <div className="whitespace-nowrap" title={new Date(gym.last_active_at).toLocaleString()}>
+      <div className={`font-semibold ${tone}`}>{timeAgo(gym.last_active_at)}</div>
+      {gym.last_active_by_name && (
+        <div className="text-xs text-slate-400">
+          {gym.last_active_by_name}
+          {gym.last_active_by_role === 'owner' ? ' · owner' : ''}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -368,12 +462,10 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           {!ov && <div className="col-span-full py-2 text-center text-sm text-slate-400">Loading overview…</div>}
         </div>
 
-        {isOwner && <RegistrationModeCard onBanner={setBanner} />}
-        {isOwner && <BillingAdmin onBanner={setBanner} />}
-        {isOwner && <TeamCard onBanner={setBanner} />}
-
-        {/* gyms table */}
-        <div className="flex flex-wrap items-center gap-3">
+        {/* gyms table — first after the overview: it is what this panel is
+            opened for, and it used to sit below three settings cards. */}
+        <div className="card overflow-hidden p-0">
+        <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 px-4 py-3">
           <h2 className="text-lg font-semibold">Gyms</h2>
           <input
             className="input max-w-xs"
@@ -388,7 +480,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           )}
         </div>
 
-        <div className="card overflow-x-auto p-0">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
@@ -422,18 +514,27 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <div className="text-xs text-slate-400">{g.address ?? '—'}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <div>{g.owner_name ?? '—'}</div>
+                    <div className="whitespace-nowrap">{g.owner_name ?? '—'}</div>
                     <div className="text-xs text-slate-400">{g.owner_email ?? ''}</div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="whitespace-nowrap px-4 py-3">
                     <span className="font-semibold">{g.active_member_count}</span>
                     <span className="text-slate-400"> / {g.member_count}</span>
+                    {(g.members_added_today ?? 0) > 0 && (
+                      <div className="mt-0.5">
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                          +{g.members_added_today} today
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">{money(g.revenue_30d)}</td>
                   <td className="px-4 py-3 text-slate-500">
                     <SubscriptionCell gym={g} />
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">{ago(g.last_checkin_at)}</td>
+                  <td className="px-4 py-3">
+                    <LastCheckInCell gym={g} />
+                  </td>
                   <td className="px-4 py-3">
                     <StatusBadge gym={g} />
                   </td>
@@ -454,6 +555,12 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
             </tbody>
           </table>
         </div>
+        </div>
+
+        {/* Payments and billing settings, then the rarer settings. */}
+        {isOwner && <BillingAdmin onBanner={setBanner} />}
+        {isOwner && <RegistrationModeCard onBanner={setBanner} />}
+        {isOwner && <TeamCard onBanner={setBanner} />}
       </main>
 
       {selected && (
@@ -813,7 +920,8 @@ function ManageGymModal({
 
   const detailQ = useQuery({
     queryKey: ['platform-gym', gym.id],
-    queryFn: async () => (await platformApi.get<GymRow & { staff: StaffRow[] }>(`/gyms/${gym.id}`)).data,
+    queryFn: async () =>
+      (await platformApi.get<GymRow & { staff: StaffRow[]; activity?: GymActivity }>(`/gyms/${gym.id}`)).data,
   });
 
   const doneAndClose = (action: string) => (data: unknown) => {
@@ -921,7 +1029,11 @@ function ManageGymModal({
               label="Subscription ends"
               value={
                 gym.subscription_ends_at
-                  ? `${String(gym.subscription_ends_at).slice(0, 10)} (${daysLeft(gym.subscription_ends_at)}d)`
+                  ? `${String(gym.subscription_ends_at).slice(0, 10)} · ${
+                      (daysLeft(gym.subscription_ends_at) ?? 0) < 0
+                        ? 'expired'
+                        : `${daysLeft(gym.subscription_ends_at)} days left`
+                    }`
                   : '—'
               }
             />
@@ -940,10 +1052,20 @@ function ManageGymModal({
             <Info label="Staff accounts" value={String(gym.staff_count)} />
             <Info label="Revenue total" value={money(gym.revenue_total)} />
             <Info label="Revenue 30d" value={money(gym.revenue_30d)} />
-            <Info label="Last check-in" value={ago(gym.last_checkin_at)} />
+            <Info
+              label="Last check-in (staff)"
+              value={
+                gym.last_active_at
+                  ? `${timeAgo(gym.last_active_at)}${gym.last_active_by_name ? ` · ${gym.last_active_by_name}` : ''}`
+                  : 'never'
+              }
+            />
+            <Info label="Last member check-in" value={ago(gym.last_checkin_at)} />
             <Info label="Phone" value={gym.phone ?? '—'} />
             <Info label="Address" value={gym.address ?? '—'} />
           </div>
+
+          <ActivityCard activity={d?.activity} loading={detailQ.isLoading} />
 
           <div>
             <div className="label">Owner</div>
@@ -1226,6 +1348,97 @@ function ManageGymModal({
         </div>
       )}
     </Modal>
+  );
+}
+
+/**
+ * How much the gym actually uses the system: the last seven days, and who has
+ * or has not opened the app or site today.
+ *
+ * Counted on the server from ordinary requests, so it covers every installed
+ * app without an update — and it starts from the day that went live, which is
+ * why a new deployment shows empty days before it.
+ */
+function ActivityCard({ activity, loading }: { activity?: GymActivity; loading: boolean }) {
+  if (loading) {
+    return (
+      <div>
+        <div className="label">Activity</div>
+        <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
+      </div>
+    );
+  }
+  if (!activity) return null;
+
+  const max = Math.max(1, ...activity.days.map((d) => d.visits));
+  const weekday = (iso: string) =>
+    new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' });
+
+  return (
+    <div>
+      <div className="label">Activity — last 7 days</div>
+      <div className="rounded-lg border border-slate-200 p-3">
+        {/* Visits per day as bars; the numbers stay on screen because a bar
+            alone cannot say whether "short" means 2 or 20. */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {activity.days.map((d, i) => {
+            const today = i === activity.days.length - 1;
+            return (
+              <div key={d.day} className="flex flex-col items-center gap-1 text-center">
+                <div className="text-xs font-semibold tabular-nums">{d.visits}</div>
+                <div className="flex h-14 w-full items-end">
+                  <div
+                    className={`w-full rounded-t ${today ? 'bg-sky-500' : 'bg-slate-300'}`}
+                    style={{ height: `${Math.max(d.visits > 0 ? 8 : 2, (d.visits / max) * 100)}%` }}
+                  />
+                </div>
+                <div className={`text-[11px] ${today ? 'font-semibold text-sky-700' : 'text-slate-500'}`}>
+                  {today ? 'Today' : weekday(d.day)}
+                </div>
+                <div
+                  className={`text-[10px] ${d.members_added > 0 ? 'font-semibold text-emerald-700' : 'text-slate-300'}`}
+                  title="Members added"
+                >
+                  +{d.members_added}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-2 text-[11px] text-slate-400">
+          Bars: visits (a visit = opening the app or site after 30+ min away). +N: members added that day.
+        </div>
+
+        <div className="mt-3 border-t border-slate-100 pt-2">
+          <div className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">Today, by person</div>
+          <div className="divide-y divide-slate-100 text-sm">
+            {activity.staff_today.map((p) => (
+              <div key={p.user_id} className="flex items-center justify-between gap-3 py-1.5">
+                <div className="min-w-0">
+                  <span className="font-medium">{p.name}</span>
+                  <span className="ml-1.5 text-xs text-slate-400">{p.role}</span>
+                </div>
+                <div className="shrink-0 text-right">
+                  {p.visits > 0 ? (
+                    <span className="whitespace-nowrap">
+                      <b>{p.visits}</b> <span className="text-slate-500">visit{p.visits === 1 ? '' : 's'}</span>
+                      <span className="ml-1.5 text-xs text-slate-400">
+                        {p.app_visits} app · {p.web_visits} web
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="whitespace-nowrap text-xs text-slate-400">
+                      {p.last_seen_at ? `not today · last ${timeAgo(p.last_seen_at)}` : 'never signed in'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+            {activity.staff_today.length === 0 && <div className="py-1.5 text-slate-400">No staff accounts.</div>}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
