@@ -165,6 +165,52 @@ function timeAgo(date: string | null | undefined): string {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+/**
+ * Whether the panel shows staff activity (last check-in and the Manage
+ * dialog's activity chart). A viewing preference for whoever is signed in on
+ * this browser, so it lives in localStorage rather than on the server: hiding
+ * it here stops nothing being recorded, and changes nothing for anyone else.
+ *
+ * Reads and writes are wrapped because storage can throw (private windows,
+ * blocked site data) — the panel must still render, defaulting to shown.
+ */
+const SHOW_ACTIVITY_KEY = 'platformShowStaffActivity';
+
+function readShowActivity(): boolean {
+  try {
+    return localStorage.getItem(SHOW_ACTIVITY_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+function writeShowActivity(on: boolean): void {
+  try {
+    localStorage.setItem(SHOW_ACTIVITY_KEY, on ? 'on' : 'off');
+  } catch {
+    /* preference simply is not remembered */
+  }
+}
+
+/** The panel's switch, at table-header size. Same look as the payments switch. */
+function MiniSwitch({ on, onChange, label }: { on: boolean; onChange: (on: boolean) => void; label: string }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      title={label}
+      onClick={() => onChange(!on)}
+      className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${on ? 'bg-emerald-500' : 'bg-slate-300'}`}
+    >
+      <span
+        className={`absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all ${on ? 'left-3.5' : 'left-0.5'}`}
+      />
+    </button>
+  );
+}
+
 function daysLeft(date: string | null): number | null {
   if (!date) return null;
   return Math.floor((new Date(date).getTime() - Date.now()) / 86_400_000);
@@ -329,6 +375,11 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [selected, setSelected] = useState<GymRow | null>(null);
   const [banner, setBanner] = useState('');
   const [backingUp, setBackingUp] = useState(false);
+  const [showActivity, setShowActivity] = useState(readShowActivity);
+  function toggleActivity(on: boolean) {
+    setShowActivity(on);
+    writeShowActivity(on);
+  }
 
   // full member backup of every gym, rendered client-side as one PDF
   async function downloadBackup() {
@@ -489,7 +540,18 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                 <th className="px-4 py-3">Members</th>
                 <th className="px-4 py-3">Revenue (30d)</th>
                 <th className="px-4 py-3">Subscription ends</th>
-                <th className="px-4 py-3">Last check-in</th>
+                <th className="px-4 py-3">
+                  {/* Beside the heading it controls, so the column never looks
+                      broken when it is empty — the switch says why. */}
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className={showActivity ? '' : 'text-slate-400'}>Last check-in</span>
+                    <MiniSwitch
+                      on={showActivity}
+                      onChange={toggleActivity}
+                      label={showActivity ? 'Hide staff check-ins' : 'Show staff check-ins'}
+                    />
+                  </div>
+                </th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -533,7 +595,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                     <SubscriptionCell gym={g} />
                   </td>
                   <td className="px-4 py-3">
-                    <LastCheckInCell gym={g} />
+                    {showActivity ? <LastCheckInCell gym={g} /> : <span className="text-slate-300">—</span>}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge gym={g} />
@@ -568,6 +630,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
           gym={selected}
           isOwner={isOwner}
           perms={perms}
+          showActivity={showActivity}
           onClose={() => setSelected(null)}
           onBanner={setBanner}
           onChanged={() => {
@@ -867,6 +930,7 @@ function ManageGymModal({
   gym,
   isOwner,
   perms,
+  showActivity,
   onClose,
   onChanged,
   onBanner,
@@ -874,6 +938,8 @@ function ManageGymModal({
   gym: GymRow;
   isOwner: boolean;
   perms: PlatformPerms;
+  /** The table's switch. Off hides staff activity here too, not only in the list. */
+  showActivity: boolean;
   onClose: () => void;
   onChanged: () => void;
   onBanner: (msg: string) => void;
@@ -1052,20 +1118,22 @@ function ManageGymModal({
             <Info label="Staff accounts" value={String(gym.staff_count)} />
             <Info label="Revenue total" value={money(gym.revenue_total)} />
             <Info label="Revenue 30d" value={money(gym.revenue_30d)} />
-            <Info
-              label="Last check-in (staff)"
-              value={
-                gym.last_active_at
-                  ? `${timeAgo(gym.last_active_at)}${gym.last_active_by_name ? ` · ${gym.last_active_by_name}` : ''}`
-                  : 'never'
-              }
-            />
+            {showActivity && (
+              <Info
+                label="Last check-in (staff)"
+                value={
+                  gym.last_active_at
+                    ? `${timeAgo(gym.last_active_at)}${gym.last_active_by_name ? ` · ${gym.last_active_by_name}` : ''}`
+                    : 'never'
+                }
+              />
+            )}
             <Info label="Last member check-in" value={ago(gym.last_checkin_at)} />
             <Info label="Phone" value={gym.phone ?? '—'} />
             <Info label="Address" value={gym.address ?? '—'} />
           </div>
 
-          <ActivityCard activity={d?.activity} loading={detailQ.isLoading} />
+          {showActivity && <ActivityCard activity={d?.activity} loading={detailQ.isLoading} />}
 
           <div>
             <div className="label">Owner</div>
