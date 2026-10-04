@@ -9,7 +9,7 @@ function Brand({ asLink }: { asLink: boolean }) {
   const inner = (
     <>
       <img src={loginLogo} alt="" className="h-11 w-11 rounded-xl object-cover" />
-      <span className="font-display text-lg font-black uppercase tracking-wider">Snowfall</span>
+      <span className="font-display text-lg font-black uppercase tracking-wider text-white">Snowfall</span>
     </>
   );
   return asLink ? (
@@ -46,7 +46,7 @@ export function AuthShell({
 }) {
   return (
     <div className="flex min-h-screen bg-white">
-      <aside className="hidden w-1/2 shrink-0 flex-col justify-between bg-sky-100 p-12 text-slate-900 lg:flex">
+      <aside className="hidden w-1/2 shrink-0 flex-col justify-between bg-[linear-gradient(135deg,#071a35_0%,#0d2d55_53%,#164b7c_53%,#236b9c_100%)] p-12 text-white lg:flex">
         {/* /welcome is a `!NATIVE` route, so in the app the same link would
             fall through the catch-all straight back to here. On a tablet wide
             enough to show this panel that is a dead tap, so it is not a link
@@ -59,8 +59,8 @@ export function AuthShell({
           </h2>
           <ul className="mt-8 space-y-4">
             {[t('auth.brandLine1'), t('auth.brandLine2'), t('auth.brandLine3')].map((line) => (
-              <li key={line} className="flex items-start gap-3 text-sm text-slate-600">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-200 text-sky-700">
+              <li key={line} className="flex items-start gap-3 text-sm text-sky-100">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white">
                   <CheckIcon className="h-3.5 w-3.5" />
                 </span>
                 {line}
@@ -69,13 +69,13 @@ export function AuthShell({
           </ul>
         </div>
 
-        <p className="text-xs text-slate-500">Snowfall Gym Management System</p>
+        <p className="text-xs text-sky-100/75">Snowfall Gym Management System</p>
       </aside>
 
       <main className="flex flex-1 items-start justify-center bg-white px-4 sm:px-8 lg:items-center lg:py-10">
         <div className={`w-full ${wide ? 'max-w-xl' : 'max-w-sm'}`}>
-          <div className="-mx-4 mb-7 flex justify-center bg-sky-100 px-4 py-6 sm:-mx-8 lg:hidden">
-            <img src={loginLogo} alt="Snowfall Gym Management System" className="w-20 rounded-xl" />
+          <div className="-mx-4 mb-7 flex min-h-40 items-end bg-[linear-gradient(135deg,#071a35_0%,#0d2d55_53%,#164b7c_53%,#236b9c_100%)] px-6 pb-8 pt-7 [clip-path:polygon(0_0,100%_0,100%_78%,0_100%)] sm:-mx-8 lg:hidden">
+            <Brand asLink={!NATIVE} />
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h1>
