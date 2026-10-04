@@ -44,10 +44,9 @@ export function App() {
 
   return (
     <Routes>
-      {/* Marketing and sign-up flows are web-only: the app is installed by
-          staff of an already-registered gym, so it opens straight at login. */}
+        {/* Marketing and pricing stay web-only; gym registration works on both platforms. */}
       {!NATIVE && <Route path="/welcome" element={user ? <Navigate to="/" replace /> : <LandingPage />} />}
-      {!NATIVE && <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />}
+        <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterGymPage />} />
       {!NATIVE && <Route path="/pricing" element={<PricingPage />} />}
       {/* hidden platform-owner control panel — own auth, independent of gym
           sessions, and never shipped to the phone */}

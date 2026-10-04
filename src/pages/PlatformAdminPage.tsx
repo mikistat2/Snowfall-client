@@ -8,7 +8,7 @@ import { Logo } from '../components/ui/Logo';
 import { Modal } from '../components/ui/Modal';
 import { Select } from '../components/ui/Select';
 import { BillingAdmin } from '../components/billing/BillingAdmin';
-import type { BillingCycle } from '../lib/billing';
+import type { BillingCycle, BillingPlan } from '../lib/billing';
 import { RecordPaymentSection } from '../components/billing/RecordPaymentSection';
 import loginLogo from "../assets/images/login-logo.png";
 
@@ -58,6 +58,7 @@ interface GymRow {
   /** Platform feature entitlements — owner-only switches. */
   camera_allowed?: boolean;
   telegram_allowed?: boolean;
+  billing_plan_id: number | null;
   /** The package last paid for. Null until the gym's first verified payment. */
   plan_name: string | null;
   billing_cycle: 'MONTHLY' | 'YEARLY' | null;
@@ -68,6 +69,7 @@ interface GymRow {
    */
   plan_camera: boolean | null;
   plan_telegram: boolean | null;
+  plan_member_limit: number | null;
   created_at: string;
   owner_name: string | null;
   owner_email: string | null;
@@ -645,7 +647,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
 // ------------------------------------------------- registration mode card ----
 
-/** Global switch: new gyms wait for approval, or start a free trial instantly. */
+/** Controls whether new gym registrations need manual platform approval. */
 function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void }) {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -662,8 +664,8 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
       qc.setQueryData(['platform-settings'], updated);
       onBanner(
         updated.trial_mode
-          ? `Free-trial mode is ON — new gyms start a ${updated.trial_days}-day trial instantly, without your approval.`
-          : 'Approval mode is ON — new gyms must wait until you approve them.',
+          ? `Admin approval is OFF — new gyms start a ${updated.trial_days}-day free trial immediately.`
+          : 'Admin approval is ON — new gyms must wait until you approve them.',
       );
     },
   });
@@ -672,15 +674,15 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
   return (
     <div className="card flex flex-wrap items-center gap-4 p-4">
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold">New gym registrations</div>
+        <div className="text-sm font-semibold">Require platform admin approval</div>
         <div className="text-xs text-slate-500">
           {data.trial_mode
-            ? `Free-trial mode: new gyms get ${data.trial_days} days instantly — you are notified by email of every trial signup.`
-            : 'Approval mode: new gyms wait on a "pending" screen until you approve them here.'}
+            ? `OFF: new gyms can register and log in immediately with a ${data.trial_days}-day free trial.`
+            : 'ON: new gyms remain pending and cannot log in until you approve them here.'}
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm">
-        Trial days
+        Trial days when approval is off
         <input
           type="number"
           min={1}
@@ -695,11 +697,11 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
         />
       </label>
       <button
-        className={data.trial_mode ? 'btn-primary' : 'btn-secondary'}
+        className={data.trial_mode ? 'btn-secondary' : 'btn-primary'}
         disabled={save.isPending}
         onClick={() => save.mutate({ trial_mode: !data.trial_mode })}
       >
-        {data.trial_mode ? '🎁 Free trial: ON' : 'Free trial: OFF'}
+        {data.trial_mode ? 'Approval required: OFF' : 'Approval required: ON'}
       </button>
     </div>
   );
@@ -964,6 +966,16 @@ function ManageGymModal({
   const [confirmTrial, setConfirmTrial] = useState(false);
   // Bumping this opens the payment panel below, prefilled with the cycle.
   const [payRequest, setPayRequest] = useState<{ seq: number; cycle: BillingCycle } | null>(null);
+  const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
+  const [billingPlanId, setBillingPlanId] = useState<number | ''>(gym.billing_plan_id ?? '');
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(gym.billing_cycle ?? 'YEARLY');
+
+  useEffect(() => {
+    if (!isOwner) return;
+    void platformApi
+      .get<BillingPlan[]>('/billing/plans')
+      .then(({ data }) => setBillingPlans(data.filter((plan) => plan.is_active)));
+  }, [isOwner]);
 
   // one-click PDF of this gym's members (same layout as the gym's own export)
   async function exportMembers() {
@@ -1019,6 +1031,14 @@ function ManageGymModal({
   const saveNote = useMutationHelper(
     () => platformApi.put(`/gyms/${gym.id}/note`, { note: note || null }),
     onChanged,
+    setError,
+  );
+  const saveBillingPlan = useMutationHelper(
+    () => {
+      if (billingPlanId === '') throw new Error('Choose a billing package first.');
+      return platformApi.put(`/gyms/${gym.id}/billing-plan`, { planId: billingPlanId, cycle: billingCycle });
+    },
+    doneAndClose(`Package updated for "${gym.name}".`),
     setError,
   );
   // Preselected from what the gym asked for at registration, so the common
@@ -1113,6 +1133,39 @@ function ManageGymModal({
                     : 'Never paid'
               }
             />
+            {isOwner && (
+              <div className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:col-span-4">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Assign package</div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <Select
+                    className="min-w-[13rem]"
+                    value={billingPlanId}
+                    label="Package"
+                    onChange={(next) => setBillingPlanId(next as number)}
+                    options={billingPlans.map((plan) => ({
+                      value: plan.id,
+                      label: `${plan.name}${plan.member_limit ? ` · ${plan.member_limit} members` : ' · unlimited'}`,
+                    }))}
+                  />
+                  <Select
+                    className="w-28"
+                    value={billingCycle}
+                    label="Billing cycle"
+                    onChange={(next) => setBillingCycle(next as BillingCycle)}
+                    options={[
+                      { value: 'MONTHLY', label: 'Monthly' },
+                      { value: 'YEARLY', label: 'Yearly' },
+                    ]}
+                  />
+                  <button className="btn-secondary" onClick={() => saveBillingPlan.run()} disabled={saveBillingPlan.busy || billingPlanId === ''}>
+                    {saveBillingPlan.busy ? 'Saving…' : 'Save package'}
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-slate-500">
+                  Changes the assigned package and cycle only. Existing subscription dates and payment history stay unchanged.
+                </p>
+              </div>
+            )}
             <Info label="Joined" value={new Date(gym.created_at).toLocaleDateString()} />
             <Info label="Members (active / all)" value={`${gym.active_member_count} / ${gym.member_count}`} />
             <Info label="Staff accounts" value={String(gym.staff_count)} />

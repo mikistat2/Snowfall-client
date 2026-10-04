@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { apiErrorMessage } from '../lib/api';
-import { NATIVE } from '../lib/platform';
 import { t } from '../i18n/strings';
 import { AuthShell } from '../components/ui/AuthShell';
 import { PasswordInput } from '../components/ui/PasswordInput';
@@ -32,15 +31,9 @@ export function LoginPage() {
       title={t('auth.welcomeBack')}
       subtitle={t('auth.loginSubtitle')}
       footer={
-        /* Sign-up is web-only — App.tsx registers /register behind !NATIVE
-           because the app is installed by staff of an already-registered gym.
-           Rendering the link on the phone gave a dead tap that fell through
-           the catch-all route straight back to this screen. */
-        !NATIVE && (
-          <Link to="/register" className="font-medium text-accent hover:underline">
-            {t('auth.noAccount')}
-          </Link>
-        )
+        <Link to="/register" className="font-medium text-accent hover:underline">
+          {t('auth.noAccount')}
+        </Link>
       }
     >
       <form onSubmit={onSubmit} className="space-y-4">

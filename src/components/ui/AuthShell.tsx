@@ -24,16 +24,11 @@ function Brand({ asLink }: { asLink: boolean }) {
 /**
  * The frame around logging in and signing up.
  *
- * Both screens used to be a lone white card floating on the app canvas with a
- * gradient-text heading — which reads as a form someone is filling in, not as
- * the front door of a product a gym is about to pay for. This is the shape
- * that carries a first impression: a dark brand panel stating what the product
- * does, and the form on a clean full-height surface beside it.
+ * The blue brand panel and white form surface make signup feel like a product
+ * workflow rather than a floating form card.
  *
- * The brand panel is `lg:` only. On a phone, and in the Android app, it would
- * be a screen of marketing between someone and the password they came to type,
- * so below that width the form is the whole page — which is also why the panel
- * carries no information the form needs.
+ * On phones the brand panel becomes a compact header so the form remains easy
+ * to reach without losing the blue-and-white identity.
  */
 export function AuthShell({
   title,
@@ -50,34 +45,22 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-surface">
-      <aside className="relative hidden w-[44%] max-w-2xl shrink-0 flex-col justify-between overflow-hidden bg-slate-950 p-12 text-white lg:flex">
-        {/* Two soft pools of colour rather than a flat gradient — a single
-            linear wash over a full-height panel bands badly on a wide screen. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              'radial-gradient(90% 70% at 10% 0%, rgb(2 132 199 / 0.45), transparent 60%),' +
-              'radial-gradient(70% 60% at 90% 100%, rgb(124 58 237 / 0.35), transparent 60%)',
-          }}
-        />
-
+    <div className="flex min-h-screen bg-white">
+      <aside className="hidden w-1/2 shrink-0 flex-col justify-between bg-sky-100 p-12 text-slate-900 lg:flex">
         {/* /welcome is a `!NATIVE` route, so in the app the same link would
             fall through the catch-all straight back to here. On a tablet wide
             enough to show this panel that is a dead tap, so it is not a link
             there at all. */}
         <Brand asLink={!NATIVE} />
 
-        <div className="relative">
+        <div>
           <h2 className="max-w-md text-3xl font-bold leading-tight">
             The front desk of your gym, on one screen.
           </h2>
           <ul className="mt-8 space-y-4">
             {[t('auth.brandLine1'), t('auth.brandLine2'), t('auth.brandLine3')].map((line) => (
-              <li key={line} className="flex items-start gap-3 text-sm text-slate-300">
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/20 text-sky-300">
+              <li key={line} className="flex items-start gap-3 text-sm text-slate-600">
+                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-200 text-sky-700">
                   <CheckIcon className="h-3.5 w-3.5" />
                 </span>
                 {line}
@@ -86,17 +69,14 @@ export function AuthShell({
           </ul>
         </div>
 
-        <p className="relative text-xs text-slate-500">Snowfall Gym Management System</p>
+        <p className="text-xs text-slate-500">Snowfall Gym Management System</p>
       </aside>
 
-      <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8">
+      <main className="flex flex-1 items-start justify-center bg-white px-4 sm:px-8 lg:items-center lg:py-10">
         <div className={`w-full ${wide ? 'max-w-xl' : 'max-w-sm'}`}>
-          {/* Stands in for the brand panel below `lg`, where it is hidden. */}
-          <img
-            src={loginLogo}
-            alt="Snowfall Gym Management System"
-            className="mx-auto mb-6 w-24 rounded-2xl lg:hidden"
-          />
+          <div className="-mx-4 mb-7 flex justify-center bg-sky-100 px-4 py-6 sm:-mx-8 lg:hidden">
+            <img src={loginLogo} alt="Snowfall Gym Management System" className="w-20 rounded-xl" />
+          </div>
 
           <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h1>
           {subtitle && <p className="mt-1.5 text-sm text-fg-muted">{subtitle}</p>}
