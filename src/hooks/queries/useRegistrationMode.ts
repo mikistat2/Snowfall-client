@@ -28,6 +28,7 @@ export interface SignupPlan {
 }
 
 export interface RegistrationMode {
+  approval_required: boolean;
   trial_mode: boolean;
   trial_days: number;
   /**

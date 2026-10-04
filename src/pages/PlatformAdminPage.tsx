@@ -35,6 +35,7 @@ interface Overview {
 }
 
 interface PlatformSettings {
+  approval_required: boolean;
   trial_mode: boolean;
   trial_days: number;
 }
@@ -647,7 +648,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
 
 // ------------------------------------------------- registration mode card ----
 
-/** Controls whether new gym registrations need manual platform approval. */
+/** Controls approval and trial behavior independently for new registrations. */
 function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void }) {
   const qc = useQueryClient();
   const { data } = useQuery({
@@ -663,9 +664,11 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
     onSuccess: (updated: PlatformSettings) => {
       qc.setQueryData(['platform-settings'], updated);
       onBanner(
-        updated.trial_mode
-          ? `Admin approval is OFF — new gyms start a ${updated.trial_days}-day free trial immediately.`
-          : 'Admin approval is ON — new gyms must wait until you approve them.',
+        updated.approval_required
+          ? `Admin approval is ON${updated.trial_mode ? ` — a ${updated.trial_days}-day trial starts after approval.` : '.'}`
+          : updated.trial_mode
+            ? `Admin approval is OFF — new gyms start a ${updated.trial_days}-day free trial immediately.`
+            : 'Admin approval is OFF — new gyms activate immediately without a free trial.',
       );
     },
   });
@@ -676,13 +679,29 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
       <div className="min-w-0 flex-1">
         <div className="text-sm font-semibold">Require platform admin approval</div>
         <div className="text-xs text-slate-500">
-          {data.trial_mode
-            ? `OFF: new gyms can register and log in immediately with a ${data.trial_days}-day free trial.`
-            : 'ON: new gyms remain pending and cannot log in until you approve them here.'}
+          {data.approval_required
+            ? `ON: new gyms remain pending until approved${data.trial_mode ? `, then receive a ${data.trial_days}-day free trial.` : '.'}`
+            : data.trial_mode
+              ? `OFF: new gyms activate immediately with a ${data.trial_days}-day free trial.`
+              : 'OFF: new gyms activate immediately without a free trial.'}
         </div>
       </div>
+      <button
+        className={data.approval_required ? 'btn-primary' : 'btn-secondary'}
+        disabled={save.isPending}
+        onClick={() => save.mutate({ approval_required: !data.approval_required })}
+      >
+        Approval required: {data.approval_required ? 'ON' : 'OFF'}
+      </button>
+      <button
+        className={data.trial_mode ? 'btn-primary' : 'btn-secondary'}
+        disabled={save.isPending}
+        onClick={() => save.mutate({ trial_mode: !data.trial_mode })}
+      >
+        Free trial: {data.trial_mode ? 'ON' : 'OFF'}
+      </button>
       <label className="flex items-center gap-2 text-sm">
-        Trial days when approval is off
+        Trial days
         <input
           type="number"
           min={1}
@@ -696,13 +715,6 @@ function RegistrationModeCard({ onBanner }: { onBanner: (msg: string) => void })
           }}
         />
       </label>
-      <button
-        className={data.trial_mode ? 'btn-secondary' : 'btn-primary'}
-        disabled={save.isPending}
-        onClick={() => save.mutate({ trial_mode: !data.trial_mode })}
-      >
-        {data.trial_mode ? 'Approval required: OFF' : 'Approval required: ON'}
-      </button>
     </div>
   );
 }

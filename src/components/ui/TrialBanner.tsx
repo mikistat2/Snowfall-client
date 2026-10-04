@@ -19,8 +19,8 @@ export function TrialBanner({ variant }: { variant: 'landing' | 'register' }) {
           🎁
         </span>
         <span>
-          Limited offer — <span className="font-black">{days}-day FREE trial</span> · start instantly, no
-          approval needed
+          Limited offer — <span className="font-black">{days}-day FREE trial</span> ·{' '}
+          {data.approval_required ? 'starts after admin approval' : 'start instantly, no approval needed'}
         </span>
       </div>
     );
@@ -38,7 +38,11 @@ export function TrialBanner({ variant }: { variant: 'landing' | 'register' }) {
         <div>
           <div className="font-bold leading-tight">Free trial is ON — {days} days on us!</div>
           <div className="mt-0.5 text-xs leading-relaxed text-sky-100">
-            Register now and your gym starts <b>instantly</b> — full access, no waiting for admin approval.
+            {data.approval_required ? (
+              <>Your trial starts after platform admin approval.</>
+            ) : (
+              <>Your gym starts immediately, without waiting for platform admin approval.</>
+            )}
           </div>
         </div>
       </div>

@@ -74,7 +74,7 @@ export function RegisterGymPage() {
         ...(planId ? { planId, cycle: chosenCycle } : {}),
       });
       if (result.pending) setPendingApproval(true);
-      // not pending (free-trial mode): useAuth stored the session and the
+      // not pending (approval is disabled): useAuth stored the session and the
       // router redirects into the app automatically
     } catch (err) {
       setError(apiErrorMessage(err));
