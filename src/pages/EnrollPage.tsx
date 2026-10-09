@@ -6,6 +6,7 @@ import { FaceCapture, type Capture } from '../components/members/FaceCapture';
 import { MemberPhotoPicker, type PhotoValue } from '../components/members/MemberPhotoPicker';
 import { renditionsFromDataUrl } from '../lib/photo';
 import { setMemberPhoto } from '../api/members';
+import { NATIVE } from '../lib/platform';
 import { EnrollShell, FormSection } from '../components/members/EnrollShell';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { WarningIcon } from '../components/ui/icons';
@@ -30,6 +31,11 @@ export function EnrollPage() {
   const { data: gym } = useGymSettings();
   // no camera at this gym → members are registered without face captures
   const cameraEnabled = gym?.settings.camera_enabled ?? true;
+  // Face capture (face-api.js) does not work inside the Android WebView, so the
+  // phone app always uses the regular photo picker instead — even when the gym
+  // has a camera. Descriptors are left empty; they can be added later from the
+  // desktop monitor or edit screen.
+  const useFaceCapture = cameraEnabled && !NATIVE;
   // ...and *why*: the owner's own choice reads differently from a platform lock.
   const { camera: cameraAllowed } = useFeatureLocks();
 
@@ -48,7 +54,7 @@ export function EnrollPage() {
   const [photo, setPhoto] = useState<PhotoValue>(null);
 
   const selectedPlan = plans.find((p) => p.id === planId);
-  const capturesNeeded = cameraEnabled && captures.length < 3;
+  const capturesNeeded = useFaceCapture && captures.length < 3;
   /**
    * The amount is required now, so it is filled in from the plan the moment one
    * is picked rather than left blank with the price as grey placeholder text.
@@ -347,35 +353,31 @@ export function EnrollPage() {
 
         <div className="space-y-4">
           {/*
-            Offered only when there is no face capture to lift a picture from.
-            A camera gym gets its photo automatically from the first capture,
-            so asking for a second one here would be busywork at the desk —
-            and it can still be replaced later from the member's page.
+            Offered when there is no face capture to lift a picture from:
+            either the gym has no camera, or we are on Android where
+            face-api.js does not work in the WebView.
           */}
-          {!cameraEnabled && (
+          {!useFaceCapture && (
             <FormSection step={3} title={t('photo.title')}>
               <MemberPhotoPicker currentUrl={null} value={photo} onChange={setPhoto} />
             </FormSection>
           )}
-          {cameraEnabled ? (
+          {useFaceCapture ? (
             <FormSection step={3} title={t('enroll.captures')}>
               <FaceCapture captures={captures} onChange={setCaptures} />
             </FormSection>
-          ) : (
+          ) : !cameraEnabled ? (
             <section className="card flex items-center gap-3">
               <span className="text-2xl" aria-hidden>
                 {cameraAllowed ? '📷' : '🔒'}
               </span>
-              {/* The stock copy ends "you can enable the camera later in
-                  Settings", which is a lie once the platform is the one
-                  holding it shut — the owner's toggle is locked. */}
               <p className="text-sm leading-relaxed text-fg-muted">
                 {cameraAllowed
                   ? t('enroll.noCamera')
                   : 'Face recognition is turned off for this gym by the platform administrator, so this member is registered without face captures. Their face can be added later if it is switched back on.'}
               </p>
             </section>
-          )}
+          ) : null /* NATIVE + cameraEnabled: photo picker shown above, no extra note needed */}
 
           {/* The submit sits with the last step rather than under the first
               column, so on a phone it is the end of the sequence and on a wide

@@ -291,7 +291,7 @@ export function MemberDetailPage() {
         />
       )}
       {editOpen && (
-        <EditMemberModal member={member} subscription={current} onClose={() => setEditOpen(false)} />
+        <EditMemberModal member={member} subscription={current} descriptorCount={data.descriptor_count} onClose={() => setEditOpen(false)} />
       )}
       {renewOpen && <RenewModal memberId={memberId} onClose={() => setRenewOpen(false)} />}
       {removeOpen && (

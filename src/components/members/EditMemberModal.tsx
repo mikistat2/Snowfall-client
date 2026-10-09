@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiErrorMessage } from '../../lib/api';
 import { t } from '../../i18n/strings';
 import { Modal } from '../ui/Modal';
@@ -6,6 +7,7 @@ import { PhoneInput } from '../ui/PhoneInput';
 import { Select } from '../ui/Select';
 import { SexPicker } from './SexPicker';
 import { MemberPhotoPicker, type PhotoValue } from './MemberPhotoPicker';
+import { FaceCapture, type Capture } from './FaceCapture';
 import { StatusBadge } from '../ui/StatusBadge';
 import { CalendarDateInput, type CalendarSystem } from '../ui/CalendarDateInput';
 import { usePlans } from '../../hooks/queries/usePlans';
@@ -18,6 +20,9 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { addDaysIso, todayIso } from '../../lib/ethiopian';
 import { daysLeft, deriveStatus } from '../../lib/expiry';
+import { addDescriptors } from '../../api/members';
+import { NATIVE } from '../../lib/platform';
+import { qk } from '../../hooks/queries/keys';
 import type { UpdateMemberInput } from '../../api/members';
 import type { Member, Subscription } from '../../lib/types';
 
@@ -42,10 +47,13 @@ function dateOnly(value: string | null | undefined): string {
 export function EditMemberModal({
   member,
   subscription,
+  descriptorCount = 0,
   onClose,
 }: {
   member: Member;
   subscription?: Subscription;
+  /** Current number of face descriptors stored for this member. */
+  descriptorCount?: number;
   onClose: () => void;
 }) {
   const { user } = useAuth();
@@ -53,7 +61,14 @@ export function EditMemberModal({
   // has since been retired, and the dropdown must not silently move them off it
   const { data: plans = [] } = usePlans();
   const { data: gym } = useGymSettings();
+  const queryClient = useQueryClient();
   const mutation = useUpdateMember(member.id);
+
+  // Face capture is available on the website (not Android) when the gym has a
+  // camera. This lets staff add or replace face descriptors from the edit screen
+  // without going back to the monitor.
+  const cameraEnabled = gym?.settings.camera_enabled ?? true;
+  const canCaptureFaces = cameraEnabled && !NATIVE;
 
   const canEditMembership = user?.role === 'owner' && Boolean(subscription);
 
@@ -63,6 +78,8 @@ export function EditMemberModal({
   const [paperCalendar, setPaperCalendar] = useState<CalendarSystem>('gregorian');
   /** null = untouched, 'remove' = delete on save, otherwise the new renditions. */
   const [photo, setPhoto] = useState<PhotoValue>(null);
+  const [captures, setCaptures] = useState<Capture[]>([]);
+  const [faceOpen, setFaceOpen] = useState(false);
   const [fullName, setFullName] = useState(member.full_name);
   const [phone, setPhone] = useState(member.phone ?? '');
   const [sex, setSex] = useState<'male' | 'female' | ''>(member.sex ?? '');
@@ -136,7 +153,8 @@ export function EditMemberModal({
       if (Object.keys(sub).length > 0) patch.subscription = sub;
     }
 
-    if (Object.keys(patch).length === 0 && photo === null) {
+    const hasNewCaptures = captures.length > 0;
+    if (Object.keys(patch).length === 0 && photo === null && !hasNewCaptures) {
       onClose();
       return;
     }
@@ -150,6 +168,19 @@ export function EditMemberModal({
       if (Object.keys(patch).length > 0) await mutation.mutateAsync(patch);
       if (photo === 'remove') await clearPhoto.mutateAsync();
       else if (photo) await savePhoto.mutateAsync({ thumb: photo.thumb, full: photo.full });
+
+      // Save face descriptors if any were captured. The `replace` flag replaces
+      // all existing descriptors when the member already had some — this is the
+      // expected "re-capture" workflow where a staff member wants better shots.
+      if (hasNewCaptures) {
+        await addDescriptors(
+          member.id,
+          captures.map((c) => c.descriptor),
+          descriptorCount > 0, // replace existing when they already have captures
+        );
+        void queryClient.invalidateQueries({ queryKey: qk.member(member.id) });
+      }
+
       onClose();
     } catch {
       // Surfaced by the error banner above, which reads whichever mutation failed.
@@ -288,6 +319,46 @@ export function EditMemberModal({
             )}
           </div>
         </div>
+
+        {/* Face capture — only on desktop browsers where face-api.js works.
+            Full-width below the grid so it does not get lost as a third cell
+            in the two-column layout. Collapsible so it does not dominate the
+            modal when the staff member only came here to fix a phone number. */}
+        {canCaptureFaces && (
+          <div className="space-y-3 rounded-lg border border-line bg-surface-2 p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">{t('enroll.captures')}</h3>
+              <button
+                type="button"
+                className="text-xs font-medium text-accent hover:underline"
+                onClick={() => setFaceOpen(!faceOpen)}
+              >
+                {faceOpen ? t('common.close') : descriptorCount > 0 ? `${t('photo.change')} (${descriptorCount})` : t('photo.add')}
+              </button>
+            </div>
+            {!faceOpen && descriptorCount > 0 && (
+              <p className="text-xs text-fg-subtle">
+                {descriptorCount} {t('members.faceCaptures').toLowerCase()} {t('edit.stored')}
+              </p>
+            )}
+            {!faceOpen && descriptorCount === 0 && (
+              <p className="text-xs text-fg-subtle">
+                {t('enroll.captureHint')}
+              </p>
+            )}
+            {faceOpen && (
+              <FaceCapture
+                captures={captures}
+                onChange={setCaptures}
+                min={1}
+                max={5}
+                hint={descriptorCount > 0
+                  ? t('edit.recaptureHint')
+                  : t('enroll.captureHint')}
+              />
+            )}
+          </div>
+        )}
 
         {canEditMembership && previewStatus && remaining !== null && (
           <div className="space-y-1 rounded-lg bg-surface-2 px-3 py-2">

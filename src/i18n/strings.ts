@@ -341,6 +341,8 @@ const en = {
   'edit.errName': 'Enter the member’s full name.',
   'edit.errJoinedMissing': 'Fill in the registration date.',
   'edit.errDatesMissing': 'Choose a plan and fill in both membership dates.',
+  'edit.stored': 'stored',
+  'edit.recaptureHint': 'Capture new shots to replace the existing ones. Look straight, then slightly left and right.',
 
   'date.day': 'Day',
   'date.month': 'Month',
@@ -733,6 +735,8 @@ const am: Partial<Record<StringKey, string>> = {
   'edit.errName': 'የአባሉን ሙሉ ስም ያስገቡ።',
   'edit.errJoinedMissing': 'የምዝገባ ቀኑን ይሙሉ።',
   'edit.errDatesMissing': 'እቅድ ይምረጡ እና ሁለቱንም የአባልነት ቀኖች ይሙሉ።',
+  'edit.stored': 'ተቀምጠዋል',
+  'edit.recaptureHint': 'ያሉትን ለመተካት አዲስ ፎቶዎች ያንሱ። ቀጥታ ይመልከቱ፣ ከዚያ ትንሽ ወደ ግራ እና ወደ ቀኝ።',
 
   'date.day': 'ቀን',
   'date.month': 'ወር',
@@ -1210,6 +1214,8 @@ const om: Partial<Record<StringKey, string>> = {
   'edit.errName': 'Maqaa guutuu miseensaa galchi.',
   'edit.errJoinedMissing': 'Guyyaa galmeessaa guuti.',
   'edit.errDatesMissing': 'Karoora filadhu, guyyaawwan miseensummaa lamaanuu guuti.',
+  'edit.stored': 'kuufame',
+  'edit.recaptureHint': 'Suuraa haaraa kaasii kan jiran bakka buusi. Kallattiin ilaali, sana booda xinnoo bitaa fi mirga.',
 
   'date.day': 'Guyyaa',
   'date.month': 'Jiʼa',
