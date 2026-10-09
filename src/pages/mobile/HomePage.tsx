@@ -259,57 +259,76 @@ function OccupancyCard({
     // floating-card look. `relative z-10` is what makes it survive: the hero is
     // position:relative, so without a position of its own this static card is
     // painted underneath it and its top 48px vanish behind the gradient.
-    //
-    // `stat-strong` rather than the plain tint the tiles below use: this is the
-    // roster count (or the live occupancy), the number the screen exists for,
-    // and at the same wash as the 2x2 grid it read as one more tile.
-    <section className="stat-card stat-tone-sky stat-strong relative z-10 -mt-12 flex items-center justify-between gap-4 p-5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          {/* the dot only pulses once a socket update has actually arrived */}
-          <span className="relative flex h-2 w-2">
-            {live && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-            )}
-            <span
-              className={`relative inline-flex h-2 w-2 rounded-full ${live ? 'bg-green-500' : 'bg-fg-subtle'}`}
-            />
-          </span>
-          {/* text-fg/70, not text-fg-muted — muted is tuned against the plain
-              surface and drops to about 3.9:1 on this wash. */}
-          <span className="text-[10px] font-bold uppercase tracking-widest text-fg/70">
-            {cameraEnabled ? t('home.liveLabel') : t('home.membersTotal')}
-          </span>
+    <section className="relative z-10 -mt-12 overflow-hidden rounded-2xl shadow-lg shadow-sky-500/15 dark:shadow-sky-500/10">
+      {/* The diagonal split: a solid surface on the left, a gradient wash on
+          the right. The SVG clip gives the slash its angle without depending
+          on a CSS transform, which would create stacking-context headaches. */}
+      <div className="relative flex items-center justify-between gap-4 p-5">
+        {/* Base surface */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-surface border border-line/60"
+          style={{ borderRadius: 'inherit' }}
+        />
+        {/* Diagonal gradient overlay — right half only */}
+        <svg
+          aria-hidden
+          className="absolute inset-0 h-full w-full"
+          preserveAspectRatio="none"
+          viewBox="0 0 400 200"
+        >
+          <defs>
+            <linearGradient id="occ-grad" x1="0.5" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="rgb(14 165 233)" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="rgb(56 189 248)" stopOpacity="0.30" />
+            </linearGradient>
+          </defs>
+          <polygon points="180,0 400,0 400,200 100,200" fill="url(#occ-grad)" />
+        </svg>
+        {/* Soft glow in the top-right corner */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-sky-400/20 blur-3xl dark:bg-sky-400/15"
+        />
+
+        {/* Content */}
+        <div className="relative min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              {live && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+              )}
+              <span
+                className={`relative inline-flex h-2 w-2 rounded-full ${live ? 'bg-green-500' : 'bg-fg-subtle'}`}
+              />
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-fg/70">
+              {cameraEnabled ? t('home.liveLabel') : t('home.membersTotal')}
+            </span>
+          </div>
+
+          {loading ? (
+            <div className="mt-2 h-12 w-20 animate-pulse rounded-lg bg-surface-2" />
+          ) : (
+            <p className="mt-1 text-5xl font-extrabold leading-none tabular-nums text-fg">{count}</p>
+          )}
+
+          <p className="mt-1.5 text-sm text-fg/70">
+            {cameraEnabled
+              ? `${t('home.insideNow')} · ${count === 1 ? t('home.person') : t('home.people')}`
+              : `${count === 1 ? t('home.person') : t('home.people')} ${t('home.onTheRoster')}`}
+          </p>
         </div>
 
-        {loading ? (
-          <div className="mt-2 h-12 w-20 animate-pulse rounded-lg bg-surface-2" />
-        ) : (
-          <p className="mt-1 text-5xl font-extrabold leading-none tabular-nums text-fg">{count}</p>
-        )}
-
-        <p className="mt-1.5 text-sm text-fg/70">
-          {cameraEnabled
-            ? `${t('home.insideNow')} · ${count === 1 ? t('home.person') : t('home.people')}`
-            : `${count === 1 ? t('home.person') : t('home.people')} ${t('home.onTheRoster')}`}
-        </p>
+        {/* Action icon — glowing ring on hover/press */}
+        <Link
+          to={cameraEnabled ? '/live' : '/members'}
+          aria-label={cameraEnabled ? t('live.title') : t('nav.members')}
+          className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-600 text-white shadow-lg shadow-sky-500/30 active:scale-95 active:shadow-sky-500/20 transition-all"
+        >
+          {cameraEnabled ? <LiveIcon className="h-7 w-7" /> : <MembersIcon className="h-7 w-7" />}
+        </Link>
       </div>
-
-      {/*
-        The card's action follows its subject: the live feed when there is a
-        camera, the roster when there is not.
-
-        `stat-icon` at 64px — a fixed sky-50 disc all but vanished once the card
-        behind it became sky-tinted. This reads off the same tint variables, so
-        the button stays visible whatever the card is doing.
-      */}
-      <Link
-        to={cameraEnabled ? '/live' : '/members'}
-        aria-label={cameraEnabled ? t('live.title') : t('nav.members')}
-        className="stat-icon h-16 w-16 rounded-2xl active:brightness-95 dark:active:brightness-125"
-      >
-        {cameraEnabled ? <LiveIcon className="h-7 w-7" /> : <MembersIcon className="h-7 w-7" />}
-      </Link>
     </section>
   );
 }
@@ -713,11 +732,16 @@ function StatSheet({
 
 /* --------------------------------------------------------- quick actions */
 
-const ACTIONS: readonly { to: string; key: StringKey; Icon: ComponentType<{ className?: string }> }[] = [
-  { to: '/members/enroll', key: 'home.actionEnroll', Icon: UserPlusIcon },
-  { to: '/members', key: 'home.actionMembers', Icon: MembersIcon },
-  { to: '/payments', key: 'home.actionPayments', Icon: PaymentsIcon },
-  { to: '/live', key: 'home.actionLive', Icon: LiveIcon },
+/** Each action gets its own gradient so the row reads as four distinct things
+ *  rather than four identical grey circles. The tones match the stat tiles:
+ *  violet for enroll (new), sky for members, emerald for payments, amber for
+ *  live — the colour is doing work, telling you what each button is about
+ *  before you read the label. */
+const ACTIONS: readonly { to: string; key: StringKey; Icon: ComponentType<{ className?: string }>; gradient: string; shadow: string }[] = [
+  { to: '/members/enroll', key: 'home.actionEnroll', Icon: UserPlusIcon, gradient: 'from-violet-500 to-purple-600', shadow: 'shadow-violet-500/30' },
+  { to: '/members', key: 'home.actionMembers', Icon: MembersIcon, gradient: 'from-sky-500 to-cyan-600', shadow: 'shadow-sky-500/30' },
+  { to: '/payments', key: 'home.actionPayments', Icon: PaymentsIcon, gradient: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/30' },
+  { to: '/live', key: 'home.actionLive', Icon: LiveIcon, gradient: 'from-amber-500 to-orange-600', shadow: 'shadow-amber-500/30' },
 ];
 
 function QuickActions() {
@@ -726,17 +750,17 @@ function QuickActions() {
       <h2 className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-fg-muted">
         {t('home.quickActions')}
       </h2>
-      <div className="grid grid-cols-4 gap-2">
-        {ACTIONS.map(({ to, key, Icon }) => (
+      <div className="grid grid-cols-4 gap-3">
+        {ACTIONS.map(({ to, key, Icon, gradient, shadow }) => (
           <Link
             key={key}
             to={to}
-            className="flex flex-col items-center gap-1.5 rounded-xl py-2 active:bg-surface-2"
+            className="flex flex-col items-center gap-2 rounded-2xl py-3 transition-transform active:scale-95"
           >
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-2 text-fg">
-              <Icon className="h-5 w-5" />
+            <span className={`flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-gradient-to-br ${gradient} text-white shadow-lg ${shadow}`}>
+              <Icon className="h-[22px] w-[22px]" />
             </span>
-            <span className="text-[11px] font-medium text-fg-muted">{t(key)}</span>
+            <span className="text-[11px] font-semibold text-fg-muted">{t(key)}</span>
           </Link>
         ))}
       </div>
