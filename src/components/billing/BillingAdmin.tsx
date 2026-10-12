@@ -31,6 +31,7 @@ interface AdminSettings {
   receipt_max_age_days: number;
   grace_days: number;
   instructions: string | null;
+  reason_code_required: boolean;
   verificationConfigured: boolean;
   verificationEnvVar: string;
   cbeAccountSuffix: string | null;
@@ -475,6 +476,51 @@ function SettingsForm({
           A receipt older than the maximum age is rejected, so an old transfer cannot be reused to buy a
           fresh subscription.
         </p>
+
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold">Require reason code in transfers</div>
+              <div className="text-xs text-slate-500">
+                When on, a receipt whose reason/remark does not carry the gym's payment code is rejected.
+                When off, a mismatch is recorded as a warning but the payment still goes through — the
+                unique transaction ID, amount and date checks still protect against fraud.
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.reason_code_required}
+              disabled={saving}
+              onClick={() => {
+                const next = !form.reason_code_required;
+                set('reason_code_required', next);
+                onSave(
+                  { reason_code_required: next },
+                  next
+                    ? 'Reason code requirement turned ON — gym transfers must include their payment code.'
+                    : 'Reason code requirement turned OFF — payments will verify without reason code.',
+                );
+              }}
+              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                form.reason_code_required ? 'bg-emerald-500' : 'bg-slate-300'
+              } disabled:opacity-50`}
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                  form.reason_code_required ? 'left-6' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+          {!form.reason_code_required && (
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              Reason code enforcement is <b>off</b>. Gym owners do not need to type their payment code
+              in the bank transfer's reason field. The code is still shown to them and still recorded,
+              but a mismatch will not block the payment.
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="card">
@@ -576,6 +622,7 @@ function SettingsForm({
                 receipt_max_age_days: form.receipt_max_age_days,
                 grace_days: form.grace_days,
                 instructions: form.instructions,
+                reason_code_required: form.reason_code_required,
               },
               'Billing settings saved.',
             )

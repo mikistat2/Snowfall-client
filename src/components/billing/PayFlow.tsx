@@ -419,20 +419,23 @@ function SendStep({
       )}
 
       {/* The payment code gets the most visual weight on this screen:
-          everything downstream depends on it being typed correctly. */}
-      <div className="card border-2 border-dashed border-accent/50">
-        <div className="flex items-center gap-2">
-          <span className="text-lg" aria-hidden>
-            ⚠️
-          </span>
-          <span className="text-sm font-bold text-fg">Type this as the reason</span>
+          everything downstream depends on it being typed correctly.
+          Hidden when the platform admin has turned off reason code enforcement. */}
+      {checkout.reasonCodeRequired !== false && (
+        <div className="card border-2 border-dashed border-accent/50">
+          <div className="flex items-center gap-2">
+            <span className="text-lg" aria-hidden>
+              ⚠️
+            </span>
+            <span className="text-sm font-bold text-fg">Type this as the reason</span>
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-fg-muted">
+            Your banking app calls it the <b>reason</b>, <b>remark</b> or <b>note</b>. It is how we match the
+            money to your gym — a payment sent without it cannot be verified.
+          </p>
+          <CopyField label="Payment code" value={checkout.reasonCode} big />
         </div>
-        <p className="mt-1 text-xs leading-relaxed text-fg-muted">
-          Your banking app calls it the <b>reason</b>, <b>remark</b> or <b>note</b>. It is how we match the
-          money to your gym — a payment sent without it cannot be verified.
-        </p>
-        <CopyField label="Payment code" value={checkout.reasonCode} big />
-      </div>
+      )}
 
       {checkout.instructions && (
         <div className="whitespace-pre-line rounded-2xl bg-sky-50 p-3.5 text-sm leading-relaxed text-sky-900 dark:bg-sky-950/40 dark:text-sky-200">

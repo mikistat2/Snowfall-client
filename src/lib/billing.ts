@@ -87,6 +87,12 @@ export interface BillingCheckout {
   /** false → no provider is set up, or the verification key is missing. */
   configured: boolean;
   graceDays: number;
+  /**
+   * When false, gyms do not need to type their payment code in the transfer
+   * reason field. Optional because older servers do not send it — treat
+   * missing as true (show the code) which is the safe default.
+   */
+  reasonCodeRequired?: boolean;
 }
 
 export interface VerificationResult {
